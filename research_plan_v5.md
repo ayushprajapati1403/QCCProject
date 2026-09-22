@@ -342,3 +342,52 @@ The swarm's case rests on H8 (under change).
 The effect is heterogeneous by change type. The swarm wins on drift, mixed events and VM addition, and loses on churn
 and VM failure, where zero-migration repair is near-optimal. The (1+1)-EA is stuck on VM addition behind a
 single-move barrier (post hoc, `results/h8_posthoc_barrier.md`).
+
+## 17. H10 — the deployed schedule as an elite anchor under migration pricing (pre-registered before H10 was run)
+
+**Observation basis (H8).** Under migration pricing the swarm loses to zero-migration repair after churn and VM failure.
+Its population is sampled *from* the carried registers and never contains the exact deployed schedule, so it pays
+migrations it does not need, about 9 per epoch after churn even at λ = 1. It wins where change calls for coordinated
+reconfiguration, including VM addition, thanks to its structural rule for new capacity. H6 rejected the elite only
+under the makespan-only objective. Under a migration price the deployed schedule is the natural zero-cost anchor.
+
+**Design** (`exp_h10_elite_migration.py`). The H8 harness, cost and six scenario types, with **fresh seeds 301–310**,
+K = 8 and λ ∈ {0.05, 0.2, 1.0}; 900 runs. Strategies:
+* Chooser;
+* GA continue;
+* (1+1)-EA+CXM continue;
+* QI-MRFO+CXM continue (the H8 configuration);
+* **QI-MRFO+CXM continue + elite**: the repaired previous deployed schedule is evaluated once and replaces the worst
+  individual as a depolarised basis state.
+
+**Hypotheses and acceptance** (pooled over 60 pairs per λ; Holm across the three λ; retained at a λ when Holm
+p < 0.05 and the 95 % CI excludes 0).
+* **H10a (primary).** Elite-anchored < QI-MRFO+CXM continue in cost gap, at each λ.
+* **H10b.** Elite-anchored < Chooser at each λ; H8 failed at λ = 0.05.
+* **H10c (reported, predicted favourable).** Elite-anchored vs (1+1)-EA+CXM continue, and vs GA continue.
+* **Replication (reported).** H8a (QI-MRFO+CXM continue vs Chooser) on the fresh seeds.
+* **Local changes (reported).** Per-scenario results on churn and VM failure. The prediction is no Holm-significant loss
+  to the Chooser there.
+
+## 18. H9 — purity-regulated decoherence, the original report's §21 item 2 (pre-registered before H9 was run)
+
+**Origin.** The original report (§21, item 2, written before V5) proposed: "set γ_t so that the population's expected
+move size stays in a target band (e.g. 1–3 tasks) instead of a fixed c/n". It predicted that this "removes the
+residual 5–47 % wasted evaluations at small c without the quality loss seen at large c". The brief lists
+feedback-controlled decoherence first. The band [1, 3] comes from that earlier text, so **nothing is tuned for H9**.
+Context from H7: the swarm is not the best static method, so H9 tests the mechanism claim, not a practical
+recommendation.
+
+**Controller** (`run_qimrfo(move_band=(1, 3))`). After every iteration γ is multiplied by 1.25 when n(1 − mean purity)
+< 1 task and divided by 1.25 when > 3, within [0.05/n, 8/n], starting from γ = 1/n.
+
+**Design** (`exp_h9_purity_band.py`). The 8 static TEST family shapes with **fresh instance seeds 301–310**, 2 run
+seeds, 20 000 evaluations; 640 runs. Arms: QI-MRFO (fixed c = 1), QI-MRFO + band, QI-MRFO+CXM (c = 1, p_x = 1),
+QI-MRFO+CXM + band.
+
+**Hypotheses and acceptance.**
+* **H9a (primary; the report's own prediction, without CXM).** Both parts must hold:
+  1. the band lowers the global duplicate-evaluation fraction (pooled Wilcoxon p < 0.05, CI excluding 0);
+  2. it is non-inferior in gap2: the upper bound of the pooled 95 % CI of (band − fixed) is ≤ +0.10 pp.
+* **H9b (under CXM).** The same two criteria.
+* **Reported.** Two-sided gap tests per family (Holm), and the c trajectories (c_end, c_mean).

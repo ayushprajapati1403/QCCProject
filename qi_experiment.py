@@ -85,7 +85,10 @@ def run_job(job):
         rec.update({"wasted": s["wasted_frac"], "neutral": s["neutral_frac"], "improving": s["improving_frac"], "worse": s["worse_frac"],
                     "move_size": s["mean_move_size"], "gb_impr_per_1k": s["gb_impr_per_1k"], **s5,
                     "div_end": tr.div_ham[-1] if tr.div_ham else np.nan,
-                    "purity_end": tr.purity[-1] if getattr(tr, "purity", None) else np.nan})
+                    "purity_end": tr.purity[-1] if getattr(tr, "purity", None) else np.nan,
+                    # decoherence strength expressed as c = gamma * n (end of run, and mean over iterations)
+                    "c_end": tr.gamma[-1] * n if getattr(tr, "gamma", None) else np.nan,
+                    "c_mean": float(np.mean(tr.gamma)) * n if getattr(tr, "gamma", None) else np.nan})
         ev, bs = np.asarray(tr.evals, float), np.asarray(tr.best, float)
         for k in range(1, N_CHECKPOINTS + 1):              # best-so-far makespan at 5 %, 10 %, ..., 100 % of the budget
             x = job["budget"] * k / N_CHECKPOINTS
