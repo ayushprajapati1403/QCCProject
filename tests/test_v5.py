@@ -155,3 +155,29 @@ def test_seed_heuristic_resolution():
     assert "seed_assign" in resolve_kwargs({"seed_heuristic": "max_min"}, inst, "run_one_plus_one")
     with pytest.raises(ValueError):
         resolve_kwargs({"seed_heuristic": "max_min"}, inst, "run_mrfo")
+
+
+# ---- purity-regulated decoherence controller (report §21 item 2) ---------------------------------------------------
+def test_move_band_bounds_budget_determinism():
+    inst = make_instance(40, 6, seed=2)
+    o1, o2 = Objective(inst), Objective(inst)
+    r1 = run_qimrfo(inst, o1, 2000, P=10, seed=3, decoherence=1 / 40, move_band=(1.0, 3.0))
+    r2 = run_qimrfo(inst, o2, 2000, P=10, seed=3, decoherence=1 / 40, move_band=(1.0, 3.0))
+    g = np.array(r1["tracker"].gamma)
+    assert o1.n_evals <= 2000 and r1["best_f"] == r2["best_f"] and r1["tracker"].gamma == r2["tracker"].gamma
+    assert len(g) == len(r1["tracker"].purity) and np.all(g[1:] >= 0.05 / 40 - 1e-15) and np.all(g[1:] <= 8 / 40 + 1e-15)
+
+
+def test_move_band_moves_gamma_in_the_right_direction():
+    inst = make_instance(60, 8, seed=4)
+    low = run_qimrfo(inst, Objective(inst), 3000, P=10, seed=0, decoherence=0.0, move_band=(1.0, 3.0))["tracker"].gamma
+    high = run_qimrfo(inst, Objective(inst), 3000, P=10, seed=0, decoherence=8 / 60, move_band=(1.0, 3.0))["tracker"].gamma
+    assert max(low) > 0.0, "collapsed registers (tiny move size) must raise gamma"
+    assert min(high) < 8 / 60, "diffuse registers (large move size) must lower gamma"
+
+
+def test_move_band_none_is_default():
+    inst = make_instance(20, 4, seed=1)
+    a = run_qimrfo(inst, Objective(inst), 900, P=8, seed=2, decoherence=0.05, exchange=1.0)
+    b = run_qimrfo(inst, Objective(inst), 900, P=8, seed=2, decoherence=0.05, exchange=1.0, move_band=None)
+    assert a["best_f"] == b["best_f"] and a["tracker"].best == b["tracker"].best

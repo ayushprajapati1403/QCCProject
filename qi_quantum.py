@@ -172,11 +172,15 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
 # QI-MRFO: MRFO dynamics (MEALPY-faithful) on amplitude registers (transfer test of the mechanism)
 # ----------------------------------------------------------------------------------------------
 def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoherence=0.0, track=True, init_state=None, accept_equal=False,
-               exchange=0.0):
+               exchange=0.0, move_band=None):
     """accept_equal=True also accepts candidates of equal fitness (neutral drift on plateaus; V4 test).
     exchange>0 (V5, hypothesis H5 'critical exchange measurement'): with this probability a measured candidate additionally
     exchanges a task of its critical VM with a shorter task on another VM (qi_core.critical_exchange), a correlated two-register
-    outcome that the product-state measurement almost never produces; the pair's registers collapse onto that outcome."""
+    outcome that the product-state measurement almost never produces; the pair's registers collapse onto that outcome.
+    move_band=(k_lo, k_hi) (V5, report §21 item 2 'purity-regulated gamma'): after every iteration the channel strength is
+    multiplied by 1.25 if the population's expected move size n(1 - mean purity) is below k_lo tasks and divided by 1.25
+    if it is above k_hi (gamma kept in [0.05/n, 8/n]); `decoherence` is then only the starting value. The trajectory
+    of gamma is recorded in tracker.gamma."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
     tr = Tracker(n, m, inst); tr.purity = []
     if init_state is None or init_state.get("Psi") is None:        # cold start (init_state may carry only an 'elite' seed)
@@ -194,13 +198,15 @@ def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoh
     def snap():
         tr.snapshot(obj.n_evals, A, F, gbF); tr.purity.append(float(np.mean([purity(Psi[i], mode).mean() for i in range(P)])))
     snap()
-    dec = lambda psi: depolarise(psi, decoherence, m, mode)
+    gam = [decoherence]                                   # current channel strength (mutable for the move_band controller)
+    tr.gamma = [decoherence]
+    dec = lambda psi: depolarise(psi, gam[0], m, mode)
     def xmeasure(new, a_new):
         # H5: correlated exchange on top of the product-state measurement; no extra random draw when exchange == 0
         if exchange <= 0 or rng.random() >= exchange: return new, a_new, False
         a_x, tt, uu = critical_exchange(inst, a_new, rng)
         rows = [tt] if uu < 0 else [tt, uu]
-        return collapse_rows(new, rows, a_x[rows], decoherence, m, mode), a_x, True
+        return collapse_rows(new, rows, a_x[rows], gam[0], m, mode), a_x, True
     def xtrack(xm, f, f_parent):
         if xm: tr.x_cands += 1; tr.x_improving += int(f < f_parent - 1e-12)
     for t in range(1, T + 1):
@@ -235,4 +241,9 @@ def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoh
             if f < F[i] or (accept_equal and f <= F[i]): Psi[i], A[i], F[i] = new, a_new, f
             if f < gbF: gbF, gbA = f, a_new.copy(); Eb = basis_state(gbA, m); tr.gb_improvements += 1
         snap()
+        if move_band is not None:                         # purity-regulated channel strength (report §21 item 2)
+            k = n * (1.0 - tr.purity[-1])
+            if k < move_band[0]: gam[0] = min(8.0 / n, max(gam[0], 0.05 / n) * 1.25)
+            elif k > move_band[1]: gam[0] = max(0.05 / n, gam[0] / 1.25)
+            tr.gamma.append(gam[0])
     return {"best_f": gbF, "best_assign": gbA, "tracker": tr, "state": {"Psi": Psi}}
