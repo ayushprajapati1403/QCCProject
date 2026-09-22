@@ -116,8 +116,8 @@ def run_dyn_job(job):
                                 task_dist=s.get("task_dist", "uniform"), hetero=s.get("hetero", "high"))
     t0 = time.time()
     out = run_dynamic(seq, d["algo"], d.get("strategy", "continue_struct"), job["budget0"], job["budget"], seed=job["seed"],
-                      P=job.get("P", 30), decoherence_c=d.get("decoherence_c", 1.0), algo_kw=d.get("algo_kw"),
-                      carry_elite=d.get("carry_elite", False), repair=d.get("repair", "random"))
+                      P=job.get("P", 30), decoherence_c=d.get("decoherence_c", 1.0), mode=d.get("mode", "born_signed"),
+                      algo_kw=d.get("algo_kw"), carry_elite=d.get("carry_elite", False), repair=d.get("repair", "random"))
     post = out[1:]
     rec = {"exp": job["exp"], "algo": job["algo"], "scenario": s["name"], "change": s["change"], "n": s["n"], "m0": s["m"],
            "seed": job["seed"], "budget0": job["budget0"], "budget": job["budget"], "runtime_s": time.time() - t0,

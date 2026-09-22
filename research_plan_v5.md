@@ -173,3 +173,60 @@ the development set**. That gives p_x = 1.0 (0.816 % vs 0.930 %), so the frozen 
 
 To show that the conclusion does not hinge on this tie-break, the TEST stage adds one **sensitivity arm**,
 QI-MRFO+CXM with p_x = 0.5, reported separately. It plays no part in the primary test P1.
+
+## 10. H5 outcome (recorded after `results/h5_analysis.md`; details in the lab log and report §27)
+
+| Prediction | Result | Verdict |
+|---|---|---|
+| P1 (primary) | −2.86 pp [−3.58, −2.21], 76/80 instances, p < 1e-4; 7/8 families Holm-significant, none worse | **confirmed → CXM retained** |
+| P2 (absolute dose–response) | ρ = +0.17, p = 0.69 | not supported (post hoc: relative effect ρ = 0.71) |
+| P3 (mechanism) | unused swaps 140 → 11 ✓, later last improvement ✓, late-half improving rate ✗ | partial |
+| P4 (Born ≈ linear under CXM) | linear twin better on 68/80, Holm-significant on 4/8 families (small margins) | **falsified against the Born rule** |
+| P5 (GA+CXM) | −0.81 pp pooled, no family after Holm; QI-MRFO+CXM beats GA+CXM on 73/80 | the gain is not generic |
+
+New boundary: QI-MRFO+CXM beats Max-Min on 6/8 held-out families but loses on n100 m20 lognormal low. There Max-Min
+is provably optimal, because it attains the preemptive bound L_max / S_max, and the swarm is stuck on a
+makespan-neutral plateau.
+
+## 11. H6 — dynamic re-optimisation: CXM under change × elite carry-over, with migration cost (pre-registered after the H5 analysis, before H6 was run)
+
+**Observation basis.**
+* The dynamic pilot (lab log, report §26 Part B) showed that carried registers beat restart and GA continuation, and
+  that uniform decoherence shocks never help.
+* Audit risk R4: QI-MRFO carries only its registers, never its best schedule, while the GA carries its elite.
+* H5: CXM lowers the static held-out gap by 2.86 pp.
+* Earlier dynamic experiments never counted **migrations**, i.e. the tasks the new schedule moves away from the previous
+  deployed one, which is the real cost of re-optimising a running cloud. A per-epoch Max-Min recomputation was also
+  never run as a competitor.
+
+**Questions.**
+1. Does CXM's static gain carry over to re-optimisation under change?
+2. Does carrying the repaired previous best schedule speed up recovery?
+3. How does the carried-state swarm compare with recomputing Max-Min every epoch once migrations are counted?
+
+**Design** (`exp_h6_dynamic.py`).
+* Six held-out dynamic scenarios, with instance seeds 101–110 (the dynamic pilot used 0–9) and 10 seeds each:
+  n=100, m=10 with churn 20 %, drift, VM failure, VM addition, and mixed events; plus n=200, m=20 lognormal with mixed
+  events.
+* K = 8 changes, a 20 000-evaluation warm start, 4 000 evaluations per epoch, P = 30, c = 1, and p_x = 1 frozen from
+  H5. Greedy repair of orphaned tasks for every carried-state strategy.
+* Ten strategies:
+  * Max-Min recomputed every epoch;
+  * an incremental list heuristic (zero voluntary migrations);
+  * GA continue and GA+CXM continue;
+  * QI-MRFO continue, QI-MRFO+CXM continue, QI-MRFO continue+elite and QI-MRFO+CXM continue+elite (a 2×2 factorial);
+  * P-MRFO+CXM continue+elite, the classical twin, added because of P4;
+  * QI-MRFO+CXM restart.
+* Unit: (scenario, seed). Holm correction across the 6 scenarios; the pooled test over all 60 pairs is the
+  pre-registered one for each hypothesis.
+
+**Predictions and acceptance.**
+* **H6a (primary).** QI-MRFO+CXM continue has a lower mean post-change gap than QI-MRFO continue (pooled Wilcoxon
+  p < 0.05, 95 % CI excluding 0). Retained if this holds and no scenario deteriorates with Holm p < 0.05.
+* **H6b.** Elite carry-over lowers the recovery AUC of QI-MRFO+CXM continue (pooled, same criteria). If AUC does not
+  improve, H6b is rejected, whatever the final gap does.
+* **H6c (reported, direction not predicted).** QI-MRFO+CXM continue+elite vs GA+CXM continue, and the linear twin vs the
+  Born version under change.
+* **H6d (prediction).** Against Max-Min recomputed every epoch, QI-MRFO+CXM continue+elite has fewer voluntary
+  migrations (pooled p < 0.05) and a post-change gap that is not higher (pooled 95 % CI upper bound ≤ +0.1 pp).
+  Either failure is reported as a failure.

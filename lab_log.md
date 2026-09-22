@@ -174,3 +174,82 @@ the identical operator as the control.
 **Prediction (pre-registered, `research_plan_v5.md` §7).** Lower held-out gap (P1). A larger gain where more swaps
 were left unused (P2). End points closer to swap-optimal and later stagnation (P3). The linear twin is still equivalent
 (P4).
+
+## V5 / H5 — critical exchange measurement: results (`results/h5_tune/`, `results/h5_test/`, `results/h5_analysis.md`, `results/h5_posthoc.md`)
+
+**Development set (selection-biased; used only to choose p_x).** Mean gap2 over the 4 pilot instances (10 seeds):
+
+| Algorithm | Mean gap2 |
+|---|---|
+| QI-MRFO | 3.73 % |
+| QI-MRFO+CXM, p_x = 0.1 / 0.25 / 0.5 / 1.0 | 0.97 / 1.19 / 0.93 / 0.82 % |
+| GA | 4.98 % |
+| GA+CXM, p_x = 1.0 | 1.88 % |
+
+p_x = 1.0 and 0.5 tied on the pre-registered mean-rank criterion. The tie-break was fixed and committed before the
+held-out stage (plan §9).
+
+**Held-out set** (8 new families × 10 new instances × 2 seeds, 20 000 evaluations, 1 440 runs; unit = instance;
+gap2 = gap to the preemptive bound):
+
+| Family | Max-Min | GA | GA+CXM | P-MRFO | P-MRFO+CXM | QI-MRFO | QI-MRFO+CXM |
+|---|---|---|---|---|---|---|---|
+| n80 m8 uniform high | 1.009 | 1.232 | 0.922 | 0.989 | **0.043** | 1.046 | 0.061 |
+| n150 m15 uniform high | 0.955 | 2.157 | 2.158 | 1.721 | **0.063** | 1.790 | 0.134 |
+| n300 m30 uniform high | 0.815 | 5.819 | 5.163 | 9.123 | **0.169** | 9.075 | 0.329 |
+| n100 m10 bimodal high | 0.267 | 3.225 | 0.844 | 4.008 | **0.039** | 3.660 | 0.144 |
+| n200 m10 bimodal none | 0.137 | 0.389 | 0.269 | 0.347 | **0.004** | 0.527 | 0.006 |
+| n120 m12 lognormal high | 0.286 | 1.563 | 1.536 | 1.052 | **0.045** | 1.300 | 0.075 |
+| n60 m12 uniform low | 1.609 | 4.039 | 3.226 | 3.611 | **0.208** | 4.146 | 0.274 |
+| n100 m20 lognormal low | **0.000** | 4.457 | 2.251 | 5.855 | 3.458 | 5.628 | 3.307 |
+
+Mean rank over 160 blocks: P-MRFO+CXM 1.57, QI-MRFO+CXM 2.16, Max-Min 3.20, GA+CXM 5.01, P-MRFO 5.38, GA 5.47,
+QI-MRFO 5.49, Min-Min 8.18, MRFO 8.55.
+
+**What happened?**
+* **P1 confirmed (primary).** QI-MRFO+CXM − QI-MRFO = −2.86 pp (95 % CI [−3.58, −2.21]), better on 76/80 instances,
+  Wilcoxon p < 1e-4, rank-biserial −0.96. Seven families are Holm-significant, each with 10/10 wins. The eighth
+  (lognormal low) points the same way but is not significant (6/4). No family deteriorates.
+* **The p_x = 0.5 sensitivity arm** gives −2.81 pp (78/80): the conclusion does not depend on the tie-break.
+* **Max-Min reversal.** Unchanged QI-MRFO loses to Max-Min on 7/8 held-out families (73/80 instances), so the §26
+  finding generalises beyond single instances. QI-MRFO+CXM **beats Max-Min on 6/8 families** (Holm p = 0.016, 9–10/10
+  wins each), ties on bimodal-high (8/2, n.s.), and **loses on n100 m20 lognormal low** (0/10, Holm p = 0.016).
+* **P5.** CXM helps the GA far less: −0.81 pp pooled, 50/28, not significant in any family after Holm. QI-MRFO+CXM beats
+  GA+CXM on 73/80 (−1.50 pp; 7/8 families). The gain therefore comes from the combination of the register swarm with
+  the exchange, not from the exchange alone.
+* **P4 falsified, against the quantum part.** Under CXM the classical linear-probability twin is slightly but
+  significantly better than the Born-rule version: 68/80 instances, pooled Wilcoxon p < 1e-4, Holm-significant on
+  4 families, margins 0.002–0.16 pp. Without CXM the two remain indistinguishable (38/41, p = 0.64). The best algorithm
+  on the held-out set is the classical twin with CXM (P-MRFO+CXM).
+* **P3 partially supported.**
+  * Improving swaps left at the end point: 139.7 → 10.9 ✓.
+  * Last global-best improvement: 54 % → 76 % of the budget ✓.
+  * Late-half improving fraction: 1.45 % → 0.44 % ✗, predicted to rise. CXM converges so fast that fewer late
+    candidates can still improve: gap2 at 10 % of the budget is 3.8 % against 25.6 %.
+  * Global duplicate evaluations: 27.9 % → 2.5 %.
+* **P2 not supported as pre-registered.** Spearman(baseline unused swaps, CXM effect in pp) = +0.17, p = 0.69. POST HOC
+  (`results/h5_posthoc.md`): the pp effect is capped by each family's baseline gap. The *relative* reduction is
+  92–98 % on 7 families and 22 % on the family with 0.4 unused swaps, and it correlates with unused swaps
+  (families ρ = 0.71, p = 0.047; instances ρ = 0.35, p = 0.002). This is exploratory only.
+
+**Why?** A relocation-optimal schedule needs a correlated two-task change, and CXM supplies it at one evaluation per
+candidate. Greedy acceptance around a collapsed best, together with back-action onto the exchanged registers, turns it
+into an efficient stochastic swap-descent around the best-known schedule. In the GA, crossover and generational
+replacement dilute it.
+
+**Failure boundary (new).** On n100 m20 lognormal low the preemptive bound equals L_max / S_max on every instance: the
+largest task alone on the fastest VM. Max-Min attains it, so it is provably optimal. The swarm reaches it on only 2/10
+instances, because emptying the fastest VM needs makespan-neutral moves that strict acceptance rejects: a plateau, as
+in the V4 identical-task case.
+
+**Alternative explanations.**
+* *CXM only adds exploration budget.* Against this: GA+CXM also has zero parent duplicates, yet gains little.
+* *Tuning bias.* Against this: p_x was chosen on disjoint instances, and p_x = 0.5 gives the same result.
+
+**Decision.** RETAIN CXM (p_x = 1) as the recommended option for makespan. Defaults stay unchanged for backward
+compatibility. The Born rule is not recommended.
+
+**Next.**
+* **H6.** Does CXM carry over to re-optimisation under change, does the elite carry-over (fixing audit risk R4) speed
+  up recovery, and how does the carried-state swarm compare with recomputing Max-Min once migrations are counted?
+* **Later.** Heuristic seeding and plateau-aware acceptance for the big-task failure family.

@@ -139,5 +139,40 @@ def stage_analyze():
     txt = analysis_text(); open(path, "w").write(txt); print(txt)
 
 
+def stage_posthoc():
+    """EXPLORATORY (not pre-registered), written after reading results/h5_analysis.md: P2 re-expressed as the RELATIVE gap
+    reduction (the pre-registered absolute pp effect is capped by each family's baseline gap), and the structure of the
+    one family where QI-MRFO+CXM loses to Max-Min."""
+    from scipy.stats import spearmanr
+    from qi_core import make_instance, Objective, max_min
+    path = os.path.join(RES, "h5_posthoc.md")
+    if os.path.exists(path):
+        raise RuntimeError(f"{path} exists (write-once)")
+    test = load_experiment("h5_test")
+    w = test[test.algo.isin(["QI-MRFO", "QI-MRFO+CXM"])].groupby(["family", "inst_seed", "algo"])[["gap2", "end_impr_swap"]].mean().unstack("algo")
+    rel = 1 - w["gap2"]["QI-MRFO+CXM"] / w["gap2"]["QI-MRFO"]
+    sw = w["end_impr_swap"]["QI-MRFO"]
+    fam = pd.DataFrame({"relative gap reduction": rel.groupby(level=0).mean(), "baseline unused improving swaps": sw.groupby(level=0).mean()})
+    r_f, p_f = spearmanr(fam.iloc[:, 1], fam.iloc[:, 0]); r_i, p_i = spearmanr(sw, rel)
+    out = ["# H5 post hoc analysis (EXPLORATORY — not pre-registered)\n",
+           "Written after reading `results/h5_analysis.md`. Nothing here is a confirmatory test.\n",
+           "## P2 re-expressed as the relative gap reduction 1 - gap2(QI-MRFO+CXM) / gap2(QI-MRFO)\n",
+           fam.round(3).reset_index().to_markdown(index=False, floatfmt=".3f"),
+           f"\nSpearman (baseline unused swaps vs relative reduction): families rho = {r_f:.3f} (p = {p_f:.3f}); "
+           f"instances rho = {r_i:.3f} (p = {p_i:.4f}, n = {len(rel)}).\n",
+           "## Why QI-MRFO+CXM loses to Max-Min on 'n100 m20 lognormal low'\n",
+           "| inst_seed | LB2 | L_max / S_max | total work / total speed | Max-Min makespan | QI-MRFO+CXM (mean of 2 seeds) |",
+           "|---|---|---|---|---|---|"]
+    q = test[(test.algo == "QI-MRFO+CXM") & (test.family == "n100 m20 lognormal low")].groupby("inst_seed").makespan.mean()
+    for s in TEST_INST_SEEDS:
+        inst = make_instance(100, 20, seed=s, task_dist="lognormal", hetero="low")
+        out.append(f"| {s} | {inst.lower_bound_pmtn():.3f} | {inst.task_len.max() / inst.vm_mips.max():.3f} | "
+                   f"{inst.task_len.sum() / inst.vm_mips.sum():.3f} | {Objective(inst)._raw(max_min(inst))[0]:.3f} | {q.loc[s]:.3f} |")
+    out.append("\nOn every instance the bound is set by the largest task alone on the fastest VM, and Max-Min attains it, so it is "
+               "provably optimal. Reaching that schedule by local moves requires emptying the fastest VM first; every such "
+               "move is makespan-neutral and is rejected by strict acceptance (a plateau, like the V4 identical-task case).\n")
+    txt = "\n".join(out) + "\n"; open(path, "w").write(txt); print(txt)
+
+
 if __name__ == "__main__":
-    {"tune": stage_tune, "test": stage_test, "analyze": stage_analyze}[sys.argv[1]]()
+    {"tune": stage_tune, "test": stage_test, "analyze": stage_analyze, "posthoc": stage_posthoc}[sys.argv[1]]()

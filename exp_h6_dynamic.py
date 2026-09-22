@@ -1,6 +1,6 @@
 """
 exp_h6_dynamic.py - hypothesis H6 (dynamic re-optimisation: CXM under change x elite carry-over, with migration cost);
-design pre-registered in research_plan_v5.md §10 before this script was run.
+design pre-registered in research_plan_v5.md §11 before this script was run.
 
   python exp_h6_dynamic.py run       # held-out dynamic scenarios (instance seeds 101-110), all strategies
   python exp_h6_dynamic.py analyze   # statistics -> results/h6_analysis.md
@@ -32,6 +32,7 @@ STRATEGIES = {
     "QI-MRFO+CXM continue": {"algo": "QI-MRFO", "strategy": "continue_struct", "repair": "greedy", "algo_kw": X},
     "QI-MRFO continue+elite": {"algo": "QI-MRFO", "strategy": "continue_struct", "repair": "greedy", "carry_elite": True},
     "QI-MRFO+CXM continue+elite": {"algo": "QI-MRFO", "strategy": "continue_struct", "repair": "greedy", "carry_elite": True, "algo_kw": X},
+    "P-MRFO+CXM continue+elite": {"algo": "QI-MRFO", "mode": "linear", "strategy": "continue_struct", "repair": "greedy", "carry_elite": True, "algo_kw": X},
     "QI-MRFO+CXM restart": {"algo": "QI-MRFO", "strategy": "restart", "algo_kw": X},
 }
 
@@ -79,7 +80,8 @@ def analysis_text():
              ("QI-MRFO+CXM continue+elite", "Max-Min (recompute)", "post_gap", "H6d: vs Max-Min recomputed every epoch (post-change gap)"),
              ("QI-MRFO+CXM continue+elite", "Max-Min (recompute)", "migrations", "H6d: vs Max-Min recomputed every epoch (migrations)"),
              ("QI-MRFO+CXM continue+elite", "QI-MRFO+CXM restart", "post_auc", "value of carried state under CXM (recovery AUC)"),
-             ("GA+CXM continue", "GA continue", "post_gap", "CXM on the GA under change (post-change gap)")]
+             ("GA+CXM continue", "GA continue", "post_gap", "CXM on the GA under change (post-change gap)"),
+             ("P-MRFO+CXM continue+elite", "QI-MRFO+CXM continue+elite", "post_gap", "classical linear twin vs Born rule under change (post-change gap)")]
     for a, b, metric, label in comps:
         t = paired(df, a, b, metric, scale=(1 if metric == "migrations" else 100))
         out.append(f"### {label}: A = {a}, B = {b}, metric = {metric}\n")
