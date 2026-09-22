@@ -1,0 +1,10 @@
+# pinned to the versions of docker/Dockerfile (the environment that produced results/*)
+numpy==2.2.6
+scipy==1.15.3
+matplotlib==3.10.3
+pandas==2.3.1
+pytest>=8
+nbformat
+nbconvert
+ipykernel
+jupyter_client
