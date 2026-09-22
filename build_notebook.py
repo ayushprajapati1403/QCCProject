@@ -885,6 +885,16 @@ if os.path.exists(_h7p):
 else:
     print("results/h7_test/records.csv not found (run `python exp_h7_swarm_seed.py tune test analyze` in the repository)")
 """)
+md(r"""
+### 19.2 H7: the swarm vs a (1+1)-EA with the same moves, and Max-Min seeding (`results/h7_analysis.md`)
+
+* **Pre-registered primary H7a failed.** The (1+1)-EA with identical moves beats QI-MRFO+CXM on 58/80 fresh instances,
+  and no family favours the swarm. For static makespan the exchange measurement, not the register swarm, carries the
+  gain.
+* **Seeding (H7b) confirmed.** A Max-Min basis state fixes the big-task plateau (3.11 % → 0.02 %) and harms nothing.
+* **Best static method tested.** Max-Min seed + (1+1)-EA with CXM moves (mean rank 2.70 of 8).
+* **What remains for the swarm.** Its case is re-optimisation under change (Section 20).
+""")
 
 # ----------------------------------------------------------------------------------------------------- S20 (V5 dynamic)
 md(r"""

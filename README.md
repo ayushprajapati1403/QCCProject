@@ -98,6 +98,11 @@ Swarm schedulers (PSO, DMO, MRFO) are continuous algorithms; cloud papers apply 
 * **New boundary.** On near-homogeneous VMs with a dominant task (n100 m20 lognormal/low), Max-Min is provably optimal:
   it attains the lower bound on all 10 instances. The swarm is stuck on a makespan-neutral plateau, the same failure
   mode as the identical-task case.
+* **Is the swarm needed? (H7, fresh instances 201–210).** A (1+1)-EA with exactly the same moves
+  (`run_one_plus_one`) beats QI-MRFO+CXM on 58/80 instances.
+  * For **static** makespan the gain belongs to the exchange measurement, not to the register swarm.
+  * Max-Min seeding fixes the plateau failure and improves every configuration.
+  * The best static method tested is Max-Min seed + (1+1)-EA with CXM moves.
 * **Under change (H6).** 6 held-out dynamic scenarios, 600 runs, migrations counted.
   * CXM lowers the post-change gap on 60/60 scenario-seed pairs.
   * The carried-state swarm with CXM has a lower gap than recomputing Max-Min after every change, with 41 % fewer

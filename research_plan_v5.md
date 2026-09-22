@@ -319,3 +319,14 @@ that carries its single deployed schedule across changes, with greedy repair aft
 values c = 1, p_x = 0.5 from `results/h7_selection.json`, optimising the same migration-aware cost. It is reported as
 "register swarm vs (1+1)-EA carrying one schedule" at each λ. It does not change H8a or H8b. The addition was decided
 before any H7 or H8 result was available.
+
+## 15. H7 outcome (recorded after `results/h7_analysis.md`)
+
+| Hypothesis | Result | Verdict |
+|---|---|---|
+| H7a (primary) | the (1+1)-EA with identical moves beats QI-MRFO+CXM on 58/80 fresh instances (p = 1e-4), Holm-better on n150 and n300 | **failed → register swarm unnecessary for static makespan; H5 gain attributed to CXM** |
+| H7b | seeding −0.51 pp (67/11); plateau family 3.11 → 0.02 %; no family worse | **confirmed → seeding adopted for static runs** |
+| H7c | seeded (1+1)-EA marginally better than the seeded swarm (51/19, +0.014 pp) | reported |
+
+Updated recommendation for static makespan: Max-Min seed + (1+1)-EA with CXM moves, or the seeded classical twin.
+The swarm's case rests on H8 (under change).

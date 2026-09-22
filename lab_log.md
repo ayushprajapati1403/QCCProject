@@ -308,3 +308,62 @@ the carried-state swarm naturally can.
   effect: helps after churn and VM failure, hurts after VM addition. An event-aware variant (no elite after VM
   addition) is a post hoc idea and needs its own pre-registered test.
 * **Next:** H7 (already pre-registered: is the swarm needed; seeding), then a migration-aware objective (H8).
+
+## V5 / H7 — is the register swarm needed once CXM exists? Max-Min seeding (`results/h7_tune/`, `results/h7_test/`, `results/h7_analysis.md`)
+
+**Why this test.** Late in an H5 run every QI-MRFO+CXM candidate is "best schedule + per-task noise at rate c/n +
+critical exchange", which is exactly the mutation of a (1+1)-EA. H5 never ran that minimal control. H7 runs it, tuned
+with comparable effort on the development set (6 configurations; c = 1, p_x = 0.5 selected), on **fresh** held-out
+instances (seeds 201–210) so that the seeding remedy is not evaluated on the instances that motivated it.
+
+Mean gap2 (%) on the fresh held-out set (8 families × 10 instances × 2 seeds, 20 000 evaluations):
+
+| Family | Max-Min | GA+CXM+seed | (1+1)-EA+CXM | (1+1)-EA+CXM+seed | P-MRFO+CXM | P-MRFO+CXM+seed | QI-MRFO+CXM | QI-MRFO+CXM+seed |
+|---|---|---|---|---|---|---|---|---|
+| n80 m8 uniform high | 0.765 | 0.411 | 0.043 | 0.050 | 0.044 | 0.046 | 0.052 | 0.051 |
+| n150 m15 uniform high | 0.842 | 0.601 | **0.042** | 0.046 | 0.069 | 0.068 | 0.118 | 0.087 |
+| n300 m30 uniform high | 0.857 | 0.597 | 0.075 | **0.065** | 0.136 | 0.110 | 0.413 | 0.166 |
+| n100 m10 bimodal high | 0.282 | 0.162 | 0.304 | 0.028 | 0.325 | **0.022** | 0.503 | 0.025 |
+| n200 m10 bimodal none | 0.165 | 0.081 | 0.015 | **0.002** | 0.003 | 0.003 | 0.006 | 0.004 |
+| n120 m12 lognormal high | 0.246 | 0.171 | 0.186 | **0.036** | 0.331 | **0.036** | 0.203 | 0.040 |
+| n60 m12 uniform low | 1.903 | 1.305 | 0.245 | 0.242 | 0.208 | **0.172** | 0.252 | 0.209 |
+| n100 m20 lognormal low | 0.145 | 0.094 | 2.330 | 0.020 | 2.115 | 0.025 | 3.107 | **0.019** |
+
+Mean rank over 160 blocks: (1+1)-EA+CXM+seed 2.70, P-MRFO+CXM+seed 3.10, (1+1)-EA+CXM 3.39, QI-MRFO+CXM+seed 3.85,
+P-MRFO+CXM 3.98, QI-MRFO+CXM 5.31, GA+CXM+seed 6.40, Max-Min 7.27.
+
+**What happened?**
+* **H7a (primary) FAILED.** QI-MRFO+CXM − (1+1)-EA+CXM = +0.18 pp [−0.11, +0.53]. The (1+1)-EA is better on
+  **58/80** instances (21 swarm wins, 1 tie), pooled Wilcoxon p = 1e-4 in the (1+1)-EA's favour. It is Holm-significantly
+  better on n150 (10/10) and n300 (10/10), and no family favours the swarm. The classical twin P-MRFO+CXM is not
+  significantly different pooled (26 vs 54 wins, p = 0.12) but also loses on n150 and n300. **By the pre-registered rule the register swarm is
+  declared unnecessary for static makespan once CXM is available, and H5's static gain is attributed to the exchange
+  measurement.**
+* **H7b confirmed.** Max-Min seeding improves QI-MRFO+CXM by 0.51 pp [−0.88, −0.22], on 67/80 instances (2 ties,
+  11 worse). It removes the plateau failure: lognormal-low 3.11 % → 0.02 %, 8/2/0, Holm p = 0.047. It is
+  Holm-significant on 3 more families and worsens none.
+* **H7c.** The seeded (1+1)-EA ("Max-Min + stochastic CXM local search", the control report §21 asked for) is slightly
+  better than the seeded swarm: +0.014 pp [0.004, 0.025], 51/10/19, p = 0.001. It is Holm-better on n150, n200 and
+  n300; the swarm is better on none.
+* **By construction and measured.** The seeded swarm is never worse than Max-Min and strictly better on 70/80
+  instances. It beats the seeded GA+CXM on 70/80.
+* **Replications on fresh instances.**
+  * QI-MRFO+CXM vs Max-Min: 63/2/15, p = 3e-4. Better on 5 families (Holm), worse again on lognormal-low.
+  * Linear twin vs Born rule (seeded): the twin is better on 54/10/16, p < 1e-4.
+
+**Why?** Mechanism diagnostics:
+* The (1+1)-EA spends 36 % of its evaluations on duplicates and makes 1.9-task moves, yet it converges faster: gap2
+  5.7 % at 5 % of the budget against 10.0 % for QI-MRFO+CXM, and 0.41 % against 0.58 % at the end.
+* Once CXM supplies the right correlated move, a single trajectory uses the budget better than 30 individuals that
+  share it. The MRFO dynamics add no exploration benefit measurable at 20 000 evaluations.
+
+**Alternative explanations.** (a) The population would pay off at larger budgets or on more rugged landscapes;
+UNMEASURED. (b) The swarm's parameters (c = 1) were not re-tuned under CXM, whereas the (1+1)-EA's were; partly
+answered by the flat (1+1) grid, and P-MRFO+CXM (same c) is not significantly different from it pooled.
+
+**Decision.**
+* For static makespan the recommended method is **Max-Min seeding + (1+1)-EA with CXM moves**, or equivalently the
+  seeded classical twin.
+* QI-MRFO's remaining claim rests on **re-optimisation under change**. H8, whose (1+1)-EA arm was fixed before these
+  results, tests exactly that.
+* Seeding is adopted for static runs.

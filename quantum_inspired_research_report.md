@@ -526,7 +526,8 @@ with a lexicographic tie-breaker (UNMEASURED).
 
 * **Static makespan batches.** With CXM the population method is no longer "GA-class and beaten by Max-Min". On the
   held-out families it is the best method tested except where the optimum is a constructive corner case that Max-Min
-  reaches exactly.
+  reaches exactly. *(Qualified by §29: a (1+1)-EA with the same moves is at least as good, so the gain belongs to CXM,
+  not to the swarm.)*
 * **Quantum-specific ingredients.** They remain unhelpful. The recommended configuration is the classical twin
   (probability vectors, linear mixing) with the decoherence floor and CXM. "Quantum-inspired" describes the
   derivation (registers, measurement, back-action, correlated two-register measurement), not a source of advantage.
@@ -577,6 +578,49 @@ Verdicts:
 reason to leave tasks in place. The pooled Pareto dominance over Max-Min holds, but half of the persistent tasks still
 move every epoch. Migration cost has to enter the objective: a problem that list heuristics cannot address and that a
 carried-state population method can (next hypothesis).
+
+## 29. V5 — is the register swarm needed once CXM exists? Max-Min seeding (H7; measured)
+
+**Why.** Late in a QI-MRFO+CXM run every candidate is "best schedule + per-task noise at rate $c/n$ + critical
+exchange", which is exactly the mutation of a (1+1)-EA. Without that minimal control, H5 could not say whether the
+register swarm contributes anything beyond the exchange move. H7 (pre-registered, `research_plan_v5.md` §12) adds it,
+tuned with comparable effort on the development set, and tests Max-Min seeding. It runs on a **fresh** held-out set
+(instance seeds 201–210), so the seeding remedy is not evaluated on the instances that exposed the plateau failure
+(`results/h7_test/`, `results/h7_analysis.md`, 1 200 runs).
+
+| Comparison (pooled over 80 fresh instances; gap2 pp) | Difference [95 % CI] | Wins A / ties / wins B | p |
+|---|---|---|---|
+| **H7a:** QI-MRFO+CXM − (1+1)-EA+CXM | +0.18 [−0.11, +0.53] | 21 / 1 / **58** | 1e-4 (favours the (1+1)-EA) |
+| P-MRFO+CXM − (1+1)-EA+CXM | −0.001 [−0.21, +0.23] | 26 / 0 / 54 | 0.12 |
+| **H7b:** QI-MRFO+CXM+seed − QI-MRFO+CXM | **−0.51 [−0.88, −0.22]** | 67 / 2 / 11 | < 1e-4 |
+| H7c: QI-MRFO+CXM+seed − (1+1)-EA+CXM+seed | +0.014 [+0.004, +0.025] | 19 / 10 / 51 | 0.001 |
+| QI-MRFO+CXM+seed − Max-Min | −0.58 [−0.72, −0.45] | 70 / 10 / 0 | < 1e-4 |
+| P-MRFO+CXM+seed − QI-MRFO+CXM+seed (P4 replication) | −0.015 [−0.022, −0.008] | 54 / 10 / 16 | < 1e-4 |
+| QI-MRFO+CXM − Max-Min (H5 replication) | −0.07 [−0.41, +0.35] | 63 / 2 / 15 | 3e-4 |
+
+Mean rank over the 160 blocks: (1+1)-EA+CXM+seed 2.70, P-MRFO+CXM+seed 3.10, (1+1)-EA+CXM 3.39,
+QI-MRFO+CXM+seed 3.85, P-MRFO+CXM 3.98, QI-MRFO+CXM 5.31, GA+CXM+seed 6.40, Max-Min 7.27.
+
+**Verdicts.**
+* **H7a (primary) failed.** A (1+1)-EA with the same moves beats QI-MRFO+CXM on 58 of 80 fresh instances. It is
+  Holm-significantly better on the two largest uniform families, and no family favours the swarm. By the rule
+  committed before the run, **the register swarm is unnecessary for static makespan once the exchange measurement
+  exists**, and H5's static gain belongs to CXM, not to the swarm.
+* **Why.** The (1+1)-EA wastes 36 % of its evaluations on duplicates and moves only 1.9 tasks per candidate, yet it
+  converges faster: 5.7 % gap at 5 % of the budget against 10.0 % for the swarm. Splitting the budget across 30
+  individuals costs more than the MRFO dynamics return at 20 000 evaluations.
+* **H7b confirmed.** Seeding with the Max-Min schedule improves QI-MRFO+CXM on 67/80 instances and removes the
+  big-task plateau failure of §27.7 (3.11 % → 0.02 %). It worsens no family. The seeded swarm is never worse than
+  Max-Min and is strictly better on 70/80 instances.
+* **H7c.** The seeded (1+1)-EA, i.e. "Max-Min + stochastic CXM local search", the control §21 demanded, is marginally
+  better than the seeded swarm (51 vs 19 wins, +0.014 pp).
+* **Quantum-specific part.** Replicated again: the linear twin is better than the Born rule (54/16).
+
+**Consequence for the claims of §27.8.** The static makespan result must be restated: the decisive V5 ingredient is
+the correlated exchange measurement, and the best static method tested is **Max-Min seeding + a (1+1)-EA with the
+CXM moves**. The register swarm's remaining case rests on re-optimisation under change: carried registers and
+structural rules (§26, §28). H8 (§30) tests that against a (1+1)-EA carrying its single schedule, an arm fixed before
+the H7 result was known.
 
 ## Final decision
 
