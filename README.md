@@ -77,9 +77,38 @@ Swarm schedulers (PSO, DMO, MRFO) are continuous algorithms; cloud papers apply 
 * Dynamic workloads: carrying the register state beats restarting on every change type (recovery AUC 2–4× lower) and beats the GA on VM drift/failure/addition, thanks to clean structural rules (column deletion = projective measurement, uniform share for new VMs, uniform registers for new tasks). The decoherence *shock* ("controlled forgetting") does **not** beat plain continuation at any churn severity tested (10–80 %): a negative result with a boundary.
 * The 30-seed run (7 instances, 2 100 runs) confirms the encoding effect with p < 10⁻⁴ and Cliff's δ ≈ −1 on every instance, confirms that the Born rule adds nothing over the linear twin, softens "beats the GA" to "GA-class (significantly better on one instance)", and shows that the Max-Min list heuristic beats QI-MRFO on 6 of 7 static instances by 0.3–4.7 percentage points: the practical case for the population method is additive/multi-objective objectives and re-optimisation under change, not static makespan batches.
 
+## What V5 found (held-out protocol; `research_plan_v5.md`, `lab_log.md` V5, report §27)
+
+* **Observation.** QI-MRFO stalls at schedules that are *relocation-optimal* but leave 1–50 improving two-task swaps
+  unused. Its product-state measurement changes tasks independently and almost never produces the correlated exchange
+  such a schedule needs. A third to a half of its evaluations were also re-evaluations of known schedules.
+* **Critical exchange measurement (CXM, `run_qimrfo(exchange=1.0)`).**
+  * *Mechanism.* A measured candidate additionally swaps a task on its critical VM with a shorter task elsewhere, and
+    the two registers collapse onto the outcome.
+  * *Held-out result.* 80 new instances across 8 new families, with p_x chosen only on the pilot instances.
+    Gap to the preemptive bound: **3.40 % → 0.54 %**, better on 76/80 instances (p < 1e-4, 7/8 families
+    Holm-significant, none worse).
+  * *Against Max-Min.* QI-MRFO+CXM now **beats Max-Min on 6 of 8 held-out families** (unchanged QI-MRFO: Max-Min wins
+    73/80 instances).
+  * *Against the GA.* Given the same operator, the GA improves by only 0.81 pp and loses to QI-MRFO+CXM on 73/80
+    instances.
+* **Still no quantum advantage.** Under CXM the classical linear-probability twin is slightly but significantly
+  *better* than the Born-rule version (68/80 instances). The best algorithm tested is the classical twin with CXM
+  (mean rank 1.57 of 9).
+* **New boundary.** On near-homogeneous VMs with a dominant task (n100 m20 lognormal/low), Max-Min is provably optimal:
+  it attains the lower bound on all 10 instances. The swarm is stuck on a makespan-neutral plateau, the same failure
+  mode as the identical-task case.
+* **Research quality.**
+  * 213 tests, including bit-exact golden fingerprints of the V0–V4 code.
+  * Development/held-out split with instance-level statistics.
+  * A tighter (preemptive) lower bound.
+  * Write-once checkpointed experiments with commit hashes.
+  * A pre-registration committed before each run.
+  * Deterministic, synchronised notebook builds.
+
 ## Notebook sections
 
-1 Environment · 2 Imports/config · 3 Seeds · 4 Problem representation · 5 Task/VM generation · 6 Objective · 7 Classical PSO/DMO/MRFO (+GA, heuristics) · 8 Quantum-inspired mechanism (math + demo) · 9 QI-MRFO / QI-DMO · 10 Validation tests · 11 Smoke · 12 Baseline · 13 Convergence/diversity/purity/move-size plots · 14 Statistics (Wilcoxon + Holm, Cliff's δ, A12, bootstrap CI, Friedman) · 15 Ablation · 16 Sensitivity (γ dose–response, P, S) · 17 Failure cases (tiny, m=2, trivial landscape, energy objective, many VMs, tall barriers, overhead, dynamic workloads) · 18 Interpretation.
+1 Environment · 2 Imports/config · 3 Seeds · 4 Problem representation · 5 Task/VM generation · 6 Objective · 7 Classical PSO/DMO/MRFO (+GA, heuristics) · 8 Quantum-inspired mechanism (math + demo) · 9 QI-MRFO / QI-DMO · 10 Validation tests · 11 Smoke · 12 Baseline · 13 Convergence/diversity/purity/move-size plots · 14 Statistics (Wilcoxon + Holm, Cliff's δ, A12, bootstrap CI, Friedman) · 15 Ablation · 16 Sensitivity (γ dose–response, P, S) · 17 Failure cases (tiny, m=2, trivial landscape, energy objective, many VMs, tall barriers, overhead, dynamic workloads) · 18 Interpretation · 19 V5: evaluation diagnostics and critical exchange measurement (held-out demo + committed results).
 
 ## Honesty rules used throughout
 

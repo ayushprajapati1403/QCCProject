@@ -211,9 +211,9 @@ QI-MRFO 5.49, Min-Min 8.18, MRFO 8.55.
   Wilcoxon p < 1e-4, rank-biserial −0.96. Seven families are Holm-significant, each with 10/10 wins. The eighth
   (lognormal low) points the same way but is not significant (6/4). No family deteriorates.
 * **The p_x = 0.5 sensitivity arm** gives −2.81 pp (78/80): the conclusion does not depend on the tie-break.
-* **Max-Min reversal.** Unchanged QI-MRFO loses to Max-Min on 7/8 held-out families (73/80 instances), so the §26
-  finding generalises beyond single instances. QI-MRFO+CXM **beats Max-Min on 6/8 families** (Holm p = 0.016, 9–10/10
-  wins each), ties on bimodal-high (8/2, n.s.), and **loses on n100 m20 lognormal low** (0/10, Holm p = 0.016).
+* **Max-Min reversal.** Unchanged QI-MRFO loses to Max-Min on 73/80 held-out instances, Holm-significantly on 6/8 families
+  (n200 bimodal-none: Holm p = 0.055; n80: 5/5), so the §26 finding generalises beyond single instances. QI-MRFO+CXM **beats Max-Min on 6/8 families** (Holm p = 0.016, 9–10/10
+  wins each), ties on bimodal-high (8/2, n.s.), and **loses on n100 m20 lognormal low** (0 wins, 2 ties, 8 losses; Holm p = 0.016).
 * **P5.** CXM helps the GA far less: −0.81 pp pooled, 50/28, not significant in any family after Holm. QI-MRFO+CXM beats
   GA+CXM on 73/80 (−1.50 pp; 7/8 families). The gain therefore comes from the combination of the register swarm with
   the exchange, not from the exchange alone.

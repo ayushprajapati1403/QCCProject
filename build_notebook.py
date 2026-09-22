@@ -846,6 +846,27 @@ if os.path.exists(_h5p):
 else:
     print("results/h5_test/records.csv not found (run `python exp_h5_cxm.py tune test analyze` in the repository)")
 """)
+md(r"""
+### 19.1 What the held-out experiment showed (committed run; `results/h5_analysis.md`, `results/h5_posthoc.md`)
+
+The printout above is authoritative; where it disagrees with this text, the numbers win.
+
+* **P1 (primary) confirmed.** CXM lowers QI-MRFO's gap to the preemptive bound from 3.40 % to 0.54 %: −2.86 pp,
+  95 % CI [−3.58, −2.21], better on 76/80 new instances. Seven of 8 families are Holm-significant, and no family is
+  worse. With $p_x = 0.5$ the result is the same (−2.81 pp).
+* **Against Max-Min.** Unchanged QI-MRFO loses on 73/80 instances. QI-MRFO+CXM wins on 6 of 8 families and loses
+  on n100 m20 lognormal/low. There Max-Min attains the lower bound on every instance: the largest task alone on the
+  fastest VM is provably optimal, and reaching it by local moves needs makespan-neutral steps that strict acceptance
+  rejects (a plateau).
+* **P5.** CXM is *not* a generic fix. The GA gains 0.81 pp, and QI-MRFO+CXM beats GA+CXM on 73/80 instances. The
+  exchange works because the register swarm applies it greedily around a collapsed best and stores it through
+  back-action.
+* **P4 falsified.** Under CXM the classical linear twin is slightly but significantly **better** than the Born-rule
+  version (68/80 instances, margins below 0.2 pp). The quantum-specific ingredient is again not a source of advantage.
+* **P3 partially supported.** The end points are nearly swap-optimal (improving swaps 140 → 11) and the last
+  improvement comes later (54 % → 76 % of the budget). The late-half improving rate fell because CXM converges early.
+* **P2** (absolute dose–response) not supported; the post hoc relative version is ρ = 0.71 and is exploratory.
+""")
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
       "language_info": {"name": "python", "version": "3.12"}}, "nbformat": 4, "nbformat_minor": 5}

@@ -369,7 +369,171 @@ All four predicted boundaries are confirmed: tiny and two-VM instances need no m
 | GA continue | 5.00 / 7.2 | 5.51 / 10.0 | 8.92 / 11.5 | 2.81 / 5.1 |
 | GA hypermutation | 5.79 / 11.2 | 6.37 / 15.9 | 10.50 / 14.2 | 2.82 / 8.6 |
 
+*Correction (V5 audit, risk R3):* the notebook's dynamic runs used strategy `continue`. That strategy applies the VM-removal and VM-addition rules but does **not** reset the registers of replaced tasks under churn, which only `continue_struct` does. The churn column above is therefore plain continuation, and the label "structural rules" applies to the VM-failure and VM-addition columns only. The numbers are unaffected.
+
 With 10 seeds the picture of the 5-seed pilot is unchanged and sharper: carrying the register state is the best or within noise of the best strategy on every change type, with recovery areas 2.5–3× smaller than a restart; **QI-MRFO-continue beats GA-continue on all four change types** (by 0.7–2.0 pp in final gap and 20–45 % in recovery area; seed SDs 0.4–1.1 pp); the decoherence shock never improves on continuation by more than 0.15 pp (drift, γ ≤ 0.5) and always slows recovery; GA hypermutation is worse than GA continuation everywhere. The value of the mechanism for cloud resource management is therefore not "quantum forgetting" but the warm-startable, structurally adaptable state that a measurement-based representation provides.
+
+---
+
+## 27. V5 — critical exchange measurement (measured; development/held-out protocol)
+
+### 27.1 Protocol upgrades (research quality)
+
+V0–V4 had three weaknesses that the V5 protocol addresses:
+* **Inference scope.** Every statistical test paired run seeds on a single instance per shape (§26 uses `inst_seed = 1`
+  for all 7 shapes), so its conclusions concern 7 instances, not 7 instance distributions.
+* **Selection bias.** The decoherence constants were chosen on 4 of those 7 instances.
+* **Loose bound.** On heavy-tailed batches the lower bound omits all but two terms of the Q|pmtn|Cmax bound.
+
+V5 therefore uses:
+1. a development set (TUNE = the 4 pilot instances), where parameters may be chosen and whose numbers are labelled
+   selection-biased;
+2. a held-out set (TEST = 8 new families × 10 new instance seeds 101–110 × 2 run seeds), where nothing is chosen;
+3. the instance as the statistical unit;
+4. the exact preemptive bound $C^{pmtn}_{\max} = \max\big(\max_{k<K} P_k/S_k,\ P_n/S_K\big)$, $K = \min(n,m)$ (Liu & Yang
+   1974; Gonzalez & Sahni 1978), reported as `gap2`;
+5. write-once experiment directories (JSONL checkpoint, `jobs.json` digest, `meta.json` with the git commit, `DONE`);
+6. a pre-registration committed before the run (`research_plan_v5.md`).
+
+In addition, 212 unit tests including bit-exact golden fingerprints of V0–V4 guarantee that every V5 feature is
+opt-in. The unchanged smoke notebook re-executes to within 1.1e-16 of the committed results.
+
+### 27.2 Observation (V5 OBSERVE)
+
+Instrumenting QI-MRFO (c = 1) on the pilot instances (5 seeds, 20 000 evaluations; `results/v5_diagnostics.txt`,
+`results/v5_localopt.txt`) showed four things:
+* **O1.** 31–46 % of evaluations re-evaluate a schedule already seen in the run. The earlier "wasted" metric (12–21 %)
+  counted only parent duplicates.
+* **O2.** Every improving candidate moves a task off the critical VM, which is a necessary condition for a strict
+  makespan decrease, yet only 20–45 % of candidates do.
+* **O3.** The global best stops improving at 16–54 % of the budget on three of four instances.
+* **O4.** The end points are always relocation-optimal but leave 1–50 strictly improving critical swaps (50 at n = 100).
+  Max-Min's schedule is relocation-optimal and never swap-optimal.
+
+The binding constraint is therefore not the amount of noise, the thing adaptive decoherence would tune, but the *kind*
+of move the product-state measurement can produce. Tasks are resampled independently, so a correlated two-task
+exchange almost never happens.
+
+### 27.3 Hypothesis H5 and mechanism
+
+**Critical exchange measurement (CXM).** With probability $p_x$ a measured candidate $a$ additionally undergoes one
+exchange:
+
+$$t \sim U\{i : a_i \in \arg\max_j \mathrm{Load}_j(a)\},\quad u \sim U\{i : a_i \ne a_t,\ L_i < L_t\},\quad (a_t, a_u) \leftarrow (a_u, a_t).$$
+
+If no shorter task exists, $t$ is instead relocated to a uniformly random other VM. The measured pair then collapses:
+$\Psi_t \leftarrow \mathcal{D}_\gamma(E(a_t))$ and $\Psi_u \leftarrow \mathcal{D}_\gamma(E(a_u))$ (measurement
+back-action), so an accepted register encodes the exchange. Everything else is unchanged: the evaluation budget (one
+evaluation per candidate), the host dynamics, the decoherence floor and greedy acceptance.
+
+Quantum reading: a correlated (non-product) measurement of a register pair. Classical equivalent: swap mutation
+restricted by two necessary conditions. The GA receives the identical operator (`run_ga(exchange=p_x)`) so the
+experiment can separate "generic problem knowledge" from "register-swarm-specific benefit".
+
+**Pre-registered predictions** (`research_plan_v5.md` §7):
+* **P1 (primary).** A lower held-out gap than unchanged QI-MRFO (pooled Wilcoxon over 80 instances, CI excluding 0).
+* **P2.** A larger gain where more swaps were left unused.
+* **P3.** End points closer to swap-optimal, later stagnation.
+* **P4.** Linear twin still equivalent.
+* **P5 (open).** How much the GA gains.
+
+### 27.4 Development set (selection-biased)
+
+On the 4 pilot instances (10 seeds, 400 runs; `results/h5_tune/`) the mean gap2 over the 4 instances fell from 3.73 %
+(QI-MRFO) to 0.82 % (QI-MRFO+CXM, $p_x = 1$), and from 4.98 % (GA) to 1.88 % (GA+CXM, $p_x = 1$). $p_x = 1$ and 0.5 tied
+on the pre-registered mean-rank criterion. The tie-break (lower mean development gap, giving 1.0) was fixed and
+committed before the held-out stage (`research_plan_v5.md` §9), and a $p_x = 0.5$ sensitivity arm was added to TEST.
+These numbers are optimistic by construction and are not used for any claim.
+
+### 27.5 Held-out results (8 new families × 10 new instances × 2 seeds, 20 000 evaluations; `results/h5_test/`, `results/h5_analysis.md`)
+
+Mean gap to the preemptive bound (%):
+
+| Family | Max-Min | GA | GA+CXM | P-MRFO | P-MRFO+CXM | QI-MRFO | QI-MRFO+CXM |
+|---|---|---|---|---|---|---|---|
+| n80 m8 uniform high | 1.009 | 1.232 | 0.922 | 0.989 | **0.043** | 1.046 | 0.061 |
+| n150 m15 uniform high | 0.955 | 2.157 | 2.158 | 1.721 | **0.063** | 1.790 | 0.134 |
+| n300 m30 uniform high | 0.815 | 5.819 | 5.163 | 9.123 | **0.169** | 9.075 | 0.329 |
+| n100 m10 bimodal high | 0.267 | 3.225 | 0.844 | 4.008 | **0.039** | 3.660 | 0.144 |
+| n200 m10 bimodal none | 0.137 | 0.389 | 0.269 | 0.347 | **0.004** | 0.527 | 0.006 |
+| n120 m12 lognormal high | 0.286 | 1.563 | 1.536 | 1.052 | **0.045** | 1.300 | 0.075 |
+| n60 m12 uniform low | 1.609 | 4.039 | 3.226 | 3.611 | **0.208** | 4.146 | 0.274 |
+| n100 m20 lognormal low | **0.000** | 4.457 | 2.251 | 5.855 | 3.458 | 5.628 | 3.307 |
+
+Mean rank over the 160 (instance, seed) blocks: P-MRFO+CXM 1.57, QI-MRFO+CXM 2.16, Max-Min 3.20, GA+CXM 5.01,
+P-MRFO 5.38, GA 5.47, QI-MRFO 5.49, Min-Min 8.18, MRFO 8.55.
+
+Paired comparisons. Unit = instance (mean of 2 run seeds); difference in gap2 percentage points; the pooled test is
+over 80 instances; Holm correction across the 8 families:
+
+| Comparison | Pooled difference [95 % CI] | Wins / ties / losses | Pooled p | Families (Holm p < 0.05) |
+|---|---|---|---|---|
+| **P1:** QI-MRFO+CXM − QI-MRFO | **−2.86 [−3.58, −2.21]** | 76 / 0 / 4 | < 1e-4 | 7 of 8 better (10/10 wins each); lognormal-low 6/4, n.s. |
+| sensitivity p_x = 0.5 − QI-MRFO | −2.81 [−3.49, −2.20] | 78 / 1 / 1 | < 1e-4 | 8 of 8 better |
+| P4: P-MRFO+CXM − QI-MRFO+CXM | −0.04 [−0.16, +0.10] | 68 / 1 / 11 | < 1e-4 | 4 of 8 favour the **linear twin**, none the Born rule |
+| P5: GA+CXM − GA | −0.81 [−1.21, −0.46] | 50 / 2 / 28 | 1e-4 | none |
+| QI-MRFO+CXM − GA+CXM | −1.50 [−1.94, −1.08] | 73 / 1 / 6 | < 1e-4 | 7 of 8 better; lognormal-low n.s. (GA+CXM ahead) |
+| QI-MRFO+CXM − Max-Min | −0.09 [−0.45, +0.33] | 67 / 2 / 11 | < 1e-4 | 6 of 8 better; bimodal-high n.s. (8/2); **lognormal-low worse (0 wins, 2 ties, 8 losses)** |
+| reference: QI-MRFO − Max-Min | +2.76 [+2.08, +3.51] | 7 / 0 / 73 | < 1e-4 | Max-Min better on 6 of 8 (n200 bimodal-none Holm p = 0.055; n80 5/5) |
+| reference: QI-MRFO − P-MRFO (no CXM) | +0.06 [−0.29, +0.42] | 38 / 1 / 41 | 0.64 | none |
+
+The pooled mean against Max-Min has a CI that includes zero only because of the lognormal-low family, where the
+difference is +3.3 pp. The median and the win rate strongly favour QI-MRFO+CXM.
+
+**Mechanism diagnostics** (means over TEST runs, QI-MRFO → QI-MRFO+CXM):
+* improving critical swaps left at the end point 139.7 → 10.9;
+* last global-best improvement at 54 % → 76 % of the budget;
+* late-half improving fraction 1.45 % → 0.44 %;
+* global duplicate evaluations 27.9 % → 2.5 %, parent-identical 12.5 % → 0.01 %;
+* candidates touching the critical VM 33 % → 85 %;
+* end diversity 0.007 → 0.112, end purity 0.974 → 0.966;
+* move size 14.0 → 24.3 tasks;
+* runtime 2.9 → 3.9 s per run.
+
+Convergence (pooled gap2 at 5 / 10 / 25 / 50 / 100 % of the budget) is 9.2 / 3.8 / 1.3 / 0.74 / 0.54 % with CXM
+against 38.2 / 25.6 / 12.4 / 6.0 / 3.4 % without.
+
+### 27.6 Verdicts on the pre-registered predictions
+
+* **P1 confirmed (primary) → CXM retained** as the recommended QI-MRFO option for makespan. The effect is large
+  (rank-biserial −0.96), holds on 7 of 8 families at 10/10 instances each, and survives the tie-break sensitivity arm.
+* **P3 partially supported.** The end points are much closer to swap-optimal and stagnation comes later, but the
+  late-half improving fraction fell rather than rose. CXM reaches near-optimal schedules so early that little is left
+  to improve in the second half.
+* **P2 not supported as pre-registered.** The absolute effect is capped by each family's baseline gap. A post hoc
+  relative version (`results/h5_posthoc.md`, exploratory) does follow the mechanism: 92–98 % of the gap is removed on
+  7 families and 22 % on the family with almost no unused swaps; ρ = 0.71 across families, 0.35 across instances.
+* **P4 falsified.** Under CXM the Born rule is measurably *worse* than the classical linear-probability twin. The
+  margins are small (0.002–0.16 pp) but consistent (68/80 instances). This is the first measurement in the project in
+  which the quantum-specific ingredient matters at all, and it matters in the wrong direction.
+* **P5 answered.** The exchange operator alone is not what matters: the GA gains only a third as much and is beaten by
+  QI-MRFO+CXM on 73/80 instances. The gain comes from the interaction between CXM and the register swarm: greedy
+  acceptance around a collapsed best, plus back-action that stores the exchange in the accepted register. Together
+  they make CXM a stochastic swap-descent around the best-known schedule.
+
+### 27.7 New boundary: the big-task plateau
+
+QI-MRFO+CXM beats Max-Min on 6 of 8 held-out families, which reverses §26's "Max-Min wins 6 of 7" for the unchanged
+algorithm. It loses on n100 m20 lognormal/low-heterogeneity. On all 10 instances there the preemptive bound equals
+$L_{\max}/S_{\max}$, meaning the largest task runs alone on the fastest VM, and Max-Min attains it exactly, so it is
+provably optimal (`results/h5_posthoc.md`). The swarm reaches that schedule on only 2 of 10 instances. Moving the
+largest task to the fastest VM pays off only after that VM has been emptied, and every emptying move is
+makespan-neutral and rejected by strict acceptance. This is the same plateau mechanism as the V4 identical-task case
+(§20), now on realistic heavy-tailed instances. Candidate remedies are heuristic seeding and plateau-aware acceptance
+with a lexicographic tie-breaker (UNMEASURED).
+
+### 27.8 What changes in the claims
+
+* **Static makespan batches.** With CXM the population method is no longer "GA-class and beaten by Max-Min". On the
+  held-out families it is the best method tested except where the optimum is a constructive corner case that Max-Min
+  reaches exactly.
+* **Quantum-specific ingredients.** They remain unhelpful. The recommended configuration is the classical twin
+  (probability vectors, linear mixing) with the decoherence floor and CXM. "Quantum-inspired" describes the
+  derivation (registers, measurement, back-action, correlated two-register measurement), not a source of advantage.
+* **Novelty (positioned against §22).** The correlated two-register exchange with measurement back-action inside a
+  register swarm is not in the prior-art recheck. Its classical ingredient (swap mutation) is textbook. The
+  contribution is the measured finding that the product-state measurement cannot express the move a relocation-optimal
+  schedule needs, and that adding it gives a larger gain to the register swarm than to a GA.
 
 ## Final decision
 
