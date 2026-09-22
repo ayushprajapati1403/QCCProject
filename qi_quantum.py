@@ -184,6 +184,11 @@ def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoh
     else:
         Psi = init_state["Psi"].copy(); P = len(Psi)
     A = np.stack([measure(Psi[i], rng, mode) for i in range(P)]); F = np.array([obj(a) for a in A])
+    if init_state is not None and init_state.get("elite") is not None:
+        # V5 elite carry-over (dynamic runs): the previous epoch's best schedule, repaired for the change, is evaluated
+        # once (charged to the budget) and replaces the worst measured individual as a (depolarised) basis state
+        ea = np.asarray(init_state["elite"]); fe = obj(ea); w = int(F.argmax())
+        if fe < F[w]: A[w], F[w] = ea, fe; Psi[w] = depolarise(basis_state(ea, m), decoherence, m, mode)
     g = F.argmin(); gbF, gbA = F[g], A[g].copy()
     T = max(1, (budget - obj.n_evals) // (2 * P))
     def snap():

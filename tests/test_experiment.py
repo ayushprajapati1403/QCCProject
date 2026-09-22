@@ -72,3 +72,16 @@ def test_paired_table_direction_and_pooling():
     t = paired_table(pd.DataFrame(rows), "A", "B")
     assert list(t.family) == ["f1", "f2", "ALL"] and (t["diff A-B"] < 0).all() and (t["wins A"] == [8, 8, 16]).all()
     assert t.loc[t.family == "ALL", "pairs"].item() == 16 and (t.p_holm >= t.p - 1e-15).all()
+
+
+def test_dynamic_job_runner(tmp_path):
+    from qi_experiment import run_dyn_job, dyn_job_key
+    sc = {"name": "t-churn", "n": 15, "m": 4, "K": 2, "change": "churn", "rho": 0.2}
+    jobs = [{"exp": "d", "algo": a, "dyn": d, "scenario": sc, "seed": 0, "budget0": 400, "budget": 200, "P": 6}
+            for a, d in {"QI-MRFO": {"algo": "QI-MRFO", "strategy": "continue_struct"},
+                         "QI-MRFO+CXM+elite": {"algo": "QI-MRFO", "strategy": "continue_struct", "algo_kw": {"exchange": 1.0}, "carry_elite": True},
+                         "Incremental": {"algo": "Incremental"}}.items()]
+    df = run_experiment("d", jobs, workers=1, out_root=str(tmp_path), quiet=True, runner=run_dyn_job, keyfn=dyn_job_key,
+                        sort_cols=["scenario", "algo", "seed"])
+    assert len(df) == 3 and (df[df.algo == "Incremental"].migrations == 0).all()
+    assert {"e1_gap", "e2_mig", "post_auc", "migr_frac"} <= set(df.columns)

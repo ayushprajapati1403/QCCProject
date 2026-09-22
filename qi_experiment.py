@@ -101,6 +101,38 @@ def make_jobs(exp, algos, families, inst_seeds, run_seeds, budget, P=30, objecti
             for r in (run_seeds[:1] if sp["fn"] in HEURISTICS else run_seeds)]
 
 
+# ------------------------------------------------------------------------------------------------ dynamic jobs
+def dyn_job_key(job):
+    s = job["scenario"]
+    return f"{job['algo']}|{s['name']}|{job['seed']}"
+
+
+def run_dyn_job(job):
+    """One dynamic scenario (sequence of K changes) for one strategy; aggregates over the post-change epochs plus
+    per-epoch columns (gap, AUC, migrations)."""
+    from qi_dynamic import make_dynamic_sequence, run_dynamic
+    s, d = job["scenario"], job["dyn"]
+    seq = make_dynamic_sequence(s["n"], s["m"], seed=job["seed"], K=s["K"], change=s["change"], rho=s.get("rho", 0.2),
+                                task_dist=s.get("task_dist", "uniform"), hetero=s.get("hetero", "high"))
+    t0 = time.time()
+    out = run_dynamic(seq, d["algo"], d.get("strategy", "continue_struct"), job["budget0"], job["budget"], seed=job["seed"],
+                      P=job.get("P", 30), decoherence_c=d.get("decoherence_c", 1.0), algo_kw=d.get("algo_kw"),
+                      carry_elite=d.get("carry_elite", False), repair=d.get("repair", "random"))
+    post = out[1:]
+    rec = {"exp": job["exp"], "algo": job["algo"], "scenario": s["name"], "change": s["change"], "n": s["n"], "m0": s["m"],
+           "seed": job["seed"], "budget0": job["budget0"], "budget": job["budget"], "runtime_s": time.time() - t0,
+           "epoch0_gap": out[0]["gap"], "post_gap": float(np.mean([o["gap"] for o in post])),
+           "post_auc": float(np.mean([o["auc_gap"] for o in post])),
+           "post_ratio_mm": float(np.mean([o["best"] / o["maxmin"] for o in post])),
+           "migrations": float(np.mean([o["migrations"] for o in post])),
+           "migr_frac": float(np.mean([o["migrations"] / max(1, o["persist"] - o["forced"]) for o in post])),
+           "forced": float(np.mean([o["forced"] for o in post]))}
+    for o in out:
+        e = o["epoch"]
+        rec.update({f"e{e}_type": o["type"], f"e{e}_gap": o["gap"], f"e{e}_auc": o["auc_gap"], f"e{e}_mig": o["migrations"]})
+    return {k: (v.item() if isinstance(v, np.generic) else v) for k, v in rec.items()}
+
+
 # ------------------------------------------------------------------------------------------------ runner
 def _git_commit():
     try:
@@ -113,8 +145,10 @@ def _git_commit():
         return "unknown"
 
 
-def run_experiment(name, jobs, workers=None, out_root=None, config=None, quiet=False):
-    """Run `jobs` into results/<name>/ with checkpointing; returns the records as a pandas DataFrame."""
+def run_experiment(name, jobs, workers=None, out_root=None, config=None, quiet=False, runner=None, keyfn=None, sort_cols=None):
+    """Run `jobs` into results/<name>/ with checkpointing; returns the records as a pandas DataFrame.
+    `runner`/`keyfn` default to static jobs (run_job/job_key); dynamic scenarios use run_dyn_job/dyn_job_key."""
+    runner = runner or run_job; keyfn = keyfn or job_key
     import pandas as pd
     out_root = out_root or os.environ.get("QI_RESULTS_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "results"))
     d = os.path.join(out_root, name)
@@ -136,7 +170,7 @@ def run_experiment(name, jobs, workers=None, out_root=None, config=None, quiet=F
         for line in open(ckpt):
             if line.strip():
                 done.add(json.loads(line)["key"])
-    todo = [j for j in jobs if job_key(j) not in done]
+    todo = [j for j in jobs if keyfn(j) not in done]
     workers = workers or int(os.environ.get("QI_WORKERS", os.cpu_count() or 1))
     t0 = time.time()
     if not quiet:
@@ -144,17 +178,19 @@ def run_experiment(name, jobs, workers=None, out_root=None, config=None, quiet=F
     with open(ckpt, "a") as fh:
         if workers > 1 and len(todo) > 1:
             with ProcessPoolExecutor(max_workers=workers) as ex:
-                futs = {ex.submit(run_job, j): j for j in todo}
+                futs = {ex.submit(runner, j): j for j in todo}
                 for k, fut in enumerate(as_completed(futs), 1):
-                    rec = fut.result(); rec["key"] = job_key(futs[fut])
+                    rec = fut.result(); rec["key"] = keyfn(futs[fut])
                     fh.write(json.dumps(rec) + "\n"); fh.flush()
                     if not quiet and (k % 100 == 0 or k == len(todo)):
                         print(f"[{name}] {k}/{len(todo)} runs ({time.time() - t0:.0f}s)", flush=True)
         else:
             for j in todo:
-                rec = run_job(j); rec["key"] = job_key(j); fh.write(json.dumps(rec) + "\n"); fh.flush()
+                rec = runner(j); rec["key"] = keyfn(j); fh.write(json.dumps(rec) + "\n"); fh.flush()
     recs = [json.loads(line) for line in open(ckpt) if line.strip()]
-    df = pd.DataFrame(recs).sort_values(["family", "algo", "inst_seed", "run_seed"]).reset_index(drop=True)
+    df = pd.DataFrame(recs)
+    sort_cols = [c for c in (sort_cols or ["family", "algo", "inst_seed", "run_seed"]) if c in df.columns]
+    df = df.sort_values(sort_cols).reset_index(drop=True)
     df.to_csv(os.path.join(d, "records.csv"), index=False)
     meta = json.load(open(os.path.join(d, "meta.json")))
     meta.update({"finished": time.strftime("%Y-%m-%d %H:%M:%S"), "n_records": len(df), "wall_s_last_session": time.time() - t0})

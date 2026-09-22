@@ -18,7 +18,13 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 | `lab_log.md` | The Senku-style lab log: what happened, why, evidence, alternative explanation, next change — for every version. |
 | `literature/` | Live-web literature maps (QPSO, DMO, MRFO, quantum-inspired cloud scheduling and classical equivalents, prior-art recheck, Australian supervisors + RTP). |
 | `docker/Dockerfile` | Reproducible environment (python 3.12 + numpy/scipy/matplotlib/pandas/nbconvert/mealpy). |
-| `results/` | CSV/PKL/PNG outputs of the notebook runs and the pilot logs. |
+| `results/` | CSV/PKL/PNG outputs of the notebook runs and the pilot logs. **Raw results are immutable**: V5 experiments write to their own write-once directories (`results/<experiment>/` with `jobs.json`, `meta.json` incl. git commit, a JSONL checkpoint, `records.csv`, `DONE`), and a notebook re-run never overwrites committed files (it writes to `results/rerun_<mode>_<timestamp>/` unless `QI_RESULTS_DIR` is set). |
+| `research_plan_v5.md` | V5 audit (risks with file/function citations), profile, observations O1–O4, ranked backlog, and the pre-registered hypothesis H5 with its acceptance criteria. It was written and committed before H5 was run; its §9 amendment was committed before the held-out stage. |
+| `qi_experiment.py` | V5 harness: development (TUNE) vs held-out (TEST) instance families, JSON algorithm specs, checkpointed parallel runner for static and dynamic jobs, paired statistics (bootstrap CI, Wilcoxon, rank-biserial, Cliff's δ, A12, Holm). |
+| `exp_h5_cxm.py`, `exp_h6_dynamic.py` | V5 experiments: H5 (critical exchange measurement; tune → test → analyze) and H6 (dynamic re-optimisation with migrations). |
+| `observe_v5_*.py` | V5 observation scripts (duplicate evaluations, critical-VM condition, stagnation, local optimality of end points). |
+| `tests/` | `pytest` suite: objective, registers, measurement, channel, dynamic structural rules, determinism, budget accounting, harness, notebook/module synchronisation, and bit-exact golden fingerprints of the V0–V4 code. |
+| `requirements.txt` | Pinned environment (same versions as `docker/Dockerfile`). |
 
 ## How to run
 
@@ -38,6 +44,10 @@ In Colab: `import os; os.environ["QI_MODE"] = "smoke"` in a cell *before* Sectio
 docker build -t qi-sched docker/
 docker run --rm -v "$PWD:/work" -e QI_MODE=fast qi-sched jupyter nbconvert --to notebook --execute quantum_inspired_cloud_scheduler.ipynb --output results/executed_fast.ipynb --ExecutePreprocessor.timeout=36000
 ```
+
+**Tests:** `pip install -r requirements.txt && pytest` (about 30 s). The golden test fails if a change alters the behaviour of any V0–V4 configuration; new behaviour must be opt-in.
+
+**V5 experiments (held-out protocol):** `python exp_h5_cxm.py tune`, then `test`, then `analyze` (≈ 3 + 15 min on 4 cores). Set `QI_WORKERS` to the number of processes. A finished experiment directory cannot be overwritten; resume an interrupted one by re-running the same command.
 
 **Plain Python:** `python observe_v1.py` etc. reproduce the pilot tables in `lab_log.md`; the modules can be imported directly:
 

@@ -21,8 +21,11 @@ quant = slice_module("qi_quantum.py")
 dyn = slice_module("qi_dynamic.py")
 
 cells = []
-def md(text): cells.append({"cell_type": "markdown", "id": uuid.uuid4().hex[:8], "metadata": {}, "source": textwrap.dedent(text).strip("\n")})
-def code(text): cells.append({"cell_type": "code", "id": uuid.uuid4().hex[:8], "metadata": {}, "execution_count": None, "outputs": [], "source": textwrap.dedent(text).strip("\n")})
+def _cid(text):   # deterministic cell id (position + content), so rebuilding an unchanged notebook is byte-identical
+    import hashlib
+    return hashlib.sha1(f"{len(cells)}:{text}".encode("utf-8")).hexdigest()[:8]
+def md(text): cells.append({"cell_type": "markdown", "id": _cid(text), "metadata": {}, "source": textwrap.dedent(text).strip("\n")})
+def code(text): cells.append({"cell_type": "code", "id": _cid(text), "metadata": {}, "execution_count": None, "outputs": [], "source": textwrap.dedent(text).strip("\n")})
 
 # =====================================================================================================
 md(r"""
@@ -87,9 +90,13 @@ CFG = dict(
     objective="makespan",       # 'makespan' or 'makespan_energy'
     inst_seed=1,                # seed used to generate the benchmark instances
     parallel=True,              # multiprocessing with fork on Linux; silently sequential elsewhere
-    results_dir="results",
+    results_dir=os.environ.get("QI_RESULTS_DIR", "results"),
     **_presets[MODE],
 )
+# raw results are immutable: never overwrite the committed files of a mode; a re-run goes to a new sub-directory
+if "QI_RESULTS_DIR" not in os.environ and os.path.exists(os.path.join(CFG["results_dir"], f"baseline_{MODE}.csv")):
+    CFG["results_dir"] = os.path.join(CFG["results_dir"], f"rerun_{MODE}_{time.strftime('%Y%m%d_%H%M%S')}")
+    print("committed results for this mode exist -> writing this run to", CFG["results_dir"])
 os.makedirs(CFG["results_dir"], exist_ok=True)
 print(f"mode = {MODE}: seeds={len(CFG['seeds'])}, budget={CFG['budget']} evaluations, instances={len(CFG['instances'])}")
 """)
@@ -378,6 +385,12 @@ def run_one(job):
            "curve_purity": (np.array(tr.purity) if hasattr(tr, "purity") else None),
            "move_sizes_early": float(np.mean(tr.move_sizes[: len(tr.move_sizes) // 2])) if tr.move_sizes else np.nan,
            "move_sizes_late": float(np.mean(tr.move_sizes[len(tr.move_sizes) // 2:])) if tr.move_sizes else np.nan}
+    # V5 diagnostics (Section 19): tighter preemptive LB, global duplicates, critical-VM touches, exchange moves,
+    # stagnation time, and the improving relocations / swaps still available at the returned schedule
+    s5 = tr.summary_v5(); lb2 = inst.lower_bound_pmtn(); rel, swp, _ = count_improving_moves(inst, r["best_assign"])
+    rec.update({"lb2": lb2, "gap2": (det["makespan"] - lb2) / lb2 if objective == "makespan" else np.nan,
+                "dup_global": s5["dup_global_frac"], "touch_crit": s5["touch_crit_frac"], "x_frac": s5["x_frac"], "x_success": s5["x_success"],
+                "late_improving": s5["late_improving_frac"], "last_gb_impr_frac": s5["last_gb_impr_frac"], "end_impr_reloc": rel, "end_impr_swap": swp})
     return rec
 
 def run_suite(algos, specs, seeds, budget, objective=None, inst_seed=None, label=""):
@@ -764,10 +777,81 @@ md(r"""
 **Decision (see the report):** PROCEED with a *revised* framing — the research question is not "does the quantum metaphor beat the classical one?" (it does not) but "which properties of a measurement-based (superposition) schedule representation — purity-controlled move size, structural adaptation rules, and severity-dependent forgetting — matter for cloud re-scheduling under change, and where is the boundary?"
 """)
 
+# ----------------------------------------------------------------------------------------------------- S19 (V5)
+md(r"""
+## SECTION 19 — V5: where the evaluations go, and critical exchange measurement (hypothesis H5)
+
+**Observation (V5, `observe_v5_diagnostics.py`, `observe_v5_localopt.py`; reproduced below on this run's baseline).**
+Four facts about QI-MRFO with $c=1$:
+* **O1.** 31–46 % of its evaluations re-evaluate a schedule already seen in the run. The earlier "wasted" metric only
+  counted parent-identical candidates.
+* **O2.** A candidate can lower the makespan only if it moves a task off its reference schedule's critical VM. Every
+  improving candidate does this, but only 20–45 % of candidates do.
+* **O3.** The global best stops improving early, at 16–54 % of the budget.
+* **O4.** QI-MRFO's end points are always *relocation-optimal*, yet 1–50 strictly improving critical **swaps** remain.
+
+The product-state measurement samples tasks independently and so almost never produces the correlated two-task
+change a relocation-optimal schedule needs.
+
+**Mechanism (H5, `qi_core.critical_exchange`, `run_qimrfo(exchange=p_x)`).** With probability $p_x$ a measured candidate
+$a$ additionally undergoes a *critical exchange*. A task $t$ is drawn uniformly from the critical VM $b$ of $a$, and a
+task $u$ uniformly from the tasks on other VMs that are shorter than $t$ (necessary for $\mathrm{Load}_b$ to fall).
+Then $a_t \leftrightarrow a_u$; if no shorter task exists, $t$ is relocated. The two registers then collapse onto the
+outcome, $\Psi[t] \leftarrow \mathcal{D}_\gamma(E(a_t))$ and $\Psi[u] \leftarrow \mathcal{D}_\gamma(E(a_u))$, so an
+accepted register remembers the exchange. Quantum reading: a *correlated* (non-product) measurement of a register pair,
+followed by measurement back-action. Classical equivalent: swap mutation. The GA gets the identical operator
+(`run_ga(exchange=p_x)`) as the control that decides whether the gain is specific to the register swarm.
+
+**Protocol (pre-registered in `research_plan_v5.md`).** $p_x$ was tuned on the pilot instances only (development set,
+selection-biased), then frozen at $p_x = 1$ and tested on 8 new families × 10 new instances (seeds 101–110) × 2 run
+seeds at 20 000 evaluations. The committed results are `results/h5_tune/`, `results/h5_test/` and
+`results/h5_analysis.md`. The cells below (i) reproduce the O1–O4 diagnostics on this run's baseline, (ii) run a small
+held-out demonstration sized by `QI_MODE`, and (iii) print the committed held-out results when present.
+""")
+code(r"""
+# (i) O1-O4 on this execution's baseline runs (Section 12)
+diag_cols = ["gap", "gap2", "dup_global", "wasted", "touch_crit", "last_gb_impr_frac", "late_improving", "end_impr_reloc", "end_impr_swap"]
+print("V5 diagnostics on the Section-12 baseline (means over seeds):")
+baseline[baseline.algo.isin(["QI-MRFO", "P-MRFO (linear twin)", "GA", "Max-Min"])].groupby(["instance", "algo"])[diag_cols].mean().round(4)
+""")
+code(r"""
+# (ii) held-out demonstration: new instances (inst_seed 101), CXM on QI-MRFO, its linear twin and the GA control
+REGISTRY["QI-MRFO+CXM"] = _mk(run_qimrfo, P=CFG["P"], exchange=1.0, decoherence=lambda inst: CFG["gamma_c_mrfo"] / inst.n)
+REGISTRY["P-MRFO+CXM (linear twin)"] = _mk(run_qimrfo, P=CFG["P"], mode="linear", exchange=1.0, decoherence=lambda inst: CFG["gamma_c_mrfo"] / inst.n)
+REGISTRY["GA+CXM"] = _mk(run_ga, P=CFG["P"], exchange=1.0)
+PALETTE.update({"QI-MRFO+CXM": "#0b4f9c", "GA+CXM": "#0e7a52", "P-MRFO+CXM (linear twin)": "#2e2370"})
+H5_SPECS = {"smoke": [(80, 8, "uniform", "high"), (100, 10, "bimodal", "high")],
+            "fast": [(80, 8, "uniform", "high"), (100, 10, "bimodal", "high"), (120, 12, "lognormal", "high"), (60, 12, "uniform", "low")],
+            "full": [(80, 8, "uniform", "high"), (150, 15, "uniform", "high"), (100, 10, "bimodal", "high"), (200, 10, "bimodal", "none"),
+                     (120, 12, "lognormal", "high"), (60, 12, "uniform", "low"), (100, 20, "lognormal", "low")]}[MODE]
+H5_ALGOS = ["Max-Min", "GA", "GA+CXM", "QI-MRFO", "QI-MRFO+CXM", "P-MRFO+CXM (linear twin)"]
+h5 = run_suite(H5_ALGOS, H5_SPECS, CFG["seeds"], CFG["budget"], inst_seed=101, label="H5 demo (inst_seed 101)")
+h5.drop(columns=[c for c in h5.columns if c.startswith("curve_")]).to_csv(os.path.join(CFG["results_dir"], f"h5_demo_{MODE}.csv"), index=False)
+print("gap to the preemptive LB (%), mean over seeds:")
+display((h5.pivot_table(index="instance", columns="algo", values="gap2", aggfunc="mean")[H5_ALGOS] * 100).round(3))
+h5.groupby("algo")[["end_impr_swap", "last_gb_impr_frac", "x_success", "dup_global", "move_size", "runtime_s"]].mean().reindex(H5_ALGOS).round(4)
+""")
+code(r"""
+# (iii) the committed held-out experiment (80 new instances x 2 seeds), if the repository's results/ folder is present
+_h5p = os.path.join("results", "h5_test", "records.csv")
+if os.path.exists(_h5p):
+    h5t = pd.read_csv(_h5p)
+    _alg = ["Max-Min", "GA", "GA+CXM", "P-MRFO", "P-MRFO+CXM", "QI-MRFO", "QI-MRFO+CXM"]
+    print("committed H5 held-out results: mean gap to the preemptive LB (%)")
+    display((h5t.pivot_table(index="family", columns="algo", values="gap2", aggfunc="mean")[_alg] * 100).round(3))
+    _w = h5t[h5t.algo.isin(["QI-MRFO", "QI-MRFO+CXM"])].groupby(["family", "inst_seed", "algo"]).gap2.mean().unstack("algo")
+    _d = 100 * (_w["QI-MRFO+CXM"] - _w["QI-MRFO"]).values
+    print(f"P1 (pooled over {len(_d)} instances): mean diff = {_d.mean():.3f} pp, 95% bootstrap CI = {np.round(boot_ci(_d), 3)}, "
+          f"Wilcoxon p = {stats.wilcoxon(_d).pvalue:.2e}, CXM better on {(_d < 0).sum()}/{len(_d)} instances")
+else:
+    print("results/h5_test/records.csv not found (run `python exp_h5_cxm.py tune test analyze` in the repository)")
+""")
+
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
       "language_info": {"name": "python", "version": "3.12"}}, "nbformat": 4, "nbformat_minor": 5}
 for c in nb["cells"]:
     c["source"] = c["source"]  # nbformat accepts a single string
-out = os.path.join(HERE, "quantum_inspired_cloud_scheduler.ipynb")
-json.dump(nb, open(out, "w", encoding="utf-8"), indent=1)
-print("wrote", out, "with", len(cells), "cells")
+for fname in ("quantum_inspired_cloud_scheduler.ipynb", "quantum_inspired_MRFO_cloud_scheduler.ipynb"):   # identical copies
+    out = os.path.join(HERE, fname)
+    json.dump(nb, open(out, "w", encoding="utf-8"), indent=1)
+    print("wrote", out, "with", len(cells), "cells")

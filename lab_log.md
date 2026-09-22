@@ -120,3 +120,57 @@ Mean post-change gap (%) / AUC (%):
 ## Full notebook run (QI_MODE=full: 30 seeds, 7 instances, 20k evaluations; dynamic pilot 10 seeds) — executed in Docker, zero cell errors
 
 Outputs: results/executed_full.ipynb, baseline_full.csv, stats_full.csv, ablation_full.csv, sensitivity_full.csv, failure_cases_full.csv, dynamic_full.csv, fig_*_full.png. The numbers are reported in section 26 of quantum_inspired_research_report.md. Summary of what changed relative to the 5-seed pilot: (1) encoding effect confirmed on all 7 instances incl. three held-out shapes (Holm p < 1e-4, Cliff's delta ~ -1); (2) Born rule and sign irrelevant (no instance separates QI-MRFO from the linear twin after Holm); (3) "ties or beats the GA" softens to "GA-class, significantly better on 1 of 7"; (4) Max-Min beats QI-MRFO on 6 of 7 static instances by 0.3–4.7 pp (the pilot's n=100 tie and the fast-mode bimodal win were small-sample artefacts); (5) the decoherence floor is essential for MRFO (13.1 -> 1.1 % at n=100) but marginal for DMO (4.3 -> 4.0 %), whose unconditional step is already a noise floor; (6) dynamic re-optimisation with 10 seeds: carried register state beats GA-continue on all four change types (0.7–2.0 pp, recovery area 20–45 % lower); shocks never beat continuation by more than 0.15 pp.
+
+---
+
+# V5 — research loop continued (22 September 2026, Python 3.11 / NumPy 2.2.6, 4 cores)
+
+Protocol changes introduced in V5, following the audit in `research_plan_v5.md`:
+
+* **Tests.** 190+ unit tests, plus bit-exact golden fingerprints of the V0–V4 code (`tests/golden_v0.json`). Every V5
+  feature is opt-in, and the fingerprints stay identical.
+* **Development/held-out split.** Parameters are chosen only on the 4 pilot instances (TUNE, `inst_seed` 1), and those
+  numbers are labelled selection-biased. Claims are made only on held-out families: 8 families × 10 new instance seeds
+  (101–110) × 2 run seeds.
+* **Inference unit.** The instance is the unit, not the run seed.
+* **Bound.** Gaps are reported against the tighter preemptive bound (`lower_bound_pmtn`, "gap2"). The old `lower_bound`
+  is kept for comparability.
+* **Immutability.** Results go to write-once experiment directories (`results/<name>/` with `jobs.json`, `meta.json`,
+  a JSONL checkpoint and a `DONE` marker).
+* **Reproducibility.** The unchanged smoke notebook was re-executed and matches the committed `results/*_smoke.csv`
+  to 1.1e-16.
+
+## V5 OBSERVE — where do QI-MRFO's evaluations go? (`observe_v5_diagnostics.py`, `observe_v5_localopt.py`; 5 seeds, 20k evaluations, c = 1, pilot instances)
+
+| Instance | final gap | global duplicate evals | parent-identical | candidates touching the critical VM | last global-best improvement | improving swaps left at the end point |
+|---|---|---|---|---|---|---|
+| n30 m5 uniform | 0.91 % | 45.8 % | 20.6 % | 44.8 % | 94 % of budget | 4.8 |
+| n50 m10 bimodal | 9.68 % | 38.8 % | 11.7 % | 19.8 % | 16 % | 1.0 |
+| n100 m10 uniform | 0.96 % | 30.6 % | 16.5 % | 36.9 % | 54 % | 50.0 |
+| n50 m10 homogeneous | 2.95 % | 38.3 % | 18.2 % | 33.5 % | 47 % | 22.8 |
+
+**What happened?**
+* A third to a half of all evaluations re-evaluate a schedule seen before; the old "wasted" metric counted half of them.
+* 100 % of improving candidates move a task off the critical VM, which is a necessary condition, but only 20–45 % of
+  candidates do.
+* The global best stops improving at 16–54 % of the budget on three of four instances.
+* Every end point is relocation-optimal, yet 1–50 strictly improving critical swaps remain. Max-Min is also
+  relocation-optimal and never swap-optimal.
+
+**Why?** The measurement samples tasks independently (a product state). At a relocation-optimal schedule the next
+improvement needs a *correlated* change of two tasks: t leaves the critical VM and u takes its place. Independent
+resampling almost never produces this. A back-of-envelope estimate is about 1e-4 per candidate at n=100 (HYPOTHETICAL
+arithmetic).
+
+**Alternative explanations.** (a) Too little noise: adaptive decoherence would fix it. Against this: the pilot's c=2
+and c=4 are not better, and noise only raises independent per-task changes. (b) Budget too small. Against this: the
+search stalls long before the budget ends.
+
+**Change (H5, one controlled change).** *Critical exchange measurement* (CXM). With probability p_x a measured
+candidate also swaps a task t from its critical VM with a shorter task u on another VM, or relocates t when no shorter
+task exists. The pair's registers collapse onto the outcome, so accepted registers remember the exchange. The GA gets
+the identical operator as the control.
+
+**Prediction (pre-registered, `research_plan_v5.md` §7).** Lower held-out gap (P1). A larger gain where more swaps
+were left unused (P2). End points closer to swap-optimal and later stagnation (P3). The linear twin is still equivalent
+(P4).
