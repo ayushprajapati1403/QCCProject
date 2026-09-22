@@ -1,0 +1,24 @@
+{
+ "experiment": "h5_tune",
+ "git_commit": "6a41aa6f9933e825091e6a3a2b8b6655b7f07883",
+ "python": "3.11.15",
+ "numpy": "2.2.6",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "started": "2026-09-22 21:41:10",
+ "n_jobs": 400,
+ "config": {
+  "stage": "tune",
+  "px_grid": [
+   0.1,
+   0.25,
+   0.5,
+   1.0
+  ],
+  "budget": 20000,
+  "P": 30,
+  "note": "development set = pilot instances; selection bias applies to any number reported from it"
+ },
+ "finished": "2026-09-22 21:44:04",
+ "n_records": 400,
+ "wall_s_last_session": 173.5442759990692
+}

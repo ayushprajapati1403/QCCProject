@@ -32,6 +32,7 @@ def test_algos(px_q, px_g):
     return {"Max-Min": spec("max_min"), "Min-Min": spec("min_min"), "MRFO": spec("run_mrfo"),
             "GA": spec("run_ga"), "GA+CXM": spec("run_ga", exchange=px_g),
             "QI-MRFO": spec("run_qimrfo", decoherence_c=1.0), "QI-MRFO+CXM": spec("run_qimrfo", decoherence_c=1.0, exchange=px_q),
+            "QI-MRFO+CXM px=0.5 (sensitivity)": spec("run_qimrfo", decoherence_c=1.0, exchange=0.5),   # amendment §9 of the plan
             "P-MRFO": spec("run_qimrfo", decoherence_c=1.0, mode="linear"),
             "P-MRFO+CXM": spec("run_qimrfo", decoherence_c=1.0, mode="linear", exchange=px_q)}
 
@@ -94,7 +95,8 @@ def analysis_text():
              ("QI-MRFO+CXM", "GA", "vs unchanged GA"),
              ("QI-MRFO+CXM", "Max-Min", "vs Max-Min"),
              ("QI-MRFO", "Max-Min", "reference: unchanged QI-MRFO vs Max-Min"),
-             ("QI-MRFO", "P-MRFO", "reference: Born vs linear without CXM")]
+             ("QI-MRFO", "P-MRFO", "reference: Born vs linear without CXM"),
+             ("QI-MRFO+CXM px=0.5 (sensitivity)", "QI-MRFO", "sensitivity arm (plan §9): p_x = 0.5 instead of 1.0")]
     out.append("## 3. Paired comparisons (unit = instance, mean of 2 run seeds; diff in gap2 percentage points; Holm across the 8 families; ALL = pooled test over 80 instances)\n")
     cols = ["family", "pairs", "mean A", "mean B", "diff A-B", "CI95 lo", "CI95 hi", "wins A", "ties", "wins B", "p", "p_holm", "r_rb", "A12"]
     tables = {}

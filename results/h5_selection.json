@@ -1,0 +1,20 @@
+{
+ "QI-MRFO": {
+  "px": 1.0,
+  "mean_ranks": {
+   "QI-MRFO+CXM px=1.0": 2.138,
+   "QI-MRFO+CXM px=0.5": 2.138,
+   "QI-MRFO+CXM px=0.25": 2.55,
+   "QI-MRFO+CXM px=0.1": 3.175
+  }
+ },
+ "GA": {
+  "px": 1.0,
+  "mean_ranks": {
+   "GA+CXM px=1.0": 2.05,
+   "GA+CXM px=0.5": 2.525,
+   "GA+CXM px=0.1": 2.562,
+   "GA+CXM px=0.25": 2.862
+  }
+ }
+}

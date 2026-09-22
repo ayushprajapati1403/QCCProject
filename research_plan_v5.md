@@ -161,3 +161,15 @@ If P1 holds but P3 does not, the result is flagged as "gain without the predicte
 * **Immutability.** Each experiment writes to its own new directory under `results/` with a JSONL checkpoint, a
   `meta.json` (git commit, versions, configuration) and a `DONE` marker. The harness refuses to overwrite a finished
   experiment.
+
+## 9. Amendment before the TEST stage (tie-break), 22 September 2026
+
+The TUNE stage (`results/h5_tune/`, `results/h5_selection.json`) produced a **tie** in the pre-registered selection
+criterion for QI-MRFO+CXM: p_x = 1.0 and p_x = 0.5 both have mean rank 2.1375 over the 40 development blocks. The
+script's pick of 1.0 came from an implementation-defined sort order, not from a pre-registered rule. The tie-break is
+fixed here, after seeing only development data and before any TEST run: **ties are broken by the lower mean gap2 on
+the development set**. That gives p_x = 1.0 (0.816 % vs 0.930 %), so the frozen value stays 1.0. The GA+CXM choice
+(p_x = 1.0, mean rank 2.05) was not tied.
+
+To show that the conclusion does not hinge on this tie-break, the TEST stage adds one **sensitivity arm**,
+QI-MRFO+CXM with p_x = 0.5, reported separately. It plays no part in the primary test P1.
