@@ -1,0 +1,23 @@
+{
+ "experiment": "v5_c_under_cxm",
+ "git_commit": "cec55bcfea7699260eaa3417ab3c9c0fbdf01613",
+ "python": "3.11.15",
+ "numpy": "2.2.6",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "started": "2026-09-22 23:33:28",
+ "n_jobs": 480,
+ "config": {
+  "note": "development set, descriptive observation",
+  "c_grid": [
+   0.0,
+   0.25,
+   0.5,
+   1.0,
+   2.0,
+   4.0
+  ]
+ },
+ "finished": "2026-09-22 23:38:30",
+ "n_records": 480,
+ "wall_s_last_session": 302.06725692749023
+}
