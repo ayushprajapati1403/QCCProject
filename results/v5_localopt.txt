@@ -1,0 +1,16 @@
+=== n=30 m=5 uniform high
+  Max-Min      gap=  2.10%  relocation-optimal=1.00  swap-optimal=0.00  mean #improving relocations=   0.0  mean #improving swaps=   12.0  tied-critical-VMs=0.00
+  QI-MRFO c=1  gap=  0.91%  relocation-optimal=1.00  swap-optimal=0.20  mean #improving relocations=   0.0  mean #improving swaps=    4.8  tied-critical-VMs=0.00
+  GA           gap=  0.76%  relocation-optimal=1.00  swap-optimal=0.00  mean #improving relocations=   0.0  mean #improving swaps=    4.8  tied-critical-VMs=0.00
+=== n=50 m=10 bimodal high
+  Max-Min      gap=  7.77%  relocation-optimal=1.00  swap-optimal=0.00  mean #improving relocations=   0.0  mean #improving swaps=    2.0  tied-critical-VMs=0.00
+  QI-MRFO c=1  gap=  9.68%  relocation-optimal=1.00  swap-optimal=0.40  mean #improving relocations=   0.0  mean #improving swaps=    1.0  tied-critical-VMs=0.00
+  GA           gap= 14.45%  relocation-optimal=1.00  swap-optimal=0.20  mean #improving relocations=   0.0  mean #improving swaps=    1.6  tied-critical-VMs=0.00
+=== n=100 m=10 uniform high
+  Max-Min      gap=  0.83%  relocation-optimal=1.00  swap-optimal=0.00  mean #improving relocations=   0.0  mean #improving swaps=   85.0  tied-critical-VMs=0.00
+  QI-MRFO c=1  gap=  0.96%  relocation-optimal=1.00  swap-optimal=0.00  mean #improving relocations=   0.0  mean #improving swaps=   50.0  tied-critical-VMs=0.00
+  GA           gap=  1.41%  relocation-optimal=0.60  swap-optimal=0.00  mean #improving relocations=   0.4  mean #improving swaps=   67.6  tied-critical-VMs=0.00
+=== n=50 m=10 uniform none
+  Max-Min      gap=  2.10%  relocation-optimal=1.00  swap-optimal=0.00  mean #improving relocations=   0.0  mean #improving swaps=   15.0  tied-critical-VMs=0.00
+  QI-MRFO c=1  gap=  2.95%  relocation-optimal=1.00  swap-optimal=0.00  mean #improving relocations=   0.0  mean #improving swaps=   22.8  tied-critical-VMs=0.00
+  GA           gap=  3.45%  relocation-optimal=0.80  swap-optimal=0.00  mean #improving relocations=   0.2  mean #improving swaps=   25.0  tied-critical-VMs=0.00
