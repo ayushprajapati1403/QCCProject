@@ -268,4 +268,9 @@ def paired_table(df, a, b, metric="gap2", by="family", unit="inst_seed", scale=1
 def mean_ranks(df, algos, metric="gap2", block=("family", "inst_seed", "run_seed")):
     """Average rank of each algorithm over blocks (lower = better)."""
     w = df[df.algo.isin(algos)].pivot_table(index=list(block), columns="algo", values=metric)
+    if "run_seed" in block and len(block) > 1:
+        # deterministic heuristics run once per instance (run_seed 0): copy their value to the other run seeds of the same
+        # instance, otherwise blocks with a missing heuristic would rank the remaining algorithms among fewer entries
+        keys = [b for b in block if b != "run_seed"]
+        w = w.groupby(level=keys).transform(lambda s: s.fillna(s.mean()))
     return w.rank(axis=1, method="average").mean().sort_values()

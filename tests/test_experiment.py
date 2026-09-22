@@ -85,3 +85,15 @@ def test_dynamic_job_runner(tmp_path):
                         sort_cols=["scenario", "algo", "seed"])
     assert len(df) == 3 and (df[df.algo == "Incremental"].migrations == 0).all()
     assert {"e1_gap", "e2_mig", "post_auc", "migr_frac"} <= set(df.columns)
+
+
+def test_mean_ranks_fills_deterministic_heuristics():
+    from qi_experiment import mean_ranks
+    rows = []
+    for inst in range(3):
+        rows.append({"family": "f", "inst_seed": inst, "run_seed": 0, "algo": "H", "gap2": 0.5})      # heuristic: one run
+        for rs in (0, 1):
+            rows.append({"family": "f", "inst_seed": inst, "run_seed": rs, "algo": "A", "gap2": 0.1})
+            rows.append({"family": "f", "inst_seed": inst, "run_seed": rs, "algo": "B", "gap2": 0.9})
+    r = mean_ranks(pd.DataFrame(rows), ["A", "B", "H"])
+    assert r["A"] == 1.0 and r["H"] == 2.0 and r["B"] == 3.0
