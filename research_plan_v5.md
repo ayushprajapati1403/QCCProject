@@ -274,3 +274,40 @@ makespan-neutral plateau.
 
 New observation: CXM triples voluntary migrations (19 → 58 per epoch at n = 100). This motivates H8, a
 migration-aware objective.
+
+## 14. H8 — migration-aware re-optimisation (pre-registered before H8 was run; H7 was running)
+
+**Observation basis (H6).**
+* Pooled over H6, CXM lowers the post-change makespan but roughly triples voluntary migrations (19 → 58 per epoch at
+  n = 100).
+* Recomputing Max-Min every epoch migrates 56–84 % of the persistent tasks.
+* The zero-migration incremental heuristic collapses under drift and VM addition (gap up to 239 %).
+
+No list heuristic can trade makespan against migrations, whereas a carried-state population method optimises
+whatever objective it is given. H8 tests whether that advantage is real once migrations are priced.
+
+**Objective** (`Objective(kind='makespan_migration')`). After the first epoch:
+cost(a) = makespan(a) × (1 + λ · voluntary migrations(a) / eligible tasks), relative to the previous *deployed*
+schedule. Eligible tasks are persistent tasks whose VM survived. λ is the relative makespan penalty for migrating
+every eligible task.
+
+**Design** (`exp_h8_migration.py`).
+* The six H6 scenario types with **fresh seeds 201–210**. K = 8, a 20 000-evaluation warm start and 4 000 evaluations
+  per epoch.
+* **λ ∈ {0.05, 0.2, 1.0}**, pre-registered so that no favourable λ can be picked afterwards.
+* Strategies:
+  * Max-Min recomputed every epoch;
+  * Incremental (zero voluntary migration);
+  * **Chooser**: each epoch it deploys whichever of the two is cheaper under the true cost (a strong heuristic
+    baseline at 2 evaluations per epoch);
+  * GA continue, QI-MRFO+CXM continue and P-MRFO+CXM continue, all optimising the true cost, with c = 1, p_x = 1,
+    greedy repair and no elite (H6b rejected it).
+
+**Hypotheses and acceptance.**
+* **H8a (primary, directional).** QI-MRFO+CXM continue has a lower post-change cost gap than the Chooser, pooled over
+  the 60 (scenario, seed) pairs. Tested separately at each λ with Holm correction across the three λ values. It is
+  retained for every λ at which pooled Holm p < 0.05 and the 95 % CI excludes 0. A λ at which the Chooser is better
+  is reported as a boundary.
+* **H8b (directional).** QI-MRFO+CXM continue beats GA continue on the same cost (same criteria).
+* **Reported.** Linear twin vs Born rule. For each λ, the makespan-gap and migration components separately (the
+  trade-off).

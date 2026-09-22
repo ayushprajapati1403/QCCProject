@@ -116,12 +116,15 @@ def incremental_list_schedule(prev, info, inst_new, rng):
 
 # --- strategies --------------------------------------------------------------------------------------------
 def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=0.5, mode="born_signed", gamma_shock=0.5,
-                algo_kw=None, carry_elite=False, repair="random"):
+                algo_kw=None, carry_elite=False, repair="random", mig_lambda=None):
     """algo in {'QI-MRFO','QI-DMO','MRFO','DMO','GA','PSO'} or the per-epoch heuristics {'Max-Min' (full recompute),
     'Incremental' (zero voluntary migration)}; strategy in {'restart','continue','continue_struct','shock','hypermut'}.
     V5 options: algo_kw = extra optimizer kwargs (e.g. {'exchange': 1.0}); carry_elite = the previous epoch's best
     schedule, repaired for the change, seeds the register swarm (QI-MRFO); repair = 'random' | 'greedy' treatment of the
     tasks of a failed VM (used for the carried elite and the GA's carried population).
+    mig_lambda (V5, H8): after the first epoch every optimizer sees the migration-aware objective
+    makespan x (1 + mig_lambda * voluntary migrations / eligible tasks) relative to the previous deployed schedule;
+    'Chooser' deploys whichever of Max-Min (recompute) and Incremental is cheaper under that objective.
     Returns per-epoch dict: best makespan, LB, MaxMin makespan, normalised area under the best-so-far gap curve, and the
     voluntary / forced migrations of the deployed (best) schedule relative to the previous epoch's."""
     rng = np.random.default_rng(seed + 7)
@@ -130,6 +133,11 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
     for e, (inst, info) in enumerate(seq):
         obj = Objective(inst); B = budget0 if e == 0 else budget
         n, m = inst.n, inst.m
+        if mig_lambda is not None and e > 0:
+            ref, forced_ = map_to_new_vms(prev_best, info)
+            elig = ~forced_
+            if info["type"] == "churn": elig[info["idx"]] = False
+            obj = Objective(inst, kind="makespan_migration", ref=ref, mig_mask=elig, lam=mig_lambda)
         init = None
         if e > 0 and strategy != "restart":
             if algo in ("QI-MRFO", "QI-DMO"):
@@ -142,9 +150,13 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
                 init = adapt_position_state(state, info, m, rng)
             elif algo == "GA":
                 init = adapt_ga_state(state, info, m, rng, inst=inst, repair=repair)
-        if algo in ("Max-Min", "Incremental"):
-            a = max_min(inst) if (algo == "Max-Min" or e == 0) else incremental_list_schedule(prev_best, info, inst, rng)
-            f = obj(a); tr = Tracker(n, m); tr.snapshot(obj.n_evals, [a], [f], f)
+        if algo in ("Max-Min", "Incremental", "Chooser"):
+            if algo == "Max-Min" or e == 0: a = max_min(inst); f = obj(a)
+            elif algo == "Incremental": a = incremental_list_schedule(prev_best, info, inst, rng); f = obj(a)
+            else:                                   # Chooser: the cheaper of the two heuristics under the actual objective
+                cands = [max_min(inst), incremental_list_schedule(prev_best, info, inst, rng)]
+                fs = [obj(c) for c in cands]; k = int(np.argmin(fs)); a, f = cands[k], fs[k]
+            tr = Tracker(n, m); tr.snapshot(obj.n_evals, [a], [f], f)
             r = {"best_f": f, "best_assign": a, "tracker": tr, "state": None}
         elif algo == "QI-MRFO": r = run_qimrfo(inst, obj, B, P=P, seed=seed * 100 + e, decoherence=decoherence_c / n, mode=mode, init_state=init, track=False, **kw)
         elif algo == "QI-DMO": r = run_qidmo(inst, obj, B, P=P, seed=seed * 100 + e, decoherence=0.25 / n, mode=mode, init_state=init, track=False, **kw)
@@ -158,8 +170,10 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
         ev = np.array(tr.evals, float); bs = np.array(tr.best, float)
         auc = float((getattr(np, 'trapezoid', None) or np.trapz)((bs - lb) / lb, ev) / max(1e-9, ev[-1] - ev[0])) if len(ev) > 1 else float((bs[-1] - lb) / lb)
         vol, forced, persist = count_migrations(prev_best, r["best_assign"], info) if e > 0 else (0, 0, n)
-        out.append({"epoch": e, "best": float(r["best_f"]), "lb": lb, "maxmin": mm, "gap": (r["best_f"] - lb) / lb, "auc_gap": auc, "m": m,
+        ms_dep = float(r["best_f"]) if obj.kind == "makespan" else float(Objective(inst)._raw(r["best_assign"])[0])
+        out.append({"epoch": e, "best": ms_dep, "lb": lb, "maxmin": mm, "gap": (ms_dep - lb) / lb, "auc_gap": auc, "m": m,
                     "type": None if info is None else info["type"], "migrations": vol, "forced": forced, "persist": persist,
-                    "evals": obj.n_evals, "assign": np.asarray(r["best_assign"]).copy()})
+                    "evals": obj.n_evals, "assign": np.asarray(r["best_assign"]).copy(),
+                    "cost": float(r["best_f"]), "cost_gap": (float(r["best_f"]) - lb) / lb})
         prev_best = np.asarray(r["best_assign"]).copy()
     return out

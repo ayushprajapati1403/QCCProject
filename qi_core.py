@@ -73,9 +73,14 @@ def make_instance(n_tasks, n_vms, seed, task_dist="uniform", hetero="high", name
 
 # %% S6 objective
 class Objective:
-    """Evaluate integer assignment vectors (task -> VM). Counts evaluations (the budget unit for every optimizer)."""
-    def __init__(self, inst: CloudInstance, kind="makespan", w_energy=0.3):
+    """Evaluate integer assignment vectors (task -> VM). Counts evaluations (the budget unit for every optimizer).
+    kind='makespan_migration' (V5, H8): makespan x (1 + lam * voluntary migrations / eligible tasks), where a migration is
+    an eligible task (mig_mask: persistent, VM survived) assigned differently from the deployed reference schedule `ref`."""
+    def __init__(self, inst: CloudInstance, kind="makespan", w_energy=0.3, ref=None, mig_mask=None, lam=0.0):
         self.inst, self.kind, self.w_energy = inst, kind, w_energy
+        if kind == "makespan_migration":
+            self.ref = np.asarray(ref); self.mig_mask = np.asarray(mig_mask, bool); self.lam = float(lam)
+            self.n_eligible = max(1, int(self.mig_mask.sum()))
         self.n_evals = 0
         self._ar = np.arange(inst.n)
         rr = self._ar % inst.m                      # round-robin reference schedule for scaling
@@ -93,10 +98,16 @@ class Objective:
             return ms
         if self.kind == "makespan_energy":
             return (1 - self.w_energy) * ms / self.ms_ref + self.w_energy * en / self.e_ref
+        if self.kind == "makespan_migration":
+            return ms * (1.0 + self.lam * self.migrations(assign) / self.n_eligible)
         raise ValueError(self.kind)
+    def migrations(self, assign):
+        return int(((np.asarray(assign) != self.ref) & self.mig_mask).sum())
     def details(self, assign):
         ms, en = self._raw(assign)
-        return {"makespan": ms, "energy_Wh": en}
+        d = {"makespan": ms, "energy_Wh": en}
+        if self.kind == "makespan_migration": d["migrations"] = self.migrations(assign)
+        return d
 
 # %% S7a instrumentation
 class Tracker:

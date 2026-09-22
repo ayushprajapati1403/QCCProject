@@ -122,7 +122,8 @@ def run_dyn_job(job):
     t0 = time.time()
     out = run_dynamic(seq, d["algo"], d.get("strategy", "continue_struct"), job["budget0"], job["budget"], seed=job["seed"],
                       P=job.get("P", 30), decoherence_c=d.get("decoherence_c", 1.0), mode=d.get("mode", "born_signed"),
-                      algo_kw=d.get("algo_kw"), carry_elite=d.get("carry_elite", False), repair=d.get("repair", "random"))
+                      algo_kw=d.get("algo_kw"), carry_elite=d.get("carry_elite", False), repair=d.get("repair", "random"),
+                      mig_lambda=s.get("mig_lambda"))
     post = out[1:]
     rec = {"exp": job["exp"], "algo": job["algo"], "scenario": s["name"], "change": s["change"], "n": s["n"], "m0": s["m"],
            "seed": job["seed"], "budget0": job["budget0"], "budget": job["budget"], "runtime_s": time.time() - t0,
@@ -131,7 +132,8 @@ def run_dyn_job(job):
            "post_ratio_mm": float(np.mean([o["best"] / o["maxmin"] for o in post])),
            "migrations": float(np.mean([o["migrations"] for o in post])),
            "migr_frac": float(np.mean([o["migrations"] / max(1, o["persist"] - o["forced"]) for o in post])),
-           "forced": float(np.mean([o["forced"] for o in post]))}
+           "forced": float(np.mean([o["forced"] for o in post])),
+           "post_cost_gap": float(np.mean([o["cost_gap"] for o in post])), "mig_lambda": s.get("mig_lambda")}
     for o in out:
         e = o["epoch"]
         rec.update({f"e{e}_type": o["type"], f"e{e}_gap": o["gap"], f"e{e}_auc": o["auc_gap"], f"e{e}_mig": o["migrations"]})
