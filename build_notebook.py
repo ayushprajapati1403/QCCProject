@@ -959,14 +959,15 @@ md(r"""
 """)
 
 code(r"""
-# committed H8 run (migration-aware objective, fresh seeds 201-210): cost gap / makespan gap / migrations per lambda
-_h8p = os.path.join("results", "h8_migration", "records.csv")
-if os.path.exists(_h8p):
-    h8 = pd.read_csv(_h8p); h8["base"] = h8.scenario.str.replace(r" lam=.*$", "", regex=True)
-    display((h8.groupby(["mig_lambda", "algo"])[["post_cost_gap", "post_gap"]].mean() * 100).round(3).join(
-        h8.groupby(["mig_lambda", "algo"])[["migrations"]].mean().round(1)))
-else:
-    print("results/h8_migration/records.csv not found (run `python exp_h8_migration.py run analyze` in the repository)")
+# committed migration-priced runs: H8 (seeds 201-210), H10 elite anchor (301-310), H11 event-aware elite (401-410)
+for _exp, _lab in [("h8_migration", "H8"), ("h10_elite_migration", "H10"), ("h11_event_elite", "H11")]:
+    _p = os.path.join("results", _exp, "records.csv")
+    if not os.path.exists(_p):
+        print(f"{_p} not found (run the corresponding exp_*.py in the repository)"); continue
+    _d = pd.read_csv(_p)
+    print(f"{_lab}: pooled post-change cost gap (%), makespan gap (%) and voluntary migrations per epoch")
+    display((_d.groupby(["mig_lambda", "algo"])[["post_cost_gap", "post_gap"]].mean() * 100).round(3).join(
+        _d.groupby(["mig_lambda", "algo"])[["migrations"]].mean().round(1)))
 """)
 md(r"""
 ### 20.2 H8: migrations priced (`results/h8_analysis.md`)
