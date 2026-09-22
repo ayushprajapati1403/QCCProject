@@ -535,6 +535,49 @@ with a lexicographic tie-breaker (UNMEASURED).
   contribution is the measured finding that the product-state measurement cannot express the move a relocation-optimal
   schedule needs, and that adding it gives a larger gain to the register swarm than to a GA.
 
+## 28. V5 — re-optimisation under change with migration cost (H6; measured)
+
+**Question.** Section 26 showed that carried registers beat restart and GA continuation, but it counted only makespan.
+A running cloud also pays for every task the new schedule *migrates*. The H6 experiment asks three things:
+1. Does CXM's static gain survive under change?
+2. Does carrying the repaired previous best schedule (fixing audit risk R4) speed recovery?
+3. How does the swarm compare with the obvious practitioner baseline, recomputing Max-Min after every change, once
+   migrations are counted?
+
+It was pre-registered in `research_plan_v5.md` §11. **Design:** six held-out scenarios, 10 seeds (instance seeds
+101–110), K = 8 changes, a 20 000-evaluation warm start and 4 000 evaluations per epoch, 600 runs
+(`results/h6_dynamic/`, `results/h6_analysis.md`). Voluntary migrations count persistent tasks whose VM survived but
+that the new deployed schedule moves.
+
+| Strategy (pooled over 60 scenario-seed pairs) | Post-change gap (%) | Recovery AUC (%) | Voluntary migrations per epoch |
+|---|---|---|---|
+| Max-Min recomputed every epoch | 0.80 | 0.80 | 87.5 |
+| Incremental list heuristic (no voluntary migration) | 77.0 (1.3–239 by scenario) | same | 0 |
+| GA continue / GA+CXM continue | 4.08 / 4.48 | 7.44 / 6.57 | 20.6 / 40.0 |
+| QI-MRFO continue / + elite | 3.38 / 3.03 | 6.88 / 6.14 | 19.4 / 17.0 |
+| QI-MRFO+CXM continue / + elite | 0.41 / 0.47 | 1.86 / 1.80 | 58.3 / 51.6 |
+| P-MRFO+CXM continue + elite (classical twin) | **0.29** | **1.58** | 56.1 |
+| QI-MRFO+CXM restart | 0.85 | 12.84 | 93.9 |
+
+Verdicts:
+* **H6a (primary) confirmed.** CXM under change: −2.98 pp [−3.79, −2.30], better on 60/60 pairs; all 6 scenarios are
+  Holm-significant.
+* **H6b rejected as pre-registered.** Elite carry-over: AUC −0.06 pp, CI [−0.19, +0.08]. It helps after churn and VM
+  failure (Holm p = 0.012) but **hurts after VM addition**: post-change gap +0.44 pp, 0/10, Holm p = 0.012. The carried
+  schedule leaves the new VM empty, becomes the global-best attractor, and an exchange cannot move a task onto an empty
+  VM.
+* **H6c.** The register swarm beats the GA (both with CXM) on 60/60, by 4.0 pp. CXM makes the GA *worse* under change
+  (+0.40 pp, 16/44). Carried state lowers the recovery AUC by 11 pp relative to a restart (60/60).
+* **H6d confirmed (pooled).** QI-MRFO+CXM+elite Pareto-dominates recomputing Max-Min: a lower post-change gap
+  (−0.33 pp, 48/60, p = 1e-4) *and* 41 % fewer voluntary migrations (60/60). The exception is n200 m20 lognormal mixed,
+  where Max-Min's gap is lower (0.25 % vs 0.82 %).
+* **Replication.** The classical linear twin again beats the Born rule (−0.17 pp, 55/60).
+
+**Lesson.** CXM roughly triples the swarm's migrations (19 → 58 per epoch at n = 100), because the objective gives no
+reason to leave tasks in place. The pooled Pareto dominance over Max-Min holds, but half of the persistent tasks still
+move every epoch. Migration cost has to enter the objective: a problem that list heuristics cannot address and that a
+carried-state population method can (next hypothesis).
+
 ## Final decision
 
 **PROCEED — with the revised framing.** The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"

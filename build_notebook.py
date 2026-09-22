@@ -868,6 +868,68 @@ The printout above is authoritative; where it disagrees with this text, the numb
 * **P2** (absolute dose–response) not supported; the post hoc relative version is ρ = 0.71 and is exploratory.
 """)
 
+# ----------------------------------------------------------------------------------------------------- S20 (V5 dynamic)
+md(r"""
+## SECTION 20 — V5: re-optimisation under change with migration cost (hypothesis H6)
+
+Section 17h compared strategies by the makespan after each change. A running cloud also pays for every task that the
+new schedule **migrates** away from the previous deployed one. V5 therefore counts *voluntary migrations*: persistent
+tasks whose VM survived but that the new schedule moves. Replaced tasks and tasks of a failed VM are excluded.
+`qi_dynamic.run_dynamic` gains four things:
+* optimizer kwargs, so CXM can be used under change;
+* **elite carry-over**: the previous best schedule, repaired for the change, seeds the register swarm (fixing audit risk
+  R4: the GA always carried its elite, QI-MRFO did not);
+* greedy repair of the tasks of a failed VM;
+* two heuristic competitors: **Max-Min recomputed every epoch** (unlimited migration) and an **incremental list
+  heuristic** (zero voluntary migration).
+
+The pre-registered design is `research_plan_v5.md` §11. The committed run is `results/h6_dynamic/` with its analysis
+in `results/h6_analysis.md`. The cells below run a small demonstration sized by `QI_MODE` and print the committed
+results when present.
+""")
+code(r"""
+# small held-out dynamic demonstration (instance seed 101): post-change gap, recovery AUC and voluntary migrations
+DYN5 = {"Max-Min (recompute)": dict(algo="Max-Min"), "Incremental (no migration)": dict(algo="Incremental"),
+        "GA+CXM continue": dict(algo="GA", strategy="continue", repair="greedy", algo_kw={"exchange": 1.0}),
+        "QI-MRFO continue": dict(algo="QI-MRFO", strategy="continue_struct", repair="greedy"),
+        "QI-MRFO+CXM continue+elite": dict(algo="QI-MRFO", strategy="continue_struct", repair="greedy", carry_elite=True, algo_kw={"exchange": 1.0})}
+_dyn_n, _dyn_changes = (60, ["mixed"]) if MODE == "smoke" else (100, ["churn", "drift", "mixed"])
+rows5 = []
+for ch in _dyn_changes:
+    seq5 = make_dynamic_sequence(_dyn_n, 10, seed=101, K=4, change=ch)
+    for name, spec5 in DYN5.items():
+        kw = dict(spec5)                                  # copy: the specs are reused for every change type
+        o = run_dynamic(seq5, kw.pop("algo"), kw.pop("strategy", "continue_struct"), CFG["dyn_budget0"], CFG["dyn_budget"], seed=101,
+                        P=CFG["P"], decoherence_c=CFG["gamma_c_mrfo"], **kw)
+        post = o[1:]
+        rows5.append({"change": ch, "strategy": name, "post_gap_%": 100 * np.mean([x["gap"] for x in post]),
+                      "auc_%": 100 * np.mean([x["auc_gap"] for x in post]), "migrations/epoch": np.mean([x["migrations"] for x in post])})
+pd.DataFrame(rows5).round(3)
+""")
+code(r"""
+_h6p = os.path.join("results", "h6_dynamic", "records.csv")
+if os.path.exists(_h6p):
+    h6 = pd.read_csv(_h6p)
+    for metric, lab, sc in [("post_gap", "post-change gap (%)", 100), ("post_auc", "recovery AUC (%)", 100), ("migrations", "voluntary migrations per epoch", 1)]:
+        print(f"committed H6 results — {lab}:")
+        display((h6.pivot_table(index="scenario", columns="algo", values=metric, aggfunc="mean") * sc).round(3))
+else:
+    print("results/h6_dynamic/records.csv not found (run `python exp_h6_dynamic.py run analyze` in the repository)")
+""")
+md(r"""
+### 20.1 What the committed H6 run showed (`results/h6_analysis.md`; the printout above is authoritative)
+
+* **CXM under change (H6a, primary) confirmed.** The post-change gap drops by 2.98 pp on 60/60 scenario-seed pairs.
+* **Elite carry-over (H6b) rejected as a default.** It helps after churn and VM failure but hurts after VM addition:
+  the carried schedule leaves the new VM empty and becomes the attractor, and an exchange cannot fill an empty VM.
+* **Against recomputing Max-Min every epoch (H6d).** The carried-state swarm with CXM reaches a lower gap (−0.33 pp,
+  48/60) with 41 % fewer voluntary migrations. The exception is heavy-tailed n = 200, where Max-Min is better.
+* **Against the GA.** Carried-state QI-MRFO+CXM beats GA+CXM on 60/60, and CXM makes the GA worse under change.
+* **Quantum-specific part.** The classical linear twin is again better than the Born rule (55/60).
+* **Open cost.** CXM triples migrations, because the objective ignores them. A migration-aware objective is the next
+  hypothesis.
+""")
+
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
       "language_info": {"name": "python", "version": "3.12"}}, "nbformat": 4, "nbformat_minor": 5}
 for c in nb["cells"]:

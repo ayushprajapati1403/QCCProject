@@ -253,3 +253,58 @@ compatibility. The Born rule is not recommended.
 * **H6.** Does CXM carry over to re-optimisation under change, does the elite carry-over (fixing audit risk R4) speed
   up recovery, and how does the carried-state swarm compare with recomputing Max-Min once migrations are counted?
 * **Later.** Heuristic seeding and plateau-aware acceptance for the big-task failure family.
+
+## V5 / H6 — re-optimisation under change: CXM × elite carry-over, with migrations (`results/h6_dynamic/`, `results/h6_analysis.md`)
+
+Six held-out scenarios, 10 seeds (instance seeds 101–110), K = 8 changes, a 20 000-evaluation warm start, then 4 000
+evaluations per epoch; 600 runs. Means over the post-change epochs, pooled over the 60 (scenario, seed) pairs:
+
+| Strategy | Post-change gap (%) | Recovery AUC (%) | Voluntary migrations per epoch |
+|---|---|---|---|
+| Max-Min recomputed every epoch | 0.80 | 0.80 | 87.5 |
+| Incremental list heuristic (no voluntary migration) | 1.3–239 (collapses under drift / VM addition) | same | 0 |
+| GA continue | 4.08 | 7.4 | 20.6 |
+| GA+CXM continue | 4.48 | 6.6 | 40.0 |
+| QI-MRFO continue (registers + structural rules) | 3.38 | 6.9 | 19.4 |
+| QI-MRFO+CXM continue | 0.41 | 1.86 | 58.3 |
+| QI-MRFO+CXM continue + elite | 0.47 | 1.80 | 51.6 |
+| P-MRFO+CXM continue + elite (classical twin) | **0.29** | **1.58** | 56.1 |
+| QI-MRFO+CXM restart | 0.85 | 12.8 | 93.9 |
+
+**What happened?**
+* **H6a confirmed (primary).** CXM under change: −2.98 pp [−3.79, −2.30], better on 60/60 pairs; every scenario is
+  Holm-significant at 10/10.
+* **H6b rejected as pre-registered.** Elite carry-over changes the recovery AUC by −0.06 pp, CI [−0.19, +0.08] (43/17,
+  p = 0.034). It helps after churn and VM failure (AUC, Holm p = 0.012). After a **VM addition it hurts**: the
+  post-change gap is +0.44 pp, 0/10, Holm p = 0.012. Without CXM the elite helps more clearly (AUC −0.74 pp, 47/13,
+  p < 1e-4).
+* **H6c.** The register swarm beats the GA, both with CXM, on 60/60 (−4.0 pp). CXM makes the GA *worse* under change
+  (+0.40 pp, 16/44, p = 0.0002). Carried state is worth an 11-pp lower recovery AUC than a restart with CXM (60/60).
+* **H6d confirmed (pooled).** QI-MRFO+CXM+elite has a lower post-change gap than recomputing Max-Min every epoch
+  (−0.33 pp, 48/60, p = 1e-4) with 41 % fewer voluntary migrations (51.6 vs 87.5, 60/60). It is better on 4 scenarios,
+  tied on VM addition, and **worse on n200 m20 lognormal mixed** (+0.57 pp, 0/10), where the 4 000-evaluation epochs
+  are short for n = 200 and heavy-tailed tasks favour Max-Min.
+* **Replication of H5's P4.** Under change as well, the classical linear twin beats the Born rule (−0.17 pp, 55/60;
+  Holm-significant on 4/6 scenarios).
+
+**Why?**
+* CXM repairs a disturbed schedule with exactly the correlated moves needed, and carried registers start the repair
+  next to the old optimum.
+* The elite fails after a VM addition because the carried schedule leaves the new VM empty. As the global-best
+  attractor it pulls every register toward a solution that ignores the new capacity, while an exchange can never move
+  a task onto an empty VM (there is no task there to swap with).
+
+**Alternative explanation for the elite result.** The per-epoch budget (4 000) is too short for the swarm to leave
+the elite's basin. Not tested.
+
+**New observation.** CXM roughly **triples voluntary migrations** (19 → 58 per epoch at n = 100). The unconstrained
+objective has no reason to keep tasks where they are, and many exchanges shuffle tasks between near-equivalent
+schedules. Migration cost therefore has to enter the objective. That is a problem list heuristics cannot address and
+the carried-state swarm naturally can.
+
+**Decision.**
+* CXM is retained for re-optimisation.
+* Elite carry-over is **not** adopted as a default. It is kept as an option with a documented, change-type-dependent
+  effect: helps after churn and VM failure, hurts after VM addition. An event-aware variant (no elite after VM
+  addition) is a post hoc idea and needs its own pre-registered test.
+* **Next:** H7 (already pre-registered: is the swarm needed; seeding), then a migration-aware objective (H8).

@@ -98,6 +98,13 @@ Swarm schedulers (PSO, DMO, MRFO) are continuous algorithms; cloud papers apply 
 * **New boundary.** On near-homogeneous VMs with a dominant task (n100 m20 lognormal/low), Max-Min is provably optimal:
   it attains the lower bound on all 10 instances. The swarm is stuck on a makespan-neutral plateau, the same failure
   mode as the identical-task case.
+* **Under change (H6).** 6 held-out dynamic scenarios, 600 runs, migrations counted.
+  * CXM lowers the post-change gap on 60/60 scenario-seed pairs.
+  * The carried-state swarm with CXM has a lower gap than recomputing Max-Min after every change, with 41 % fewer
+    task migrations. The exception is heavy-tailed n = 200.
+  * Carrying the previous best schedule helps after churn and VM failure but hurts after VM addition, so it is not a
+    default.
+  * CXM triples migrations relative to the plain swarm, so migration cost has to enter the objective (next step).
 * **Research quality.**
   * 213 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.
@@ -108,7 +115,7 @@ Swarm schedulers (PSO, DMO, MRFO) are continuous algorithms; cloud papers apply 
 
 ## Notebook sections
 
-1 Environment · 2 Imports/config · 3 Seeds · 4 Problem representation · 5 Task/VM generation · 6 Objective · 7 Classical PSO/DMO/MRFO (+GA, heuristics) · 8 Quantum-inspired mechanism (math + demo) · 9 QI-MRFO / QI-DMO · 10 Validation tests · 11 Smoke · 12 Baseline · 13 Convergence/diversity/purity/move-size plots · 14 Statistics (Wilcoxon + Holm, Cliff's δ, A12, bootstrap CI, Friedman) · 15 Ablation · 16 Sensitivity (γ dose–response, P, S) · 17 Failure cases (tiny, m=2, trivial landscape, energy objective, many VMs, tall barriers, overhead, dynamic workloads) · 18 Interpretation · 19 V5: evaluation diagnostics and critical exchange measurement (held-out demo + committed results).
+1 Environment · 2 Imports/config · 3 Seeds · 4 Problem representation · 5 Task/VM generation · 6 Objective · 7 Classical PSO/DMO/MRFO (+GA, heuristics) · 8 Quantum-inspired mechanism (math + demo) · 9 QI-MRFO / QI-DMO · 10 Validation tests · 11 Smoke · 12 Baseline · 13 Convergence/diversity/purity/move-size plots · 14 Statistics (Wilcoxon + Holm, Cliff's δ, A12, bootstrap CI, Friedman) · 15 Ablation · 16 Sensitivity (γ dose–response, P, S) · 17 Failure cases (tiny, m=2, trivial landscape, energy objective, many VMs, tall barriers, overhead, dynamic workloads) · 18 Interpretation · 19 V5: evaluation diagnostics and critical exchange measurement (held-out demo + committed results) · 20 V5: re-optimisation under change with migration counts (demo + committed H6 results).
 
 ## Honesty rules used throughout
 

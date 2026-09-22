@@ -262,3 +262,15 @@ makespan-neutral plateau.
 * **H7c (reported).** Seeded QI-MRFO+CXM vs seeded (1+1)-EA+CXM, i.e. "Max-Min + stochastic local search", the
   control §21 of the report asked for.
 * **Replications (reported).** H5's P4 (linear twin vs Born under CXM), and QI-MRFO+CXM vs Max-Min on fresh instances.
+
+## 13. H6 outcome (recorded after `results/h6_analysis.md`)
+
+| Hypothesis | Result | Verdict |
+|---|---|---|
+| H6a (primary) | CXM under change −2.98 pp [−3.79, −2.30], 60/60, 6/6 scenarios Holm | **confirmed → CXM retained under change** |
+| H6b | elite AUC −0.06 pp, CI includes 0; helps churn and VM failure, hurts VM addition (gap +0.44 pp, 0/10) | **rejected** as a default; change-type-dependent option |
+| H6c | swarm beats GA (both CXM) 60/60; CXM hurts the GA under change | reported |
+| H6d | lower gap than Max-Min recompute (−0.33 pp, 48/60) with 41 % fewer migrations (60/60); worse on n200 lognormal mixed | **confirmed (pooled)** |
+
+New observation: CXM triples voluntary migrations (19 → 58 per epoch at n = 100). This motivates H8, a
+migration-aware objective.
