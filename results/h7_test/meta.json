@@ -1,0 +1,59 @@
+{
+ "experiment": "h7_test",
+ "git_commit": "7c6b3110bfc0d421340adb2f9a1b3ffd9c43ee8d",
+ "python": "3.11.15",
+ "numpy": "2.2.6",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "started": "2026-09-22 22:19:29",
+ "n_jobs": 1200,
+ "config": {
+  "stage": "test",
+  "one_plus_one": {
+   "c": 1.0,
+   "px": 0.5,
+   "mean_ranks": {
+    "(1+1)-EA+CXM c=1.0 px=0.5": 3.2875,
+    "(1+1)-EA+CXM c=2.0 px=1.0": 3.3125,
+    "(1+1)-EA+CXM c=2.0 px=0.5": 3.4125,
+    "(1+1)-EA+CXM c=1.0 px=1.0": 3.55,
+    "(1+1)-EA+CXM c=0.25 px=0.5": 3.7125,
+    "(1+1)-EA+CXM c=0.25 px=1.0": 3.725
+   },
+   "mean_gap2": {
+    "(1+1)-EA+CXM c=0.25 px=0.5": 0.009966,
+    "(1+1)-EA+CXM c=0.25 px=1.0": 0.009827,
+    "(1+1)-EA+CXM c=1.0 px=0.5": 0.007741,
+    "(1+1)-EA+CXM c=1.0 px=1.0": 0.007044,
+    "(1+1)-EA+CXM c=2.0 px=0.5": 0.007288,
+    "(1+1)-EA+CXM c=2.0 px=1.0": 0.008131
+   }
+  },
+  "budget": 20000,
+  "P": 30,
+  "families": [
+   "n80 m8 uniform high",
+   "n150 m15 uniform high",
+   "n300 m30 uniform high",
+   "n100 m10 bimodal high",
+   "n200 m10 bimodal none",
+   "n120 m12 lognormal high",
+   "n60 m12 uniform low",
+   "n100 m20 lognormal low"
+  ],
+  "inst_seeds": [
+   201,
+   202,
+   203,
+   204,
+   205,
+   206,
+   207,
+   208,
+   209,
+   210
+  ]
+ },
+ "finished": "2026-09-22 22:31:53",
+ "n_records": 1200,
+ "wall_s_last_session": 744.5167875289917
+}
