@@ -57,3 +57,16 @@ def test_dynamic_one_plus_one_carries_its_schedule(change):
             if info["type"] == "churn": elig[info["idx"]] = False
             start_cost = Objective(inst, kind="makespan_migration", ref=ref, mig_mask=elig, lam=0.2)(ref)
             assert out[e]["cost"] <= start_cost + 1e-9
+
+
+@pytest.mark.parametrize("lam", [None, 0.2])
+def test_event_aware_elite_semantics(lam):
+    kw = dict(P=8, decoherence_c=1.0, algo_kw={"exchange": 1.0}, mig_lambda=lam, repair="greedy")
+    add = make_dynamic_sequence(20, 5, seed=6, K=3, change="vm_add")
+    a = run_dynamic(add, "QI-MRFO", "continue_struct", 700, 300, seed=0, carry_elite="except_vm_add", **kw)
+    b = run_dynamic(add, "QI-MRFO", "continue_struct", 700, 300, seed=0, carry_elite=False, **kw)
+    assert [o["best"] for o in a] == [o["best"] for o in b], "no elite after VM additions"
+    churn = make_dynamic_sequence(20, 5, seed=6, K=3, change="churn")
+    c = run_dynamic(churn, "QI-MRFO", "continue_struct", 700, 300, seed=0, carry_elite="except_vm_add", **kw)
+    d = run_dynamic(churn, "QI-MRFO", "continue_struct", 700, 300, seed=0, carry_elite=True, **kw)
+    assert [o["best"] for o in c] == [o["best"] for o in d], "elite after every other event"

@@ -391,3 +391,33 @@ QI-MRFO+CXM + band.
   2. it is non-inferior in gap2: the upper bound of the pooled 95 % CI of (band − fixed) is ≤ +0.10 pp.
 * **H9b (under CXM).** The same two criteria.
 * **Reported.** Two-sided gap tests per family (Holm), and the c trajectories (c_end, c_mean).
+
+## 20. H10 outcome (recorded after `results/h10_analysis.md`)
+
+| Test | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| H10a elite < no elite (primary) | rejected (+1.43 pp) | rejected (+2.44 pp; 42/18 wins) | rejected (−0.29 pp; 42/18) |
+| H10b elite-anchored < Chooser | n.s. | n.s. | **retained** (−10.8 pp) |
+| H8a replication (no elite < Chooser) | **significant** (−0.63 pp) | CI excludes 0, p = 0.074 | **significant** (−10.6 pp) |
+
+Heterogeneity again (the H6b mechanism): the elite wins 10/10 on churn and VM failure at every λ and loses 0–1/10 on
+VM addition, where it suppresses the coordinated escape onto the new VM.
+
+## 21. H11 — event-aware elite: carry the deployed schedule after every event except a VM addition (pre-registered before H11 was run)
+
+**Origin (post hoc, therefore tested on fresh seeds).** The elite hurt after VM additions twice: in H6b under the
+makespan-only objective, and in H10a under the migration price, where it lost 0–1/10 on VM addition at every λ.
+Under the migration price it won 10/10 on churn and VM failure. The mechanism is the same both times. The carried
+schedule leaves the new VM empty and, as the global-best attractor, suppresses the coordinated escape that the
+register swarm's VM-addition rule produces. H11 tests the rule this suggests: `carry_elite="except_vm_add"`. It is
+decided per event, so mixed scenarios receive the elite after every non-addition event.
+
+**Design** (`exp_h11_event_elite.py`). The H8/H10 harness with **fresh seeds 401–410**, λ ∈ {0.05, 0.2, 1.0}; 720 runs.
+Strategies: Chooser, QI-MRFO+CXM continue (no elite), + elite (always), + event-aware elite.
+
+**Hypotheses and acceptance** (pooled over 60 pairs per λ; Holm across the three λ; retained at a λ when Holm
+p < 0.05 and the 95 % CI excludes 0).
+* **H11a (primary).** Event-aware elite < no elite in cost gap, at each λ.
+* **H11b.** Event-aware elite < always-elite, at each λ (the VM-addition losses disappear).
+* **H11c (reported).** Event-aware elite vs Chooser.
+* **Replication (reported).** H10a (always-elite vs no elite) on fresh seeds.

@@ -421,3 +421,43 @@ epoch after churn. The (1+1)-EA and the incremental heuristic start *at* the dep
   keeping the structural rules that produce coordinated moves after a VM addition. H6 rejected the elite only for the
   makespan-only objective.
 * This becomes H10 (pre-registered next).
+
+## V5 / H10 — the deployed schedule as an elite anchor under migration pricing (`results/h10_elite_migration/`, `results/h10_analysis.md`)
+
+**Setup.** The H8 harness with fresh seeds 301–310, λ ∈ {0.05, 0.2, 1.0}; 900 runs. Pooled cost gap % (voluntary
+migrations per epoch):
+
+| Strategy | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Chooser | 3.41 (49.3) | 8.72 (31.6) | 30.19 (11.3) |
+| GA continue | 5.02 (15.6) | 8.33 (11.5) | **18.95** (4.3) |
+| (1+1)-EA+CXM continue | 9.36 (27.6) | 11.86 (18.9) | 19.21 (7.6) |
+| QI-MRFO+CXM continue | **2.79** (42.2) | **7.35** (28.2) | 19.64 (12.1) |
+| QI-MRFO+CXM continue + elite | 4.21 (30.2) | 9.79 (18.9) | 19.35 (7.6) |
+
+**What happened?**
+* **H10a (primary) rejected at every λ.** Elite − no elite: +1.43 pp [0.43, 2.70] (33/27, p = 0.76), +2.44 pp
+  [0.28, 5.05] (42/18, p = 0.07) and −0.29 pp [−2.23, 1.81] (42/18, p = 0.08). The mean is worse even though the elite
+  wins most pairs at λ ≥ 0.2.
+  * **Churn and VM failure:** the elite wins 10/10 at every λ (Holm p = 0.012), and at λ ≥ 0.2 it also wins on drift
+    and mixed events. Migrations fall sharply, e.g. VM failure 17.0 → 5.3 per epoch at λ = 0.05.
+  * **VM addition:** it **loses badly** by +9.1, +19.3 and +12.2 pp with 0–1/10 wins. Migrations after VM addition fall
+    from 8.2 to 0.0 at λ = 1.0: the swarm stops using the new capacity.
+* **H10b.** Elite-anchored vs Chooser is retained only at λ = 1.0 (−10.8 pp, Holm p = 0.007).
+* **H10c.** Against the (1+1)-EA: n.s. at every λ. Against the GA: better at λ = 0.05 (50/10), n.s. at higher λ.
+* **Replication of H8a on fresh seeds** (swarm without elite vs Chooser): significant at λ = 0.05 (−0.63 pp, 43/17,
+  Holm p = 1e-4) and λ = 1.0 (−10.6 pp, Holm p = 0.013). At λ = 0.2 it is −1.37 pp with the CI excluding 0 but
+  Wilcoxon p = 0.074. Across H8 and H10 the swarm without elite has the lower mean cost than the Chooser at every λ,
+  but significance varies by seed set.
+
+**Why?** The same mechanism appears for the second time (H6b, now H10a).
+* The elite is the global-best attractor. After local changes it is exactly the right anchor, because it costs zero
+  migrations.
+* After a VM addition it leaves the new VM empty and pulls every register onto a schedule from which every
+  single-task move is uphill (the H8 barrier).
+* The anchor thereby suppresses the coordinated escape that the VM-addition rule would otherwise produce.
+
+**Decision.**
+* The elite is not adopted unconditionally.
+* **Post hoc suggestion:** carry the elite after every event **except** VM addition. Derived from H6b + H10a, it is
+  pre-registered as H11 and tested on fresh seeds 401–410.

@@ -143,8 +143,11 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
             if algo in ("QI-MRFO", "QI-DMO"):
                 init = adapt_register_state(state, info, mode, rng, struct=(strategy != "continue"))
                 if strategy == "shock": init = shock_state(init, gamma_shock, mode)
-                if carry_elite:
-                    if algo != "QI-MRFO": raise ValueError("carry_elite is implemented for QI-MRFO only")
+                # carry_elite: True = always; "except_vm_add" (V5, H11) = event-aware, no elite after a VM addition, where
+                # the carried schedule leaves the new VM empty and anchors the swarm away from it (H6b, H10a)
+                use_elite = carry_elite is True or (carry_elite == "except_vm_add" and info["type"] != "vm_add")
+                if carry_elite and algo != "QI-MRFO": raise ValueError("carry_elite is implemented for QI-MRFO only")
+                if use_elite:
                     init = dict(init); init["elite"] = repair_schedule(prev_best, info, inst, rng, repair)
             elif algo in ("MRFO", "DMO", "PSO"):
                 init = adapt_position_state(state, info, m, rng)
