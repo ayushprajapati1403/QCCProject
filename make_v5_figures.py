@@ -102,29 +102,33 @@ def fig_dynamic_tradeoff():
 
 
 def fig_migration_heatmaps():
-    panels = [("h8_migration", "QI-MRFO+CXM continue", "H8 (seeds 201–210): swarm − Chooser")]
-    if os.path.exists(os.path.join(RES, "h10_elite_migration", "records.csv")):
-        panels.append(("h10_elite_migration", "QI-MRFO+CXM continue+elite", "H10 (seeds 301–310): elite-anchored swarm − Chooser"))
+    """Pairwise contrasts of post-change COST gap by scenario type x lambda (blue = A cheaper, red = B cheaper)."""
+    panels = [("h8_migration", "QI-MRFO+CXM continue", "Chooser (cheaper of the two)", "H8: swarm − Chooser"),
+              ("h10_elite_migration", "QI-MRFO+CXM continue+elite", "QI-MRFO+CXM continue", "H10: elite − no elite"),
+              ("h11_event_elite", "QI-MRFO+CXM continue+event-aware elite", "QI-MRFO+CXM continue", "H11: event-aware elite − no elite")]
+    panels = [p for p in panels if os.path.exists(os.path.join(RES, p[0], "records.csv"))]
     cmap = LinearSegmentedColormap.from_list("div", ["#2a78d6", "#f0efec", "#e34948"])
-    fig, axes = plt.subplots(1, len(panels), figsize=(5.6 * len(panels), 4.4), squeeze=False)
-    for ax, (exp, algo, title) in zip(axes[0], panels):
+    norm = SymLogNorm(linthresh=1.0, vmin=-45, vmax=45, base=10)
+    fig, axes = plt.subplots(1, len(panels), figsize=(4.3 * len(panels) + 1.6, 4.2), squeeze=False)
+    for k, (ax, (exp, a, b, title)) in enumerate(zip(axes[0], panels)):
         df = pd.read_csv(os.path.join(RES, exp, "records.csv"))
         df["base"] = df.scenario.str.replace(r" lam=.*$", "", regex=True)
-        w = df[df.algo.isin([algo, "Chooser (cheaper of the two)"])].pivot_table(index=["base", "mig_lambda", "seed"], columns="algo", values="post_cost_gap")
-        d = ((w[algo] - w["Chooser (cheaper of the two)"]) * 100).groupby(level=[0, 1]).mean().unstack("mig_lambda")
-        norm = SymLogNorm(linthresh=1.0, vmin=-45, vmax=45, base=10)
+        w = df[df.algo.isin([a, b])].pivot_table(index=["base", "mig_lambda", "seed"], columns="algo", values="post_cost_gap")
+        d = ((w[a] - w[b]) * 100).groupby(level=[0, 1]).mean().unstack("mig_lambda")
         ax.imshow(d.values, cmap=cmap, norm=norm, aspect="auto")
         for i in range(d.shape[0]):
             for j in range(d.shape[1]):
-                v = d.values[i, j]; strong = abs(v) > 8
-                ax.text(j, i, f"{v:+.1f}", ha="center", va="center", fontsize=8.5, color="#ffffff" if strong else INK)
+                v = d.values[i, j]
+                ax.text(j, i, f"{v:+.1f}", ha="center", va="center", fontsize=8.5, color="#ffffff" if abs(v) > 8 else INK)
         ax.set_xticks(range(d.shape[1])); ax.set_xticklabels([f"λ = {c:g}" for c in d.columns])
-        ax.set_yticks(range(d.shape[0])); ax.set_yticklabels(d.index)
+        ax.set_yticks(range(d.shape[0])); ax.set_yticklabels(d.index if k == 0 else [])
         ax.set_title(title, loc="left", fontsize=10, color=INK)
         for sp in ax.spines.values(): sp.set_visible(False)
         ax.tick_params(length=0)
-    fig.text(0.01, -0.02, "Cell = mean difference in post-change cost gap (percentage points); blue = swarm cheaper, red = Chooser cheaper; "
-                          "symmetric-log colour scale.", fontsize=8, color=INK2)
+        for i in range(d.shape[0] + 1): ax.axhline(i - 0.5, color=SURF, linewidth=2)      # 2 px surface gap between cells
+        for j in range(d.shape[1] + 1): ax.axvline(j - 0.5, color=SURF, linewidth=2)
+    fig.text(0.01, -0.03, "Cell = mean difference in post-change cost gap, A − B (percentage points; 10 seeds per cell; each panel uses its own "
+                          "fresh seed set). Blue = A cheaper, red = B cheaper; symmetric-log colour scale.", fontsize=8, color=INK2)
     save(fig, "fig_v5_migration_heatmap.png")
 
 

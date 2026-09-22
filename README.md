@@ -117,6 +117,16 @@ Swarm schedulers (PSO, DMO, MRFO) are continuous algorithms; cloud papers apply 
   * A (1+1)-EA with the same moves is stuck after VM additions: every single-task move is uphill under the price. The
     swarm's VM-addition rule produces multi-task moves that escape. This is the first measured advantage of the
     register representation over a (1+1)-EA with identical moves.
+* **Elite anchor under migration pricing (H10, fresh seeds 301–310).** Carrying the deployed schedule is change-type
+  dependent.
+  * It wins 10/10 after churn and VM failure at every λ.
+  * It loses badly after VM addition, where it suppresses the swarm's escape onto the new VM. This is the same
+    mechanism as H6b, seen a second time.
+  * Pooled it is rejected, which motivates the event-aware rule tested in H11.
+* **Feedback-controlled decoherence (H9, fresh seeds 301–310).** The purity-regulated γ proposed in the original
+  report (§21) is falsified, with and without CXM. It *raises* duplicate evaluations (27 % → 46 %) and worsens the
+  gap, because mean purity is dominated by a few diffuse registers, so the controller starves the collapsed registers
+  that cause duplicates. Fixed c = 1 stays the default.
 * **Research quality.**
   * 213 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.

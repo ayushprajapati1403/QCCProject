@@ -461,3 +461,39 @@ migrations per epoch):
 * The elite is not adopted unconditionally.
 * **Post hoc suggestion:** carry the elite after every event **except** VM addition. Derived from H6b + H10a, it is
   pre-registered as H11 and tested on fresh seeds 401–410.
+
+## V5 / H9 — purity-regulated decoherence, the original report's §21 item 2 (`results/h9_test/`, `results/h9_analysis.md`)
+
+**Setup.** The controller multiplies γ by 1.25 when n(1 − mean purity) < 1 task and divides it by 1.25 when > 3, with
+the band [1, 3] taken from the original report, so nothing was tuned. It runs on the 8 static family shapes with fresh
+seeds 301–310, with and without CXM; 640 runs.
+
+| Pooled | QI-MRFO (c = 1) | QI-MRFO + band | QI-MRFO+CXM (c = 1) | QI-MRFO+CXM + band |
+|---|---|---|---|---|
+| global duplicate evaluations | 27.4 % | **46.4 %** | 2.5 % | **9.4 %** |
+| gap2 | 3.39 % | 4.12 % | 0.34 % | 0.49 % |
+| mean c over the run (c = γ·n) | 1.00 | 0.33–1.22 by family | 1.00 | 0.06–0.82 by family |
+
+**What happened?**
+* **H9a (primary, without CXM) rejected, in the opposite direction.** The band *raises* duplicate evaluations by
+  +19.0 pp (78/80 worse) and *worsens* gap2 by +0.72 pp [0.20, 1.34] (48/26, p = 0.003). Both pre-registered criteria
+  fail.
+* **H9b (under CXM) rejected.** Duplicates rise by +6.9 pp (77/80 worse). The gap2 difference is +0.15 pp
+  [0.04, 0.29]: the band wins 52/26 instances, but the upper CI bound breaks the +0.10 pp non-inferiority margin,
+  driven by large losses on lognormal-low (+1.0 pp) and n300 (+0.32 pp).
+
+**Why?** The feedback variable is wrong.
+* The controller drove γ *down*, because n(1 − mean purity) sat above 3 tasks: mean c was 0.33–0.64 on 7 of 8
+  families without CXM (1.22 on n60) and 0.06–0.82 on all 8 families with CXM, instead of 1.
+* The population-mean purity is dominated by a few diffuse registers.
+* The duplicates come from the many collapsed ones.
+* Lowering γ therefore starves exactly the registers that produce duplicates. Duplicates rise, reproducing V2's
+  low-c waste, and the search degrades.
+* The report's proxy "expected move size = n − Σ purity" is correct in expectation but is a poor *control* signal,
+  because the move-size distribution is bimodal: many zero moves plus some large ones.
+
+**Alternative explanation.** A different band (e.g. scaled with n) could work. That would be a new, tuned
+hypothesis. The pre-registered, untuned version from the original report is falsified.
+
+**Decision.** Not adopted. Fixed c = 1 stays the default. A future controller should use a direct signal, such as the
+per-register duplicate rate or the parent-identical rate. That is UNMEASURED.

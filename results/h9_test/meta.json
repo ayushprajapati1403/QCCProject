@@ -1,0 +1,42 @@
+{
+ "experiment": "h9_test",
+ "git_commit": "857b937f03a1b9c0fa7b00bb9dba85c95f3ba170",
+ "python": "3.11.15",
+ "numpy": "2.2.6",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "started": "2026-09-22 23:06:46",
+ "n_jobs": 640,
+ "config": {
+  "band": [
+   1.0,
+   3.0
+  ],
+  "budget": 20000,
+  "P": 30,
+  "families": [
+   "n80 m8 uniform high",
+   "n150 m15 uniform high",
+   "n300 m30 uniform high",
+   "n100 m10 bimodal high",
+   "n200 m10 bimodal none",
+   "n120 m12 lognormal high",
+   "n60 m12 uniform low",
+   "n100 m20 lognormal low"
+  ],
+  "inst_seeds": [
+   301,
+   302,
+   303,
+   304,
+   305,
+   306,
+   307,
+   308,
+   309,
+   310
+  ]
+ },
+ "finished": "2026-09-22 23:15:47",
+ "n_records": 640,
+ "wall_s_last_session": 540.5758609771729
+}

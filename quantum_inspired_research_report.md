@@ -668,6 +668,58 @@ same moves cannot. Its structural rule for new capacity creates coordinated move
 price builds for local search. The data also say what to fix: anchor the swarm on the deployed schedule (an elite)
 for local changes (H10, pre-registered next).
 
+## 31. V5 — the deployed schedule as an elite anchor under migration pricing (H10; measured)
+
+**Why.** In H8 the swarm lost to zero-migration repair after churn and VM failure. Its population is *sampled from*
+the carried registers and never contains the exact deployed schedule, which costs nothing to keep. H10
+(pre-registered, `research_plan_v5.md` §17; fresh seeds 301–310; 900 runs; `results/h10_analysis.md`) adds that
+schedule as an elite.
+
+| Pooled cost gap % (migrations per epoch) | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Chooser | 3.41 (49.3) | 8.72 (31.6) | 30.19 (11.3) |
+| GA continue | 5.02 (15.6) | 8.33 (11.5) | **18.95** (4.3) |
+| (1+1)-EA+CXM continue | 9.36 (27.6) | 11.86 (18.9) | 19.21 (7.6) |
+| QI-MRFO+CXM continue | **2.79** (42.2) | **7.35** (28.2) | 19.64 (12.1) |
+| QI-MRFO+CXM continue + elite | 4.21 (30.2) | 9.79 (18.9) | 19.35 (7.6) |
+
+**Verdicts.**
+* **H10a (primary) rejected at every λ.** Elite − no elite: +1.43, +2.44 and −0.29 pp, none significant. The elite
+  wins most pairs at λ ≥ 0.2 (42/18) but loses by large margins on one change type:
+  * after churn and VM failure it wins 10/10 at every λ (Holm p = 0.012) and cuts migrations sharply;
+  * **after VM addition it loses** by 9–19 pp with 0–1/10 wins, and its VM-addition migrations drop to zero at λ = 1.
+  This is the same mechanism as H6b, now seen a second time under a different objective. The carried schedule leaves
+  the new VM empty and, as the global-best attractor, suppresses the coordinated escape of §30.
+* **H10b.** The elite-anchored swarm beats the Chooser only at λ = 1.0 (−10.8 pp).
+* **Replication of H8a on fresh seeds.** The swarm without elite beats the Chooser at λ = 0.05 (43/17, Holm p = 1e-4)
+  and λ = 1.0. At λ = 0.2 the CI excludes 0 but Wilcoxon p = 0.074.
+* **Figure.** `results/fig_v5_migration_heatmap.png` shows the contrasts by scenario type and λ.
+
+**Consequence.** The data point to an event-aware rule, derived post hoc and therefore tested separately on fresh
+seeds as H11 (§33): carry the elite after every event except a VM addition.
+
+## 32. V5 — purity-regulated decoherence, the §21 item-2 prediction (H9; measured)
+
+**Why.** The brief puts feedback-controlled decoherence first. §21 of this report, written before V5, had predicted
+that holding the expected move size $n(1-\bar\pi)$ in a 1–3-task band "removes the residual wasted evaluations
+without quality loss". H9 (pre-registered, `research_plan_v5.md` §18) tested exactly that controller, untuned, with
+and without CXM, on fresh static instances (seeds 301–310; 640 runs; `results/h9_analysis.md`).
+
+| Pooled over 80 instances | QI-MRFO → + band | QI-MRFO+CXM → + band |
+|---|---|---|
+| global duplicate evaluations | 27.4 % → **46.4 %** (worse on 78/80) | 2.5 % → **9.4 %** (worse on 77/80) |
+| gap2 | 3.39 % → 4.12 % (+0.72 pp [0.20, 1.34], p = 0.003) | 0.34 % → 0.49 % (+0.15 pp [0.04, 0.29]; 52/26 wins, p = 0.12) |
+
+**Verdict: falsified in both settings.** The controller increases the waste it was meant to remove. Without CXM the
+gap is also significantly worse; under CXM it breaks the +0.10 pp non-inferiority margin.
+
+**Mechanism.** The controller lowered γ (mean c 0.33–0.64 on 7/8 families without CXM, 0.06–0.82 with CXM), because
+$n(1-\bar\pi)$ exceeded 3 tasks. That quantity is correct in expectation but is dominated by a few diffuse registers,
+while duplicates come from the many collapsed ones. Lowering γ therefore starves precisely the registers that produce
+duplicates, reproducing V2's low-c waste. The move-size distribution is bimodal (many zero moves plus some large
+ones), so mean purity is a poor control signal. A controller on a direct signal, such as the per-register or
+parent-identical duplicate rate, is UNMEASURED.
+
 ## Final decision
 
 **PROCEED — with the revised framing.** The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"

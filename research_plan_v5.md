@@ -421,3 +421,14 @@ p < 0.05 and the 95 % CI excludes 0).
 * **H11b.** Event-aware elite < always-elite, at each λ (the VM-addition losses disappear).
 * **H11c (reported).** Event-aware elite vs Chooser.
 * **Replication (reported).** H10a (always-elite vs no elite) on fresh seeds.
+
+## 22. H9 outcome (recorded after `results/h9_analysis.md`)
+
+| Hypothesis | Result | Verdict |
+|---|---|---|
+| H9a (without CXM) | duplicates +19.0 pp (78/80 worse); gap2 +0.72 pp [0.20, 1.34] | **rejected (opposite direction)** |
+| H9b (under CXM) | duplicates +6.9 pp (77/80 worse); gap2 +0.15 pp [0.04, 0.29] (non-inferiority margin +0.10 broken) | **rejected** |
+
+Mechanism: the mean-purity signal is dominated by a few diffuse registers, so the controller lowers γ and starves the
+collapsed registers that produce duplicates. The original report's §21 item 2 prediction is falsified for this
+(untuned) controller.
