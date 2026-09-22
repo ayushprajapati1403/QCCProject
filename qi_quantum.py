@@ -10,7 +10,7 @@ Modes: 'born_signed' (signed amplitudes, Born rule), 'born_abs' (non-negative am
        'linear' (classical twin: probability vectors with linear mixing).
 """
 import numpy as np
-from qi_core import Tracker
+from qi_core import Tracker, critical_exchange
 
 # %% S8 mechanism
 
@@ -91,6 +91,13 @@ def add_tasks_state(state, idx_new, mode):
     Psi[:, idx_new, :] = uniform_state(len(idx_new), m, mode)[None]
     return {"Psi": Psi}
 
+def collapse_rows(psi, rows, outcomes, gamma, m, mode):
+    """Measurement back-action (V5): the registers `rows` collapse onto the measured VMs `outcomes`, then pass through the
+    same depolarising floor as every candidate register (so a collapsed row keeps purity < 1 when gamma > 0)."""
+    psi = psi.copy()
+    psi[rows] = depolarise(basis_state(np.asarray(outcomes), m), gamma, m, mode)
+    return psi
+
 # %% S9 QI algorithms
 # ----------------------------------------------------------------------------------------------
 # QI-DMO: DMO dynamics (MATLAB/MEALPY-faithful) on amplitude registers
@@ -100,7 +107,7 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
     """decoherence: per-candidate depolarising strength gamma (0 = V1); gamma_reset: babysitter channel strength;
     attractor: 'basis' (alpha peeps its measured schedule) or 'register' (alpha's superposition state)."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
-    tr = Tracker(n, m); tr.purity = []
+    tr = Tracker(n, m, inst); tr.purity = []
     if init_state is None:
         Psi = np.stack([uniform_state(n, m, mode) for _ in range(P)])
     else:
@@ -164,10 +171,14 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
 # ----------------------------------------------------------------------------------------------
 # QI-MRFO: MRFO dynamics (MEALPY-faithful) on amplitude registers (transfer test of the mechanism)
 # ----------------------------------------------------------------------------------------------
-def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoherence=0.0, track=True, init_state=None, accept_equal=False):
-    """accept_equal=True also accepts candidates of equal fitness (neutral drift on plateaus; V4 test)."""
+def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoherence=0.0, track=True, init_state=None, accept_equal=False,
+               exchange=0.0):
+    """accept_equal=True also accepts candidates of equal fitness (neutral drift on plateaus; V4 test).
+    exchange>0 (V5, hypothesis H5 'critical exchange measurement'): with this probability a measured candidate additionally
+    exchanges a task of its critical VM with a shorter task on another VM (qi_core.critical_exchange), a correlated two-register
+    outcome that the product-state measurement almost never produces; the pair's registers collapse onto that outcome."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
-    tr = Tracker(n, m); tr.purity = []
+    tr = Tracker(n, m, inst); tr.purity = []
     if init_state is None:
         Psi = np.stack([uniform_state(n, m, mode) for _ in range(P)])
     else:
@@ -179,6 +190,14 @@ def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoh
         tr.snapshot(obj.n_evals, A, F, gbF); tr.purity.append(float(np.mean([purity(Psi[i], mode).mean() for i in range(P)])))
     snap()
     dec = lambda psi: depolarise(psi, decoherence, m, mode)
+    def xmeasure(new, a_new):
+        # H5: correlated exchange on top of the product-state measurement; no extra random draw when exchange == 0
+        if exchange <= 0 or rng.random() >= exchange: return new, a_new, False
+        a_x, tt, uu = critical_exchange(inst, a_new, rng)
+        rows = [tt] if uu < 0 else [tt, uu]
+        return collapse_rows(new, rows, a_x[rows], decoherence, m, mode), a_x, True
+    def xtrack(xm, f, f_parent):
+        if xm: tr.x_cands += 1; tr.x_improving += int(f < f_parent - 1e-12)
     for t in range(1, T + 1):
         Eb = basis_state(gbA, m)
         for i in range(P):
@@ -196,14 +215,18 @@ def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoh
                 r = rng.random(); alpha = 2 * r * np.sqrt(np.abs(np.log(r)))
                 if i == 0: new = Psi[i] + r * (Eb - Psi[i]) + alpha * (Eb - Psi[i])
                 else:      new = Psi[i] + r * (Psi[i - 1] - Psi[i]) + alpha * (Eb - Psi[i])
-            new = dec(project(new, m, mode)); a_new = measure(new, rng, mode); f = obj(a_new)
-            if track: tr.candidate(A[i], a_new, F[i], f)
+            new = dec(project(new, m, mode)); a_new = measure(new, rng, mode)
+            new, a_new, xm = xmeasure(new, a_new)
+            f = obj(a_new)
+            if track: tr.candidate(A[i], a_new, F[i], f); xtrack(xm, f, F[i])
             if f < F[i] or (accept_equal and f <= F[i]): Psi[i], A[i], F[i] = new, a_new, f
             if f < gbF: gbF, gbA = f, a_new.copy(); Eb = basis_state(gbA, m); tr.gb_improvements += 1
         for i in range(P):                               # somersault foraging
             new = dec(project(Psi[i] + S * (rng.random() * Eb - rng.random() * Psi[i]), m, mode))
-            a_new = measure(new, rng, mode); f = obj(a_new)
-            if track: tr.candidate(A[i], a_new, F[i], f)
+            a_new = measure(new, rng, mode)
+            new, a_new, xm = xmeasure(new, a_new)
+            f = obj(a_new)
+            if track: tr.candidate(A[i], a_new, F[i], f); xtrack(xm, f, F[i])
             if f < F[i] or (accept_equal and f <= F[i]): Psi[i], A[i], F[i] = new, a_new, f
             if f < gbF: gbF, gbA = f, a_new.copy(); Eb = basis_state(gbA, m); tr.gb_improvements += 1
         snap()

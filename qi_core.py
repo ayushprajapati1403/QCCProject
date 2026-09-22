@@ -3,7 +3,7 @@ qi_core.py - cloud-scheduling problem + classical optimizers + instrumentation (
 The '# %% S<k>' markers slice this file into notebook sections.
 """
 # %% S2 imports
-import numpy as np, time
+import numpy as np, time, hashlib
 from dataclasses import dataclass, field
 
 # %% S4 problem representation
@@ -25,6 +25,13 @@ class CloudInstance:
     def lower_bound(self):
         # Q||Cmax lower bound: max(total work / total speed, largest task on fastest VM)
         return max(self.task_len.sum() / self.vm_mips.sum(), self.task_len.max() / self.vm_mips.max())
+    def lower_bound_pmtn(self):
+        """Tighter valid bound: the optimal PREEMPTIVE makespan Q|pmtn|Cmax (Liu & Yang 1974; Horvath, Lam & Sethi 1977;
+        Gonzalez & Sahni 1978) = max( max_{k<K} P_k / S_k , P_n / S_K ), K = min(n, m), P_k = sum of the k largest task
+        lengths, S_k = sum of the k fastest speeds. Always >= lower_bound(); used for the V5 'gap2' columns."""
+        P = np.cumsum(np.sort(self.task_len)[::-1]); S = np.cumsum(np.sort(self.vm_mips)[::-1]); K = min(self.n, self.m)
+        prefix = (P[:K - 1] / S[:K - 1]).max() if K > 1 else 0.0
+        return max(prefix, P[-1] / S[K - 1])
     def copy_with(self, task_len=None, vm_mips=None, vm_p_idle=None, vm_p_max=None, name=None):
         return CloudInstance(self.task_len if task_len is None else task_len, self.vm_mips if vm_mips is None else vm_mips,
                              self.vm_p_idle if vm_p_idle is None else vm_p_idle, self.vm_p_max if vm_p_max is None else vm_p_max,
@@ -93,21 +100,39 @@ class Objective:
 
 # %% S7a instrumentation
 class Tracker:
-    """Records per-iteration statistics common to all optimizers (used to test the MECHANISM, not just the score)."""
-    def __init__(self, n, m):
+    """Records per-iteration statistics common to all optimizers (used to test the MECHANISM, not just the score).
+    With `inst` given (V5), two extra diagnostics are recorded per candidate: whether the schedule was ever evaluated
+    before in the run (global duplicate; 'wasted' only counts parent-identical candidates) and whether the candidate
+    moves a task off its reference schedule's critical VM (a necessary condition for a strict makespan improvement).
+    They only read the candidates, so the optimizers' behaviour is unchanged."""
+    def __init__(self, n, m, inst=None):
         self.n, self.m = n, m
         self.evals, self.best, self.mean, self.div_ham = [], [], [], []
         self.wasted = self.neutral = self.improving = self.worse = 0
         self.move_sizes = []
         self.gb_improvements = 0
+        self.dup_global = self.touch_crit = self.x_cands = self.x_improving = 0
+        self._et = None if inst is None else inst.et
+        self._seen = set(); self._ar = np.arange(n)
+        self.flags = []            # per candidate: 1 = improving, 0 = not (used for late-run improvement rates)
         self.t0 = time.time()
     def candidate(self, parent_assign, child_assign, f_parent, f_child):
-        changed = int((parent_assign != child_assign).sum())
+        diff = parent_assign != child_assign
+        changed = int(diff.sum())
         self.move_sizes.append(changed)
         if changed == 0: self.wasted += 1
         elif f_child < f_parent - 1e-12: self.improving += 1
         elif abs(f_child - f_parent) <= 1e-12: self.neutral += 1
         else: self.worse += 1
+        if self._et is not None:
+            self.flags.append(int(changed > 0 and f_child < f_parent - 1e-12))
+            self._seen.add(hashlib.blake2b(parent_assign.tobytes(), digest_size=8).digest())
+            key = hashlib.blake2b(child_assign.tobytes(), digest_size=8).digest()   # deterministic (no PYTHONHASHSEED salt)
+            if key in self._seen: self.dup_global += 1
+            else: self._seen.add(key)
+            loads = np.bincount(parent_assign, weights=self._et[self._ar, parent_assign], minlength=self.m)
+            crit = loads >= loads.max() * (1 - 1e-12)
+            self.touch_crit += int((diff & crit[parent_assign]).any())
     def snapshot(self, n_evals, assigns, fits, best):
         self.evals.append(n_evals); self.best.append(best); self.mean.append(float(np.mean(fits)))
         A = np.asarray(assigns); P = len(A)
@@ -125,6 +150,18 @@ class Tracker:
                 "mean_move_size": float(np.mean(self.move_sizes)) if self.move_sizes else 0.0,
                 "gb_impr_per_1k": 1000.0 * self.gb_improvements / max(1, self.evals[-1] if self.evals else 1),
                 "runtime_s": time.time() - self.t0}
+    def summary_v5(self):
+        """V5 diagnostics (needs Tracker(..., inst)): global duplicates, critical-VM touches, exchange-move counts,
+        late-half improvement rate and the budget fraction at which the global best last improved."""
+        tot = max(1, len(self.move_sizes))
+        ev, bs = np.asarray(self.evals, float), np.asarray(self.best, float)
+        drops = np.where(np.diff(bs) < 0)[0]
+        last = ev[drops[-1] + 1] / ev[-1] if len(drops) and ev[-1] > 0 else 0.0
+        fl = np.asarray(self.flags)
+        return {"dup_global_frac": self.dup_global / tot, "touch_crit_frac": self.touch_crit / tot,
+                "x_frac": self.x_cands / tot, "x_success": self.x_improving / max(1, self.x_cands),
+                "late_improving_frac": float(fl[len(fl) // 2:].mean()) if len(fl) > 1 else 0.0,
+                "last_gb_impr_frac": float(last)}
 
 # %% S7b heuristics
 def _list_schedule(inst, pick):
@@ -159,6 +196,50 @@ def local_search_1move(inst, assign, max_steps=10000):
         t, v = best[1]; a[t] = v
     return a
 
+def critical_exchange(inst, a, rng):
+    """V5 critical exchange move (CXM). t is drawn uniformly from the tasks on the critical VM(s) of schedule a;
+    u uniformly from the tasks on other VMs that are SHORTER than t (necessary for the exchange to lower the critical
+    load); t and u swap VMs. If no shorter task exists elsewhere, t is relocated to a uniformly random other VM.
+    Returns (new_a, t, u), u = -1 for a relocation. Shared by QI-MRFO and the GA so that both get the identical operator."""
+    n, m = inst.n, inst.m
+    new = a.copy()
+    if m < 2: return new, -1, -1
+    loads = np.bincount(a, weights=inst.et[np.arange(n), a], minlength=m)
+    crit = loads >= loads.max() * (1 - 1e-12)
+    T = np.flatnonzero(crit[a])
+    t = T[rng.integers(len(T))]; b = a[t]
+    U = np.flatnonzero((a != b) & (inst.task_len < inst.task_len[t]))
+    if len(U):
+        u = U[rng.integers(len(U))]
+        new[t], new[u] = a[u], b
+        return new, t, u
+    v = rng.integers(m - 1); v += int(v >= b)
+    new[t] = v
+    return new, t, -1
+
+def count_improving_moves(inst, a, eps=1e-9):
+    """Landscape diagnostic at schedule a: number of STRICTLY makespan-improving (i) relocations of a critical task and
+    (ii) swaps of a critical task with a task on another VM. With several VMs tied at the makespan no single move can
+    improve it: returns (0, 0, n_tied). Vectorised version of observe_v5_localopt.improving_moves."""
+    n, m, et = inst.n, inst.m, inst.et
+    L = np.bincount(a, weights=et[np.arange(n), a], minlength=m); ms = L.max()
+    tied = int((L >= ms * (1 - 1e-12)).sum())
+    if tied > 1 or m < 2: return 0, 0, tied
+    b = int(L.argmax()); Tb = np.flatnonzero(a == b); Ub = np.flatnonzero(a != b)
+    rest = np.full(m, -np.inf)                                   # rest[v] = max load over VMs other than b and v
+    for v in range(m):
+        if v != b:
+            mask = np.ones(m, bool); mask[[b, v]] = False
+            rest[v] = L[mask].max() if mask.any() else -np.inf
+    V = np.delete(np.arange(m), b)
+    rel_new = np.maximum(np.maximum((ms - et[Tb, b])[:, None], L[V][None, :] + et[np.ix_(Tb, V)]), rest[V][None, :])
+    n_rel = int((rel_new < ms - eps).sum())
+    vu = a[Ub]
+    nb = ms - et[Tb, b][:, None] + et[Ub, b][None, :]
+    nv = (L[vu] - et[Ub, vu])[None, :] + et[np.ix_(Tb, np.arange(m))][:, vu]
+    n_swap = int((np.maximum(np.maximum(nb, nv), rest[vu][None, :]) < ms - eps).sum())
+    return n_rel, n_swap, 1
+
 # %% S7c classical optimizers
 # All optimizers share the signature (inst, obj, budget, P, seed, ...) and return a dict with best_f, best_assign,
 # tracker and a 'state' that can be passed back as init_state for warm-started (dynamic) re-optimization.
@@ -168,7 +249,7 @@ def _init_pop(rng, P, n, m):
 def run_pso(inst, obj, budget, P=30, seed=0, w=0.729, c1=1.49445, c2=1.49445, track=True, init_state=None):
     """Standard inertia-weight PSO (Clerc constriction values), floor decoder."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
-    tr = Tracker(n, m)
+    tr = Tracker(n, m, inst)
     if init_state is None:
         X = _init_pop(rng, P, n, m); V = rng.uniform(-1, 1, (P, n))
     else:
@@ -196,7 +277,7 @@ def run_dmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, track=Tr
     """Dwarf Mongoose Optimization, faithful to the authors' MATLAB code as reproduced in MEALPY OriginalDMOA.
     greedy_next=True replaces the unconditional 'next mongoose position' move by a greedy one (MEALPY DevDMOA style)."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
-    tr = Tracker(n, m)
+    tr = Tracker(n, m, inst)
     X = _init_pop(rng, P, n, m) if init_state is None else np.clip(init_state["X"].copy(), 0, m - 1e-9)
     A = decode(X, m); F = np.array([obj(a) for a in A])
     C = np.zeros(P); tau = -np.inf; L = np.round(0.6 * n * n_baby_sitter)
@@ -249,7 +330,7 @@ def run_dmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, track=Tr
 def run_mrfo(inst, obj, budget, P=30, seed=0, S=2.0, track=True, init_state=None):
     """Manta Ray Foraging Optimization, faithful to Zhao et al. 2020 as implemented in MEALPY OriginalMRFO."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
-    tr = Tracker(n, m)
+    tr = Tracker(n, m, inst)
     X = _init_pop(rng, P, n, m) if init_state is None else np.clip(init_state["X"].copy(), 0, m - 1e-9)
     A = decode(X, m); F = np.array([obj(a) for a in A])
     g = F.argmin(); gb, gbF, gbA = X[g].copy(), F[g], A[g].copy()
@@ -285,12 +366,13 @@ def run_mrfo(inst, obj, budget, P=30, seed=0, S=2.0, track=True, init_state=None
         tr.snapshot(obj.n_evals, A, F, gbF)
     return {"best_f": gbF, "best_assign": gbA, "tracker": tr, "state": {"X": X}}
 
-def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None, hypermutation=0.0):
+def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None, hypermutation=0.0, exchange=0.0):
     """Discrete GA baseline: tournament(2), uniform crossover, per-gene reassignment mutation, 1-elitism.
-    hypermutation>0: mutation rate x10 during the first `hypermutation` fraction of the budget (Cobb-style)."""
+    hypermutation>0: mutation rate x10 during the first `hypermutation` fraction of the budget (Cobb-style).
+    exchange>0 (V5 control for H5): each child additionally undergoes the critical exchange move with this probability."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
     pm = pm or 1.0 / n
-    tr = Tracker(n, m)
+    tr = Tracker(n, m, inst)
     A = rng.integers(0, m, (P, n)) if init_state is None else np.clip(init_state["A"].copy(), 0, m - 1)
     F = np.array([obj(a) for a in A])
     g = F.argmin(); gbF, gbA = F[g], A[g].copy()
@@ -306,8 +388,12 @@ def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None
             child = np.where(rng.random(n) < 0.5, A[p1], A[p2])
             mut = rng.random(n) < rate
             child[mut] = rng.integers(0, m, mut.sum())
+            xm = exchange > 0 and rng.random() < exchange
+            if xm: child = critical_exchange(inst, child, rng)[0]
             f = obj(child)
-            if track: tr.candidate(A[p1], child, F[p1], f)
+            if track:
+                tr.candidate(A[p1], child, F[p1], f)
+                if xm: tr.x_cands += 1; tr.x_improving += int(f < F[p1] - 1e-12)
             newA[c], newF[c] = child, f
             if f < gbF: gbF, gbA = f, child.copy(); tr.gb_improvements += 1
         A, F = newA, newF
@@ -316,7 +402,7 @@ def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None
 
 def run_random(inst, obj, budget, seed=0, P=30, track=True, init_state=None):
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
-    tr = Tracker(n, m); gbF, gbA = np.inf, None
+    tr = Tracker(n, m, inst); gbF, gbA = np.inf, None
     while obj.n_evals + P <= budget:
         A = rng.integers(0, m, (P, n)); F = np.array([obj(a) for a in A])
         g = F.argmin()
