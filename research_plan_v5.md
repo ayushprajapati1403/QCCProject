@@ -311,3 +311,11 @@ every eligible task.
 * **H8b (directional).** QI-MRFO+CXM continue beats GA continue on the same cost (same criteria).
 * **Reported.** Linear twin vs Born rule. For each λ, the makespan-gap and migration components separately (the
   trade-off).
+
+### 14.1 Amendment before any H8 run (H7 still running; its outcome unknown)
+
+H8 lacked the dynamic counterpart of H7's minimal control. **(1+1)-EA+CXM continue** is therefore added: a (1+1)-EA
+that carries its single deployed schedule across changes, with greedy repair after a VM failure and the development-set
+values c = 1, p_x = 0.5 from `results/h7_selection.json`, optimising the same migration-aware cost. It is reported as
+"register swarm vs (1+1)-EA carrying one schedule" at each λ. It does not change H8a or H8b. The addition was decided
+before any H7 or H8 result was available.

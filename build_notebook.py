@@ -819,12 +819,14 @@ code(r"""
 REGISTRY["QI-MRFO+CXM"] = _mk(run_qimrfo, P=CFG["P"], exchange=1.0, decoherence=lambda inst: CFG["gamma_c_mrfo"] / inst.n)
 REGISTRY["P-MRFO+CXM (linear twin)"] = _mk(run_qimrfo, P=CFG["P"], mode="linear", exchange=1.0, decoherence=lambda inst: CFG["gamma_c_mrfo"] / inst.n)
 REGISTRY["GA+CXM"] = _mk(run_ga, P=CFG["P"], exchange=1.0)
+# H7 control: a (1+1)-EA with exactly the moves of a collapsed QI-MRFO+CXM (c and p_x tuned on the pilot instances only)
+REGISTRY["(1+1)-EA+CXM"] = _mk(run_one_plus_one, decoherence=lambda inst: 1.0 / inst.n, exchange=0.5)
 PALETTE.update({"QI-MRFO+CXM": "#0b4f9c", "GA+CXM": "#0e7a52", "P-MRFO+CXM (linear twin)": "#2e2370"})
 H5_SPECS = {"smoke": [(80, 8, "uniform", "high"), (100, 10, "bimodal", "high")],
             "fast": [(80, 8, "uniform", "high"), (100, 10, "bimodal", "high"), (120, 12, "lognormal", "high"), (60, 12, "uniform", "low")],
             "full": [(80, 8, "uniform", "high"), (150, 15, "uniform", "high"), (100, 10, "bimodal", "high"), (200, 10, "bimodal", "none"),
                      (120, 12, "lognormal", "high"), (60, 12, "uniform", "low"), (100, 20, "lognormal", "low")]}[MODE]
-H5_ALGOS = ["Max-Min", "GA", "GA+CXM", "QI-MRFO", "QI-MRFO+CXM", "P-MRFO+CXM (linear twin)"]
+H5_ALGOS = ["Max-Min", "GA", "GA+CXM", "(1+1)-EA+CXM", "QI-MRFO", "QI-MRFO+CXM", "P-MRFO+CXM (linear twin)"]
 h5 = run_suite(H5_ALGOS, H5_SPECS, CFG["seeds"], CFG["budget"], inst_seed=101, label="H5 demo (inst_seed 101)")
 h5.drop(columns=[c for c in h5.columns if c.startswith("curve_")]).to_csv(os.path.join(CFG["results_dir"], f"h5_demo_{MODE}.csv"), index=False)
 print("gap to the preemptive LB (%), mean over seeds:")
@@ -866,6 +868,22 @@ The printout above is authoritative; where it disagrees with this text, the numb
 * **P3 partially supported.** The end points are nearly swap-optimal (improving swaps 140 → 11) and the last
   improvement comes later (54 % → 76 % of the budget). The late-half improving rate fell because CXM converges early.
 * **P2** (absolute dose–response) not supported; the post hoc relative version is ρ = 0.71 and is exploratory.
+""")
+
+code(r"""
+# (iv) committed H7 run (fresh instances, seeds 201-210): is the register swarm needed once CXM exists? Max-Min seeding
+_h7p = os.path.join("results", "h7_test", "records.csv")
+if os.path.exists(_h7p):
+    h7t = pd.read_csv(_h7p)
+    _alg7 = ["Max-Min", "GA+CXM+seed", "(1+1)-EA+CXM", "(1+1)-EA+CXM+seed", "P-MRFO+CXM", "P-MRFO+CXM+seed", "QI-MRFO+CXM", "QI-MRFO+CXM+seed"]
+    print("committed H7 results: mean gap to the preemptive LB (%)")
+    display((h7t.pivot_table(index="family", columns="algo", values="gap2", aggfunc="mean")[_alg7] * 100).round(3))
+    for _a, _b in [("QI-MRFO+CXM", "(1+1)-EA+CXM"), ("QI-MRFO+CXM+seed", "QI-MRFO+CXM")]:
+        _w = h7t[h7t.algo.isin([_a, _b])].groupby(["family", "inst_seed", "algo"]).gap2.mean().unstack("algo")
+        _d = 100 * (_w[_a] - _w[_b]).values
+        print(f"{_a} - {_b}: mean {_d.mean():.3f} pp, CI {np.round(boot_ci(_d), 3)}, Wilcoxon p = {stats.wilcoxon(_d).pvalue:.2e}, {_a} better on {(_d < 0).sum()}/{len(_d)}")
+else:
+    print("results/h7_test/records.csv not found (run `python exp_h7_swarm_seed.py tune test analyze` in the repository)")
 """)
 
 # ----------------------------------------------------------------------------------------------------- S20 (V5 dynamic)
@@ -928,6 +946,17 @@ md(r"""
 * **Quantum-specific part.** The classical linear twin is again better than the Born rule (55/60).
 * **Open cost.** CXM triples migrations, because the objective ignores them. A migration-aware objective is the next
   hypothesis.
+""")
+
+code(r"""
+# committed H8 run (migration-aware objective, fresh seeds 201-210): cost gap / makespan gap / migrations per lambda
+_h8p = os.path.join("results", "h8_migration", "records.csv")
+if os.path.exists(_h8p):
+    h8 = pd.read_csv(_h8p); h8["base"] = h8.scenario.str.replace(r" lam=.*$", "", regex=True)
+    display((h8.groupby(["mig_lambda", "algo"])[["post_cost_gap", "post_gap"]].mean() * 100).round(3).join(
+        h8.groupby(["mig_lambda", "algo"])[["migrations"]].mean().round(1)))
+else:
+    print("results/h8_migration/records.csv not found (run `python exp_h8_migration.py run analyze` in the repository)")
 """)
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},

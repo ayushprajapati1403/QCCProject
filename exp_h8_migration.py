@@ -35,6 +35,8 @@ STRATEGIES = {
     "GA continue": {"algo": "GA", "strategy": "continue", "repair": "greedy"},
     "QI-MRFO+CXM continue": {"algo": "QI-MRFO", "strategy": "continue_struct", "repair": "greedy", "algo_kw": X},
     "P-MRFO+CXM continue": {"algo": "QI-MRFO", "mode": "linear", "strategy": "continue_struct", "repair": "greedy", "algo_kw": X},
+    # amendment (plan §14.1, before any H8 run): minimal classical control, a (1+1)-EA carrying its single schedule
+    "(1+1)-EA+CXM continue": {"algo": "(1+1)-EA", "strategy": "continue", "repair": "greedy", "algo_kw": {"exchange": 0.5}},
 }
 
 
@@ -79,7 +81,8 @@ def analysis_text():
     out.append("## Pre-registered tests (cost gap; unit = (scenario, seed); Holm across the 6 scenarios within each lambda; ALL = pooled over 60 pairs)\n")
     comps = [("QI-MRFO+CXM continue", "Chooser (cheaper of the two)", "H8a primary"),
              ("QI-MRFO+CXM continue", "GA continue", "H8b"),
-             ("P-MRFO+CXM continue", "QI-MRFO+CXM continue", "linear twin vs Born rule")]
+             ("P-MRFO+CXM continue", "QI-MRFO+CXM continue", "linear twin vs Born rule"),
+             ("QI-MRFO+CXM continue", "(1+1)-EA+CXM continue", "amendment: register swarm vs (1+1)-EA carrying one schedule")]
     pooled = []
     for lam in LAMBDAS:
         sub = df[df.mig_lambda == lam]

@@ -40,3 +40,20 @@ def test_incremental_costs_equal_makespan_and_chooser_picks_cheaper():
     # epoch 1 shares the same reference (the epoch-0 Max-Min schedule) for all three strategies
     assert ch[1]["cost"] == pytest.approx(min(mm[1]["cost"], inc[1]["cost"]))
     assert ch[1]["evals"] == 2
+
+
+@pytest.mark.parametrize("change", ["churn", "vm_fail", "vm_add", "drift", "mixed"])
+def test_dynamic_one_plus_one_carries_its_schedule(change):
+    seq = make_dynamic_sequence(20, 5, seed=4, K=3, change=change)
+    out = run_dynamic(seq, "(1+1)-EA", "continue", 600, 300, seed=0, decoherence_c=1.0, algo_kw={"exchange": 0.5}, mig_lambda=0.2)
+    assert all(o["evals"] <= (600 if o["epoch"] == 0 else 300) for o in out)
+    for e in range(1, len(seq)):
+        # strict acceptance from the carried (repaired) schedule: the deployed cost never exceeds the carried start's cost
+        inst, info = seq[e]
+        from qi_dynamic import repair_schedule
+        if info["type"] != "vm_fail":                            # random repair would need the harness RNG state
+            ref, forced = map_to_new_vms(out[e - 1]["assign"], info)
+            elig = ~forced
+            if info["type"] == "churn": elig[info["idx"]] = False
+            start_cost = Objective(inst, kind="makespan_migration", ref=ref, mig_mask=elig, lam=0.2)(ref)
+            assert out[e]["cost"] <= start_cost + 1e-9

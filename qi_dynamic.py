@@ -6,7 +6,7 @@ state (continue), or from a decohered state (shock, register-based optimizers on
 """
 import numpy as np
 from qi_core import (CloudInstance, make_instance, sample_task_lengths, sample_vm_speeds, Objective, Tracker,
-                     run_mrfo, run_dmo, run_ga, run_pso, max_min)
+                     run_mrfo, run_dmo, run_ga, run_pso, run_one_plus_one, max_min)
 from qi_quantum import (run_qimrfo, run_qidmo, shock_state, remove_vm_state, add_vm_state, add_tasks_state)
 
 # %% S17 dynamic harness
@@ -148,7 +148,7 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
                     init = dict(init); init["elite"] = repair_schedule(prev_best, info, inst, rng, repair)
             elif algo in ("MRFO", "DMO", "PSO"):
                 init = adapt_position_state(state, info, m, rng)
-            elif algo == "GA":
+            elif algo in ("GA", "(1+1)-EA"):                # the (1+1)-EA carries its single schedule like a GA of size 1
                 init = adapt_ga_state(state, info, m, rng, inst=inst, repair=repair)
         if algo in ("Max-Min", "Incremental", "Chooser"):
             if algo == "Max-Min" or e == 0: a = max_min(inst); f = obj(a)
@@ -164,6 +164,7 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
         elif algo == "DMO": r = run_dmo(inst, obj, B, P=P, seed=seed * 100 + e, init_state=init, track=False, **kw)
         elif algo == "PSO": r = run_pso(inst, obj, B, P=P, seed=seed * 100 + e, init_state=init, track=False, **kw)
         elif algo == "GA": r = run_ga(inst, obj, B, P=P, seed=seed * 100 + e, init_state=init, track=False, hypermutation=(0.2 if strategy == "hypermut" else 0.0), **kw)
+        elif algo == "(1+1)-EA": r = run_one_plus_one(inst, obj, B, seed=seed * 100 + e, decoherence=decoherence_c / n, init_state=init, track=False, **kw)
         else: raise ValueError(algo)
         state = r["state"]; tr = r["tracker"]
         lb = inst.lower_bound(); mm = obj._raw(max_min(inst))[0]
