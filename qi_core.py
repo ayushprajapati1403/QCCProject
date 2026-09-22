@@ -366,7 +366,7 @@ def run_mrfo(inst, obj, budget, P=30, seed=0, S=2.0, track=True, init_state=None
         tr.snapshot(obj.n_evals, A, F, gbF)
     return {"best_f": gbF, "best_assign": gbA, "tracker": tr, "state": {"X": X}}
 
-def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None, hypermutation=0.0, exchange=0.0):
+def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None, hypermutation=0.0, exchange=0.0, seed_assign=None):
     """Discrete GA baseline: tournament(2), uniform crossover, per-gene reassignment mutation, 1-elitism.
     hypermutation>0: mutation rate x10 during the first `hypermutation` fraction of the budget (Cobb-style).
     exchange>0 (V5 control for H5): each child additionally undergoes the critical exchange move with this probability."""
@@ -374,6 +374,7 @@ def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None
     pm = pm or 1.0 / n
     tr = Tracker(n, m, inst)
     A = rng.integers(0, m, (P, n)) if init_state is None else np.clip(init_state["A"].copy(), 0, m - 1)
+    if seed_assign is not None: A[0] = seed_assign             # V5 (H7): heuristic seeding of one individual
     F = np.array([obj(a) for a in A])
     g = F.argmin(); gbF, gbA = F[g], A[g].copy()
     start = obj.n_evals
@@ -400,6 +401,35 @@ def run_ga(inst, obj, budget, P=30, seed=0, pm=None, track=True, init_state=None
         tr.snapshot(obj.n_evals, A, F, gbF)
     return {"best_f": gbF, "best_assign": gbA, "tracker": tr, "state": {"A": A}}
 
+def run_one_plus_one(inst, obj, budget, P=1, seed=0, decoherence=0.0, exchange=0.0, track=True, init_state=None, seed_assign=None):
+    """V5 minimal classical control for H7: a (1+1)-EA whose mutation is exactly what a fully collapsed QI-MRFO+CXM
+    register set produces. Each task is re-drawn uniformly over the VMs with probability `decoherence` (the depolarising
+    floor acting on a basis state), then the critical exchange is applied with probability `exchange`. Strict
+    acceptance, one evaluation per candidate. `seed_assign` / init_state['A'] give the start schedule (default: uniform
+    random). P is ignored (kept for the common signature)."""
+    rng = np.random.default_rng(seed); n, m = inst.n, inst.m
+    tr = Tracker(n, m, inst)
+    if seed_assign is not None: a = np.asarray(seed_assign).copy()
+    elif init_state is not None and "A" in init_state: a = np.asarray(init_state["A"])[0].copy()
+    else: a = rng.integers(0, m, n)
+    f = obj(a)
+    tr.snapshot(obj.n_evals, [a], [f], f)
+    while obj.n_evals + 1 <= budget:
+        child = a.copy()
+        if decoherence > 0:
+            mut = rng.random(n) < decoherence
+            child[mut] = rng.integers(0, m, mut.sum())
+        xm = exchange > 0 and rng.random() < exchange
+        if xm: child = critical_exchange(inst, child, rng)[0]
+        fc = obj(child)
+        if track:
+            tr.candidate(a, child, f, fc)
+            if xm: tr.x_cands += 1; tr.x_improving += int(fc < f - 1e-12)
+        if fc < f: a, f = child, fc; tr.gb_improvements += 1
+        if obj.n_evals % 60 == 0: tr.snapshot(obj.n_evals, [a], [f], f)
+    tr.snapshot(obj.n_evals, [a], [f], f)
+    return {"best_f": f, "best_assign": a, "tracker": tr, "state": {"A": a[None, :]}}
+
 def run_random(inst, obj, budget, seed=0, P=30, track=True, init_state=None):
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
     tr = Tracker(n, m, inst); gbF, gbA = np.inf, None
@@ -410,4 +440,4 @@ def run_random(inst, obj, budget, seed=0, P=30, track=True, init_state=None):
         tr.snapshot(obj.n_evals, A, F, gbF)
     return {"best_f": gbF, "best_assign": gbA, "tracker": tr, "state": {}}
 
-ALGOS = {"PSO": run_pso, "DMO": run_dmo, "MRFO": run_mrfo, "GA": run_ga, "Random": run_random}
+ALGOS = {"PSO": run_pso, "DMO": run_dmo, "MRFO": run_mrfo, "GA": run_ga, "Random": run_random, "(1+1)-EA": run_one_plus_one}

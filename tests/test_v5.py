@@ -115,3 +115,43 @@ def test_exchange_zero_is_default(fn, kw):
     inst = make_instance(20, 4, seed=2)
     r1 = fn(inst, Objective(inst), 900, P=8, seed=1, **kw); r2 = fn(inst, Objective(inst), 900, P=8, seed=1, exchange=0.0, **kw)
     assert r1["best_f"] == r2["best_f"] and r1["tracker"].best == r2["tracker"].best
+
+
+# ---- H7 additions: (1+1)-EA control and heuristic seeding -------------------------------------------------------------
+from qi_core import run_one_plus_one, max_min
+
+
+@pytest.mark.parametrize("kw", [{}, {"decoherence": 0.04}, {"decoherence": 0.04, "exchange": 1.0}])
+def test_one_plus_one_budget_monotone_deterministic(kw):
+    inst = make_instance(25, 5, seed=3, task_dist="bimodal")
+    o1, o2 = Objective(inst), Objective(inst)
+    r1 = run_one_plus_one(inst, o1, 777, seed=4, **kw); r2 = run_one_plus_one(inst, o2, 777, seed=4, **kw)
+    assert o1.n_evals == 777 and r1["best_f"] == r2["best_f"] and np.array_equal(r1["best_assign"], r2["best_assign"])
+    assert all(np.diff(r1["tracker"].best) <= 1e-12), "strict (1+1) acceptance: best-so-far never increases"
+    assert r1["best_f"] == pytest.approx(Objective(inst)(r1["best_assign"]))
+
+
+def test_one_plus_one_seed_never_worse_than_seed():
+    inst = make_instance(40, 6, seed=5, task_dist="lognormal", hetero="low")
+    mm = max_min(inst); f_mm = Objective(inst)._raw(mm)[0]
+    r = run_one_plus_one(inst, Objective(inst), 500, seed=0, decoherence=1 / 40, exchange=1.0, seed_assign=mm)
+    assert r["best_f"] <= f_mm + 1e-12
+
+
+@pytest.mark.parametrize("fn,kw", [(run_qimrfo, {"decoherence": 1 / 30, "exchange": 1.0}), (run_ga, {"exchange": 1.0})])
+def test_seeded_runs_never_worse_than_seed(fn, kw):
+    inst = make_instance(30, 6, seed=7, task_dist="lognormal", hetero="low")
+    mm = max_min(inst); f_mm = Objective(inst)._raw(mm)[0]
+    extra = {"init_state": {"elite": mm}} if fn is run_qimrfo else {"seed_assign": mm}
+    o = Objective(inst); r = fn(inst, o, 900, P=10, seed=1, **kw, **extra)
+    assert r["best_f"] <= f_mm + 1e-12 and o.n_evals <= 900
+
+
+def test_seed_heuristic_resolution():
+    from qi_experiment import resolve_kwargs
+    inst = make_instance(20, 4, seed=0)
+    k = resolve_kwargs({"decoherence_c": 1.0, "seed_heuristic": "max_min"}, inst, "run_qimrfo")
+    assert np.array_equal(k["init_state"]["elite"], max_min(inst)) and k["decoherence"] == pytest.approx(0.05)
+    assert "seed_assign" in resolve_kwargs({"seed_heuristic": "max_min"}, inst, "run_one_plus_one")
+    with pytest.raises(ValueError):
+        resolve_kwargs({"seed_heuristic": "max_min"}, inst, "run_mrfo")

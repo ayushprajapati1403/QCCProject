@@ -179,14 +179,14 @@ def run_qimrfo(inst, obj, budget, P=30, seed=0, S=2.0, mode="born_signed", decoh
     outcome that the product-state measurement almost never produces; the pair's registers collapse onto that outcome."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
     tr = Tracker(n, m, inst); tr.purity = []
-    if init_state is None:
+    if init_state is None or init_state.get("Psi") is None:        # cold start (init_state may carry only an 'elite' seed)
         Psi = np.stack([uniform_state(n, m, mode) for _ in range(P)])
     else:
         Psi = init_state["Psi"].copy(); P = len(Psi)
     A = np.stack([measure(Psi[i], rng, mode) for i in range(P)]); F = np.array([obj(a) for a in A])
     if init_state is not None and init_state.get("elite") is not None:
-        # V5 elite carry-over (dynamic runs): the previous epoch's best schedule, repaired for the change, is evaluated
-        # once (charged to the budget) and replaces the worst measured individual as a (depolarised) basis state
+        # V5 elite carry-over (dynamic runs) / heuristic seed (H7, cold start): the given schedule is evaluated once
+        # (charged to the budget) and replaces the worst measured individual as a (depolarised) basis state
         ea = np.asarray(init_state["elite"]); fe = obj(ea); w = int(F.argmax())
         if fe < F[w]: A[w], F[w] = ea, fe; Psi[w] = depolarise(basis_state(ea, m), decoherence, m, mode)
     g = F.argmin(); gbF, gbA = F[g], A[g].copy()

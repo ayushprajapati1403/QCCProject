@@ -15,7 +15,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import numpy as np
 
 from qi_core import (make_instance, Objective, Tracker, max_min, min_min, count_improving_moves,
-                     run_ga, run_mrfo, run_dmo, run_pso, run_random)
+                     run_ga, run_mrfo, run_dmo, run_pso, run_random, run_one_plus_one)
 from qi_quantum import run_qimrfo, run_qidmo
 
 # ------------------------------------------------------------------------------------------------ instance families
@@ -33,7 +33,7 @@ def family_name(fam):
 
 # ------------------------------------------------------------------------------------------------ algorithm registry
 FUNCS = {"run_qimrfo": run_qimrfo, "run_qidmo": run_qidmo, "run_ga": run_ga, "run_mrfo": run_mrfo, "run_dmo": run_dmo,
-         "run_pso": run_pso, "run_random": run_random}
+         "run_pso": run_pso, "run_random": run_random, "run_one_plus_one": run_one_plus_one}
 HEURISTICS = {"max_min": max_min, "min_min": min_min}
 
 
@@ -42,10 +42,15 @@ def spec(fn, **kw):
     return {"fn": fn, "kw": kw}
 
 
-def resolve_kwargs(kw, inst):
+def resolve_kwargs(kw, inst, fn=None):
     out = dict(kw)
     if "decoherence_c" in out:
         out["decoherence"] = out.pop("decoherence_c") / inst.n
+    if "seed_heuristic" in out:                     # V5 (H7): start from a list-scheduling heuristic's schedule
+        a = HEURISTICS[out.pop("seed_heuristic")](inst)
+        if fn in ("run_qimrfo",): out["init_state"] = {"elite": a}
+        elif fn in ("run_ga", "run_one_plus_one"): out["seed_assign"] = a
+        else: raise ValueError(f"seed_heuristic not supported for {fn}")
     return out
 
 
@@ -67,7 +72,7 @@ def run_job(job):
     if sp["fn"] in HEURISTICS:
         a = HEURISTICS[sp["fn"]](inst); f = obj(a); tr = None
     else:
-        r = FUNCS[sp["fn"]](inst, obj, job["budget"], P=job.get("P", 30), seed=job["run_seed"], **resolve_kwargs(sp["kw"], inst))
+        r = FUNCS[sp["fn"]](inst, obj, job["budget"], P=job.get("P", 30), seed=job["run_seed"], **resolve_kwargs(sp["kw"], inst, sp["fn"]))
         a, f, tr = r["best_assign"], r["best_f"], r["tracker"]
     rec["runtime_s"] = time.time() - t0
     det = Objective(inst).details(a)

@@ -230,3 +230,35 @@ makespan-neutral plateau.
 * **H6d (prediction).** Against Max-Min recomputed every epoch, QI-MRFO+CXM continue+elite has fewer voluntary
   migrations (pooled p < 0.05) and a post-change gap that is not higher (pooled 95 % CI upper bound ≤ +0.1 pp).
   Either failure is reported as a failure.
+
+## 12. H7 — is the register swarm needed once CXM exists? And does Max-Min seeding remove the plateau failure? (pre-registered before H7 was run; H6 was running)
+
+**Observation basis.**
+* **Missing control.** Late in an H5 run every QI-MRFO+CXM candidate is "best schedule + per-task noise at rate c/n +
+  critical exchange", which is exactly the mutation of a (1+1)-EA. H5 never ran that minimal classical control, so
+  the contribution of the register swarm itself (population, MRFO dynamics, superposition) is untested once CXM exists.
+* **Failure family.** On n100 m20 lognormal/low Max-Min is provably optimal and the swarm stalls on a plateau (report
+  §27.7).
+
+**Design** (`exp_h7_swarm_seed.py`).
+* **A fresh held-out set:** the same 8 family shapes as H5 with **new instance seeds 201–210** (never used), 2 run
+  seeds, 20 000 evaluations, P = 30. Re-using 101–110 would evaluate a remedy on the very instances that motivated it.
+* **The (1+1)-EA+CXM control.** Each task is re-drawn uniformly with probability c/n, then the critical exchange is
+  applied with probability p_x; strict acceptance. (c, p_x) is tuned on the development set over
+  c ∈ {0.25, 1, 2} × p_x ∈ {0.5, 1}: 6 configurations, against 4 for QI-MRFO+CXM in H5. Selection is by mean rank,
+  with ties broken by mean development gap.
+* **Frozen from H5:** QI-MRFO+CXM and P-MRFO+CXM use c = 1, p_x = 1.
+* **Seeding.** The Max-Min schedule is injected once at the start at the cost of one evaluation. It replaces the worst
+  individual as a depolarised basis state (swarm), is the start point (1+1), or replaces individual 0 (GA).
+* **Arms:** Max-Min; QI-MRFO+CXM ± seed; P-MRFO+CXM ± seed; (1+1)-EA+CXM ± seed; GA+CXM+seed.
+
+**Hypotheses and acceptance.**
+* **H7a (primary, directional).** QI-MRFO+CXM has a lower gap2 than (1+1)-EA+CXM, both unseeded, pooled over the
+  80 instances (Wilcoxon p < 0.05, 95 % CI excluding 0). **If this fails**, the register swarm is declared unnecessary
+  for static makespan once CXM is available, and the H5 gain is attributed to the exchange measurement, not to the
+  swarm.
+* **H7b.** Seeding improves QI-MRFO+CXM on the big-task family (Holm p < 0.05) and worsens no other family
+  (no Holm-significant deterioration). Otherwise seeding is rejected or restricted.
+* **H7c (reported).** Seeded QI-MRFO+CXM vs seeded (1+1)-EA+CXM, i.e. "Max-Min + stochastic local search", the
+  control §21 of the report asked for.
+* **Replications (reported).** H5's P4 (linear twin vs Born under CXM), and QI-MRFO+CXM vs Max-Min on fresh instances.
