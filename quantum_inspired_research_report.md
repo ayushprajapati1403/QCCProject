@@ -622,6 +622,52 @@ CXM moves**. The register swarm's remaining case rests on re-optimisation under 
 structural rules (§26, §28). H8 (§30) tests that against a (1+1)-EA carrying its single schedule, an arm fixed before
 the H7 result was known.
 
+## 30. V5 — migration-aware re-optimisation (H8; measured)
+
+**Why.** §28 showed that CXM roughly triples migrations because the makespan objective ignores them. H8 (pre-registered,
+`research_plan_v5.md` §14 and amendment §14.1) prices them. After the first epoch every method optimises
+$\text{cost}(a) = C_{\max}(a)\,(1 + \lambda\, \text{mig}(a)/\text{eligible})$, relative to the previous *deployed*
+schedule. Six scenario types, fresh seeds 201–210, K = 8, $\lambda \in \{0.05, 0.2, 1.0\}$; 1 260 runs
+(`results/h8_migration/`, `results/h8_analysis.md`). The strongest heuristic is a **Chooser**: each epoch it deploys
+whichever of "recompute Max-Min" and "keep everything, place only new or orphaned tasks" is cheaper under the true
+cost.
+
+Pooled mean cost gap (%):
+
+| Strategy | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Max-Min recomputed / Incremental / Chooser | 4.69 / 77.76 / 3.40 | 16.63 / 77.76 / 8.96 | 80.31 / 77.76 / 29.99 |
+| GA continue | 5.89 | 8.71 | **19.30** |
+| (1+1)-EA+CXM continue | 9.31 | 11.61 | 19.36 |
+| QI-MRFO+CXM continue | **3.19** | 7.48 | 19.48 |
+| P-MRFO+CXM continue | 3.28 | **7.43** | 19.72 |
+
+**Verdicts.**
+* **H8a (swarm < Chooser).** Retained at λ = 0.2 (−1.48 pp [−2.62, −0.30], Holm p = 0.048) and λ = 1.0 (−10.5 pp
+  [−15.6, −5.5], Holm p = 0.005). Not retained at λ = 0.05: the CI [−0.84, +0.81] includes 0 despite 39/21 wins.
+* **H8b (swarm < GA).** Retained only at λ = 0.05 (48/12). At higher λ the GA, which migrates least, wins more pairs,
+  though not significantly.
+* **(1+1)-EA arm.** No significant difference at any λ. The (1+1)-EA wins more pairs but is catastrophic after VM
+  additions.
+* **Linear twin vs Born rule.** No difference.
+
+**Mechanism: heterogeneity by change type.**
+* **Coordinated reconfiguration (drift, mixed events, VM addition).** The swarm wins against the Chooser at every λ
+  (Holm p ≤ 0.016 at λ = 1.0).
+* **Local change (churn, VM failure).** It loses (Holm p = 0.012 at λ ≥ 0.2), because zero-migration repair is already
+  near-optimal there. The swarm's population is sampled *from* the carried registers and never contains the exact
+  deployed schedule, so it pays migrations it does not need.
+* **VM addition (post hoc, exploratory).** On a balanced deployed schedule every single-task move onto the new VM is
+  uphill under the price (30/30 cases). The (1+1)-EA therefore never moves: 40.8 % cost gap, zero migrations. The
+  swarm's VM-addition rule (a uniform share of amplitude for the new VM in every register) produces multi-task
+  candidates that do escape. The exact structure that makes them downhill is not isolated; a naive coordinated move is
+  downhill in only 20 % of cases.
+
+**Consequence.** This is the first setting in V5 where the register representation does something a (1+1)-EA with the
+same moves cannot. Its structural rule for new capacity creates coordinated moves across a barrier that the migration
+price builds for local search. The data also say what to fix: anchor the swarm on the deployed schedule (an elite)
+for local changes (H10, pre-registered next).
+
 ## Final decision
 
 **PROCEED — with the revised framing.** The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"

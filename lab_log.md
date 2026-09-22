@@ -367,3 +367,57 @@ answered by the flat (1+1) grid, and P-MRFO+CXM (same c) is not significantly di
 * QI-MRFO's remaining claim rests on **re-optimisation under change**. H8, whose (1+1)-EA arm was fixed before these
   results, tests exactly that.
 * Seeding is adopted for static runs.
+
+## V5 / H8 — migration-aware re-optimisation (`results/h8_migration/`, `results/h8_analysis.md`, `results/h8_posthoc_barrier.md`)
+
+**Setup.** After the first epoch the cost is makespan × (1 + λ · voluntary migrations / eligible tasks). Six scenario
+types, fresh seeds 201–210, K = 8, λ ∈ {0.05, 0.2, 1.0}; 1 260 runs. Every optimizer optimises the true cost. The
+(1+1)-EA arm was added by amendment §14.1, before any H7 or H8 result existed.
+
+Pooled means (60 scenario-seed pairs per λ): cost gap % / makespan gap % / voluntary migrations per epoch
+
+| Strategy | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Max-Min recomputed every epoch | 4.69 / 0.71 / 86.3 | 16.63 / 0.71 / 86.3 | 80.31 / 0.71 / 86.3 |
+| Incremental (no voluntary migration) | 77.76 / 77.76 / 0 | 77.76 / 77.76 / 0 | 77.76 / 77.76 / 0 |
+| Chooser (cheaper of the two, each epoch) | 3.40 / 1.29 / 51.3 | 8.96 / 3.34 / 32.6 | 29.99 / 19.36 / 12.9 |
+| GA continue | 5.89 / 5.15 / 15.5 | 8.71 / 6.58 / 11.1 | **19.30** / 14.92 / 4.4 |
+| (1+1)-EA+CXM continue | 9.31 / 8.05 / 28.4 | 11.61 / 8.31 / 18.8 | 19.36 / 12.60 / 7.2 |
+| QI-MRFO+CXM continue | **3.19** / 1.24 / 42.2 | 7.48 / 2.14 / 28.7 | 19.48 / 7.69 / 12.0 |
+| P-MRFO+CXM continue (classical twin) | 3.28 / 1.30 / 42.6 | **7.43** / 2.17 / 28.2 | 19.72 / 8.15 / 12.0 |
+
+**What happened (pre-registered tests, pooled over 60 pairs, Holm across the three λ).**
+* **H8a (swarm vs Chooser).** Retained at **λ = 0.2** (−1.48 pp [−2.62, −0.30], 34/26, Holm p = 0.048) and
+  **λ = 1.0** (−10.5 pp [−15.6, −5.5], 37/23, Holm p = 0.005). **Not retained at λ = 0.05**: 39/21 and p = 1e-4, but the
+  CI [−0.84, +0.81] includes 0.
+  * **Heterogeneity is the main finding.** At every λ the swarm wins on drift, mixed events and VM addition, Holm p ≤ 0.016
+    at λ = 1.0. At λ = 0.2 the VM-addition win (7/3) is not Holm-significant (p = 0.098).
+  * It **loses on churn and VM failure** (Holm p = 0.012 at λ = 0.2 and 1.0). There the zero-migration incremental
+    heuristic is already near-optimal, and the swarm pays migration penalties it does not need.
+* **H8b (swarm vs GA).** Retained only at λ = 0.05 (−2.69 pp, 48/12). At λ = 0.2 and 1.0 the GA wins more pairs, though
+  not significantly (35/25, 43/17). The GA migrates least of the population methods.
+* **Amendment (swarm vs (1+1)-EA carrying one schedule).** Not significant at any λ. The (1+1)-EA wins more pairs
+  (36/24, 40/20, 36/24) but fails catastrophically on VM addition: 40.8 % cost gap and zero migrations at every λ.
+* **Linear twin vs Born rule.** Not significant at any λ.
+
+**Why? The VM-addition barrier** (post hoc check, `results/h8_posthoc_barrier.md`, exploratory).
+* On a well-balanced deployed schedule every *single-task* move onto a new VM is uphill under the migration price in
+  100 % of the 30 cases checked. The makespan gain of relieving one VM is tiny, because the next VM is almost as loaded,
+  while one migration costs λ/n of the makespan. A strict (1+1)-EA therefore never leaves the deployed schedule.
+* The register swarm's VM-addition rule gives the new VM a uniform share in every register, so its candidates move
+  many tasks at once (about 39 per epoch at λ = 0.05) and do escape.
+* A naive coordinated move (the shortest task of every old VM) is downhill in only 20 % of cases, since it can
+  overload a slow new VM. Which structure makes the swarm's multi-task candidates downhill is therefore not isolated
+  (UNMEASURED).
+
+**Why the swarm loses on churn and VM failure.** Its population is *measured from* the carried registers and never
+contains the exact deployed schedule, so even at λ = 1 it deploys schedules with about 9 unnecessary migrations per
+epoch after churn. The (1+1)-EA and the incremental heuristic start *at* the deployed schedule.
+
+**Decision / next.**
+* Under migration pricing no single method dominates: the swarm is best when change calls for coordinated
+  reconfiguration, and deployed-schedule-anchored methods are best when change is local.
+* The evidence points to one combination: the swarm plus the deployed schedule as an elite (a zero-migration anchor),
+  keeping the structural rules that produce coordinated moves after a VM addition. H6 rejected the elite only for the
+  makespan-only objective.
+* This becomes H10 (pre-registered next).

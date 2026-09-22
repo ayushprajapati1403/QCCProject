@@ -330,3 +330,15 @@ before any H7 or H8 result was available.
 
 Updated recommendation for static makespan: Max-Min seed + (1+1)-EA with CXM moves, or the seeded classical twin.
 The swarm's case rests on H8 (under change).
+
+## 16. H8 outcome (recorded after `results/h8_analysis.md`)
+
+| Test | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| H8a swarm < Chooser (pooled) | not retained (CI includes 0; 39/21) | **retained** (−1.48 pp, Holm 0.048) | **retained** (−10.5 pp, Holm 0.005) |
+| H8b swarm < GA | **retained** (−2.69 pp, 48/12) | not retained (25/35) | not retained (17/43) |
+| swarm vs (1+1)-EA (amendment) | n.s. (24/36) | n.s. (20/40) | n.s. (24/36) |
+
+The effect is heterogeneous by change type. The swarm wins on drift, mixed events and VM addition, and loses on churn
+and VM failure, where zero-migration repair is near-optimal. The (1+1)-EA is stuck on VM addition behind a
+single-move barrier (post hoc, `results/h8_posthoc_barrier.md`).

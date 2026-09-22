@@ -968,6 +968,19 @@ if os.path.exists(_h8p):
 else:
     print("results/h8_migration/records.csv not found (run `python exp_h8_migration.py run analyze` in the repository)")
 """)
+md(r"""
+### 20.2 H8: migrations priced (`results/h8_analysis.md`)
+
+* **Setup.** After each change every method optimises makespan × (1 + λ · migrations / eligible tasks).
+* **Against the best heuristic chooser.** The carried-state swarm with CXM wins pooled at λ = 0.2 and λ = 1.0 but not
+  at λ = 0.05. The effect depends on the change type: the swarm wins where change calls for coordinated
+  reconfiguration (drift, mixed events, VM addition) and loses where zero-migration repair is near-optimal (churn, VM
+  failure).
+* **Against the (1+1)-EA with the same moves.** It cannot recover from VM additions: every single-task move onto the
+  new VM is uphill under the price. The register swarm's uniform-share rule for new VMs produces multi-task moves that
+  escape.
+* **What H10 tests next.** Anchoring the swarm on the deployed schedule (the elite) for local changes.
+""")
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
       "language_info": {"name": "python", "version": "3.12"}}, "nbformat": 4, "nbformat_minor": 5}

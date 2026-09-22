@@ -110,6 +110,13 @@ Swarm schedulers (PSO, DMO, MRFO) are continuous algorithms; cloud papers apply 
   * Carrying the previous best schedule helps after churn and VM failure but hurts after VM addition, so it is not a
     default.
   * CXM triples migrations relative to the plain swarm, so migration cost has to enter the objective (next step).
+* **Migrations priced (H8; λ ∈ {0.05, 0.2, 1.0}, fresh seeds).** Once each migration costs makespan-equivalent
+  time, no single method dominates.
+  * The swarm beats the best heuristic chooser at λ = 0.2 and λ = 1.0 (pooled). It wins on drift, mixed events and VM
+    addition, and loses on churn and VM failure, where zero-migration repair is near-optimal.
+  * A (1+1)-EA with the same moves is stuck after VM additions: every single-task move is uphill under the price. The
+    swarm's VM-addition rule produces multi-task moves that escape. This is the first measured advantage of the
+    register representation over a (1+1)-EA with identical moves.
 * **Research quality.**
   * 213 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.
