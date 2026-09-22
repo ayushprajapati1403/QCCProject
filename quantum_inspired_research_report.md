@@ -793,10 +793,38 @@ seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
 | §21 / §25 item | V5 status |
 |---|---|
 | 1. Task-selective, severity-scaled decoherence under change (§25) | Not run: superseded. CXM under change (H6a, 60/60) and the event-aware elite (H11) addressed recovery. Selective shocks remain UNMEASURED. |
-| 2. Purity-regulated γ | **Tested (H9) and falsified** for the band controller as specified. A controller on a direct duplicate signal is UNMEASURED. |
+| 2. Purity-regulated γ | **Tested (H9) and falsified** for the band controller as specified. Under CXM the fixed floor no longer affects the static gap for c ∈ [0, 2] (§35, descriptive), so little headroom is left for any γ controller there. A controller on a direct duplicate signal is UNMEASURED. |
 | 3. Max-Min seeding | **Tested (H7b), confirmed.** Against Max-Min + local search (H7c) the seeded (1+1)-EA is marginally better. |
 | 4. Objectives where heuristics do not apply | **Migration-priced re-optimisation tested (H8, H10, H11).** Energy, SLA and monetary cost are UNMEASURED in V5. |
 | 5. Drop the quantum-specific parts from the default | **Supported by data.** The linear twin beats the Born rule under CXM (H5: 68/80; H6: 55/60; H7: 54/16), and is n.s. under migration pricing (H8). |
+
+## 35. V5 — the decoherence floor once CXM exists (descriptive, development set)
+
+**Question.** Does the fixed floor γ = c/n still matter once CXM exists? If not, an adaptive γ has nothing to adapt.
+
+**Design.** 4 development instances, 10 seeds, 20 000 evaluations. c ∈ {0, 0.25, 0.5, 1, 2, 4} with CXM, and a control
+committed before it ran: c = 0 vs c = 1 without CXM. 640 runs; run-level pairs, descriptive.
+(`results/v5_c_under_cxm.md`, `results/v5_c_without_cxm.md`, `results/v5_c_sweep_paired.md`)
+
+| Mean gap2 %, c = 0 → c = 1 | QI-MRFO (Born) | P-MRFO (linear twin) |
+|---|---|---|
+| without CXM | 9.85 → 3.73 (c = 1 better on 38/40 runs) | 19.68 → 4.56 (38/40) |
+| with CXM | 0.63 → 0.82 (−0.19 pp [−0.81, +0.44]) | 0.72 → 0.68 (+0.04 pp [−0.22, +0.36]) |
+
+**Findings.**
+* **Without CXM, the floor is essential**, as in V2–V4.
+* **With CXM, the gap is flat for c ∈ [0, 2].** No paired difference against c = 1 excludes 0; only c = 4 hurts,
+  by +0.55 and +0.89 pp.
+* **The floor still sets duplicate evaluations.** For QI-MRFO+CXM they are 28.7 % at c = 0, 7.3 % at c = 1 and
+  0.1 % at c = 4, but at this budget the waste does not change the gap.
+
+**Reading.** With p_x = 1 every measured schedule also receives a critical move, so collapsed registers still move.
+The exchange measurement takes over the job the decoherence floor did in V2–V4. The two consequences are:
+* adaptive decoherence has little headroom for static makespan once CXM exists;
+* the floor's remaining static role, waste, is better addressed by an evaluation cache (UNMEASURED).
+
+Descriptively, without the floor the Born-rule host degrades less than its twin (9.8 vs 19.7 %). With a working floor,
+the twin was as good or better in every held-out comparison (H5–H8).
 
 ## Final decision
 
@@ -819,7 +847,9 @@ seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
    * The Born rule is measurably worse than the classical linear twin under CXM.
    * For static makespan a (1+1)-EA with the same moves is at least as good as the swarm; the best static method
      tested is Max-Min seeding + (1+1)-EA with CXM moves.
-   * The purity-regulated decoherence controller proposed in §21 is falsified.
+   * The purity-regulated decoherence controller proposed in §21 is falsified. Under CXM the fixed floor no longer
+     affects the static gap for c ∈ [0, 2] (§35, development set), so the noise floor is no longer the lever it was in
+     V2–V4.
    * The unconditional elite is rejected.
 4. **PhD question, restated.** Which properties of a measurement-based schedule representation (move types,
    structural rules for capacity changes, anchoring on the deployed schedule) matter for re-optimising a running cloud

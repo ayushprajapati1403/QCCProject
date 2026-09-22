@@ -23,7 +23,7 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 | `qi_experiment.py` | V5 harness: development (TUNE) vs held-out (TEST) instance families, JSON algorithm specs, checkpointed parallel runner for static and dynamic jobs, paired statistics (bootstrap CI, Wilcoxon, rank-biserial, Cliff's δ, A12, Holm). |
 | `exp_h5_cxm.py` … `exp_h11_event_elite.py` | The V5 experiments H5–H11: each script pre-registered in `research_plan_v5.md`, writes a write-once `results/<name>/` directory, and produces `results/h*_analysis.md`. |
 | `make_v5_figures.py` | V5 figures (`results/fig_v5_*.png`) drawn from the committed result files. |
-| `observe_v5_*.py` | V5 observation scripts: duplicate evaluations, the critical-VM condition, stagnation, local optimality of end points, the H8 barrier check (post hoc) and the decoherence dose-response under CXM. |
+| `observe_v5_*.py` | V5 observation scripts: duplicate evaluations, the critical-VM condition, stagnation, local optimality of end points, the H8 barrier check (post hoc) and the decoherence dose-response with and without CXM (`analyze_v5_c_sweep.py` writes the paired contrasts). |
 | `tests/` | `pytest` suite: objective, registers, measurement, channel, dynamic structural rules, determinism, budget accounting, harness, notebook/module synchronisation, and bit-exact golden fingerprints of the V0–V4 code. |
 | `requirements.txt` | Pinned environment (same versions as `docker/Dockerfile`). |
 
@@ -147,6 +147,11 @@ event-aware elite the swarm beats the best heuristic chooser at every migration 
   * Remaining boundary: pure churn at λ ≥ 0.2, where zero-migration repair is best.
   * Recommended configuration for migration-priced re-optimisation:
     `run_dynamic(..., "QI-MRFO", "continue_struct", algo_kw={"exchange": 1.0}, carry_elite="except_vm_add", repair="greedy", mig_lambda=λ)`.
+* **The decoherence floor once CXM exists (descriptive, development set; report §35).**
+  * Without CXM, removing the floor (c = 0) multiplies the gap by 2.6–4.3.
+  * With CXM, the gap is flat for c ∈ [0, 2]: the exchange move takes over the floor's job.
+  * c then only sets duplicate evaluations (29 % → 7 % → 0.1 % at c = 0 / 1 / 4), so adaptive decoherence has
+    little static headroom. An evaluation cache is the better lever (UNMEASURED).
 * **Research quality.**
   * 237 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.

@@ -450,7 +450,7 @@ elite repaired by greedy placement of the new tasks.
 
 | Brief item | V5 status | Evidence |
 |---|---|---|
-| Adaptive, feedback-controlled decoherence | **tested as H9 and falsified** (the purity-regulated band from the original report §21 raises duplicates) | `results/h9_analysis.md` |
+| Adaptive, feedback-controlled decoherence | **tested as H9 and falsified** (the purity-regulated band from the original report §21 raises duplicates). Follow-up observation (development set, descriptive): under CXM the static gap is flat for c ∈ [0, 2], while without CXM c = 0 costs +6.1 / +15.1 pp. An adaptive γ therefore has little static headroom once CXM exists; γ now mainly sets duplicate waste | `results/h9_analysis.md`, `results/v5_c_sweep_paired.md` |
 | Event-aware adaptation (churn, VM failure/addition, drift) | **tested**: CXM under change (H6a ✓); unconditional elite (H6b ✗, H10 ✗); **event-aware elite (H11 ✓, every λ)**; structural rule for new VMs (H8 mechanism) | `results/h6_*`, `h8_*`, `h10_*`, `h11_*` |
 | Hybrid initialisation (Max-Min / Min-Min / HEFT) | **tested as H7b** (Max-Min seed ✓). Min-Min and HEFT not tested (HEFT does not apply to independent tasks) | `results/h7_analysis.md` |
 | Discrete local search, critical-VM relocation, two-task swap | **CXM** (H5 ✓, H6a ✓). A (1+1)-EA with the same moves is the H7 control, and it wins for static makespan | `results/h5_*`, `h7_*` |

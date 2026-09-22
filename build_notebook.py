@@ -894,6 +894,9 @@ md(r"""
 * **Seeding (H7b) confirmed.** A Max-Min basis state fixes the big-task plateau (3.11 % → 0.02 %) and harms nothing.
 * **Best static method tested.** Max-Min seed + (1+1)-EA with CXM moves (mean rank 2.70 of 8).
 * **What remains for the swarm.** Its case is re-optimisation under change (Section 20).
+* **The decoherence floor once CXM exists** (descriptive, development set; `results/v5_c_sweep_paired.md`).
+  * Without CXM, c = 0 multiplies the gap by 2.6–4.3.
+  * With CXM, the gap is flat for c ∈ [0, 2]; c then only sets duplicate evaluations.
 """)
 
 # ----------------------------------------------------------------------------------------------------- S20 (V5 dynamic)

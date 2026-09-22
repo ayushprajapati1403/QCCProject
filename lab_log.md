@@ -540,3 +540,48 @@ Pooled cost gap % (makespan gap %, voluntary migrations per epoch):
 
 **Decision.** Adopt the event-aware elite (`carry_elite="except_vm_add"`) as the recommended configuration for
 migration-priced re-optimisation.
+
+## V5 OBSERVE — the decoherence floor once CXM exists (`results/v5_c_under_cxm.md`, `results/v5_c_without_cxm.md`, `results/v5_c_sweep_paired.md`)
+
+**Question.** Before designing any adaptive-decoherence hypothesis: once CXM exists, does the fixed floor γ = c/n still
+matter? If the gap does not respond to c, a controller has nothing to adapt.
+
+**Design.** Development set only: 4 pilot instances, 10 seeds, 20 000 evaluations, P = 30.
+* QI-MRFO+CXM and P-MRFO+CXM (p_x = 1) at c ∈ {0, 0.25, 0.5, 1, 2, 4}; 480 runs.
+* The control, committed before it ran: the same c = 0 vs c = 1 contrast without CXM on the same instances and seeds;
+  160 runs.
+* Pairs are run-level on 4 instances. This is descriptive, not a held-out test.
+
+| Mean gap2 % (global duplicate evaluations %) | c = 0 | c = 1 | c = 0 − c = 1 [95 % CI], c = 0 better / c = 1 better |
+|---|---|---|---|
+| QI-MRFO, no CXM | 9.85 (83.4) | 3.73 (38.2) | +6.12 pp [+4.42, +7.93], 2/38 |
+| P-MRFO (linear twin), no CXM | 19.68 (84.7) | 4.56 (47.5) | +15.12 pp [+10.34, +20.52], 2/38 |
+| QI-MRFO+CXM | 0.63 (28.7) | 0.82 (7.3) | −0.19 pp [−0.81, +0.44], 24/14 |
+| P-MRFO+CXM | 0.72 (36.3) | 0.68 (12.0) | +0.04 pp [−0.22, +0.36], 21/19 |
+
+**What happened?**
+* **Without CXM the floor is essential.** Removing it multiplies the gap by 2.6 (QI-MRFO) and 4.3 (linear twin), as in
+  V2–V4.
+* **With CXM the gap is flat for c ∈ [0, 2].** Every paired difference against c = 1 has a bootstrap CI containing 0,
+  for both hosts. Two run-level p values fall just below 0.05, in inconsistent directions (0.045 and 0.043), and
+  neither survives Holm within its host. Only c = 4 hurts: +0.55 pp (4/35) and +0.89 pp (3/37).
+* **The floor still sets evaluation waste.** Under CXM, duplicate evaluations fall monotonically with c: QI-MRFO+CXM
+  is at 28.7 % for c = 0, 7.3 % for c = 1 and 0.1 % for c = 4. At this budget the waste does not change the gap.
+* **Side note (descriptive).** Without the floor the Born-rule host degrades less than its linear twin (9.8 vs 19.7 %).
+  In every held-out V5 comparison with a working floor (H5, H6, H7, H8), the twin was as good or better.
+
+**Why?** In V2–V4 the floor kept single-task moves available after the registers collapse. Without it, collapsed
+registers re-sample the same schedule (83–85 % duplicates) and the search stalls. With p_x = 1, every measured schedule
+also receives a critical exchange or relocation, whatever the register purity. Collapsed registers therefore still
+move: duplicates drop from 83 % to 29 % at c = 0, and the gap no longer depends on the floor. That is consistent with
+CXM taking over the floor's role.
+
+**Consequences for the backlog.**
+* **Static makespan under CXM.** Adaptive decoherence has little headroom here: on the development set, any γ with
+  c ∈ [0, 2] matches fixed c = 1 within noise.
+* **Evaluation waste.** This is the floor's remaining static role. An evaluation cache would remove the cost of
+  duplicates without changing the search, so it is the better lever. UNMEASURED.
+* **Under change.** γ might still matter as a recovery lever, but the dose-response under change with CXM is
+  UNMEASURED.
+
+**Decision.** No adaptive-decoherence hypothesis is pre-registered for static makespan; fixed c = 1 stays the default.
