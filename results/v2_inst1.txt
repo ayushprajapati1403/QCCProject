@@ -1,0 +1,13 @@
+
+=== n=50 m=10 tasks=bimodal vms=high  LB=25.11 MaxMin=27.06
+DMO(classical)         best=   36.50 sd= 2.98 gap= 45.4% | wasted_frac=0.050 improving_frac=0.212 mean_move_size=24.924 runtime_s=3.427 div_end=0.692 best@25%=44.302
+QI-DMO gamma=0.0/n     best=   30.54 sd= 1.66 gap= 21.6% | wasted_frac=0.141 improving_frac=0.075 mean_move_size=5.131 runtime_s=6.809 div_end=0.073 best@25%=30.651 purity_end=0.980
+QI-DMO gamma=0.25/n    best=   29.11 sd= 1.54 gap= 15.9% | wasted_frac=0.003 improving_frac=0.258 mean_move_size=12.044 runtime_s=9.444 div_end=0.243 best@25%=31.195 purity_end=0.901
+QI-DMO gamma=0.5/n     best=   29.11 sd= 0.93 gap= 15.9% | wasted_frac=0.000 improving_frac=0.341 mean_move_size=17.216 runtime_s=9.225 div_end=0.384 best@25%=31.567 purity_end=0.823
+QI-DMO gamma=1.0/n     best=   29.75 sd= 0.71 gap= 18.5% | wasted_frac=0.000 improving_frac=0.361 mean_move_size=22.516 runtime_s=8.809 div_end=0.575 best@25%=31.498 purity_end=0.729
+QI-DMO gamma=2.0/n     best=   30.46 sd= 0.66 gap= 21.3% | wasted_frac=0.000 improving_frac=0.365 mean_move_size=27.501 runtime_s=8.865 div_end=0.741 best@25%=31.949 purity_end=0.607
+P-DMO linear g=0.5/n   best=   30.07 sd= 0.53 gap= 19.8% | wasted_frac=0.000 improving_frac=0.347 mean_move_size=18.353 runtime_s=8.595 div_end=0.347 best@25%=32.017 purity_end=0.864
+MRFO(classical)        best=   35.45 sd= 3.68 gap= 41.2% | wasted_frac=0.148 improving_frac=0.011 mean_move_size=27.375 runtime_s=3.198 div_end=0.020 best@25%=36.270
+QI-MRFO gamma=0        best=   30.18 sd= 0.17 gap= 20.2% | wasted_frac=0.588 improving_frac=0.017 mean_move_size=3.902 runtime_s=6.162 div_end=0.005 best@25%=30.295 purity_end=0.985
+QI-MRFO gamma=0.5/n    best=   28.10 sd= 1.63 gap= 11.9% | wasted_frac=0.248 improving_frac=0.024 mean_move_size=5.421 runtime_s=7.932 div_end=0.011 best@25%=28.805 purity_end=0.969
+GA                     best=   28.74 sd= 1.67 gap= 14.5% | wasted_frac=0.023 improving_frac=0.160 mean_move_size=5.662 runtime_s=4.875 div_end=0.202 best@25%=29.573

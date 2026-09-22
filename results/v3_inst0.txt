@@ -1,0 +1,12 @@
+
+=== n=30 m=5 tasks=uniform vms=high  LB=44.53 MaxMin=45.46 MinMin=48.18
+DMO greedy_next            best=   45.56 sd= 0.08 gap=  2.3% | wasted_frac=0.173 mean_move_size=9.374 gb_impr_per_1k=0.441 runtime_s=3.691 div_end=0.395 best@25%=46.251
+QI-DMO g=.25/n greedy_next best=   45.04 sd= 0.18 gap=  1.1% | wasted_frac=0.286 mean_move_size=3.778 gb_impr_per_1k=0.612 runtime_s=13.973 div_end=0.028 best@25%=45.747 purity_end=0.964
+QI-DMO g=.25/n attr=register best=   47.67 sd= 0.93 gap=  7.1% | wasted_frac=0.000 mean_move_size=24.004 gb_impr_per_1k=0.482 runtime_s=16.231 div_end=0.799 best@25%=49.192 purity_end=0.200
+QI-MRFO g=0.25/n           best=   45.32 sd= 0.23 gap=  1.8% | wasted_frac=0.491 mean_move_size=2.820 gb_impr_per_1k=0.521 runtime_s=13.966 div_end=0.001 best@25%=45.691 purity_end=0.965
+QI-MRFO g=1.0/n            best=   44.93 sd= 0.17 gap=  0.9% | wasted_frac=0.206 mean_move_size=4.239 gb_impr_per_1k=0.792 runtime_s=12.971 div_end=0.001 best@25%=45.437 purity_end=0.925
+QI-MRFO g=2.0/n            best=   44.92 sd= 0.13 gap=  0.9% | wasted_frac=0.063 mean_move_size=5.953 gb_impr_per_1k=0.882 runtime_s=13.564 div_end=0.005 best@25%=45.384 purity_end=0.871
+QI-MRFO g=.5/n linear      best=   44.92 sd= 0.33 gap=  0.9% | wasted_frac=0.440 mean_move_size=3.838 gb_impr_per_1k=0.732 runtime_s=13.818 div_end=0.000 best@25%=45.525 purity_end=0.965
+QI-MRFO g=.5/n abs         best=   44.91 sd= 0.12 gap=  0.9% | wasted_frac=0.387 mean_move_size=3.161 gb_impr_per_1k=0.722 runtime_s=14.742 div_end=0.000 best@25%=45.562 purity_end=0.949
+QI-MRFO g=.5/n P=15        best=   45.25 sd= 0.07 gap=  1.6% | wasted_frac=0.362 mean_move_size=3.332 gb_impr_per_1k=0.750 runtime_s=16.379 div_end=0.002 best@25%=45.772 purity_end=0.953
+QI-MRFO g=.5/n P=60        best=   45.19 sd= 0.17 gap=  1.5% | wasted_frac=0.357 mean_move_size=3.468 gb_impr_per_1k=0.621 runtime_s=16.854 div_end=0.003 best@25%=45.535 purity_end=0.950

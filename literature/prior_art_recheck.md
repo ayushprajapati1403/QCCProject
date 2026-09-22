@@ -1,0 +1,76 @@
+# Prior-art recheck of the exact implemented mechanism (Phase 15; searched 2026-09-22)
+
+Mechanism checked: m-ary probability-amplitude register per task; Born-rule single-sample measurement; the host swarm's original difference-vector equations applied to the amplitudes followed by renormalisation; basis-state (one-hot) attractors; per-candidate depolarising channel p ← (1−γ)p + γ/m ("decoherence floor") with purity as the move-size measure; decoherence shock at environment changes; VM removal = column deletion. Classical twin: probability vectors with linear mixing.
+
+Method: ~35 web searches plus Crossref/OpenAlex/Semantic Scholar/arXiv/PMC fetches and PDF extraction; Springer/Nature/IEEE/MDPI landing pages blocked, so those use API abstracts (UNVERIFIED details flagged). Overlap grades are against the implemented mechanism.
+
+## 1. Multi-qubit-amplitude / Bloch-sphere / phase-angle PSO
+| Title | Authors | Year | Venue | URL | What it does | Overlap | What differs |
+|---|---|---|---|---|---|---|---|
+| Quantum-Inspired PSO Algorithm Encoded by Probability Amplitudes of Multi-Qubits | Li, Xu, Guan | 2015 | Open J. Optimization 4:21–30 | https://www.scirp.org/journal/paperinformation?paperid=56319 | particle = phase vector of ⌈log2(D+1)⌉ qubits; tensor-product rotation gates; deterministic decode x_j = Ω_min + |A_j|²(Ω_max − Ω_min); no sampling, no noise | MEDIUM-LOW | continuous; amplitude² used as a coordinate, never sampled; no floor; no dynamics |
+| Improved QPSO by Bloch Sphere | Du, Duan, Liao, Li | 2010 | ICSI 2010 (LNCS) | https://link.springer.com/chapter/10.1007/978-3-642-13495-1_17 | Bloch encoding for diversity (snippet) | LOW (UNVERIFIED) | continuous |
+| Quantum PSO Based on Bloch Coordinates of Qubits | Liu, Liu | 2013 | ICNC 2013 | (OpenAlex) | three Bloch coordinates = three candidate solutions | LOW | deterministic decode |
+| Many-Objective QIPSO for VM Placement | Balicki | 2021 | Entropy 24(1):58 | https://pmc.ncbi.nlm.nih.gov/articles/PMC8775184/ | log2-encoded qubit registers per decision, rotation matrices chosen by tournament, roulette measurement; static | MEDIUM | binary/log encoding; angle-space updates; no floor, purity or dynamics |
+
+## 2. Swarm optimisation on probability vectors / EDA–PSO hybrids
+| Title | Authors | Year | Venue | URL | What it does | Overlap | What differs |
+|---|---|---|---|---|---|---|---|
+| A New Discrete PSO Algorithm (ICPSO) | Strasser, Goodman, Sheppard, Butcher | 2016 | GECCO 2016 | https://www.cs.montana.edu/users/john.sheppard/pubs/gecco-2016a.pdf | particle position = one probability distribution per variable; "velocity and position update equations are identical to those of traditional PSO", clamped to [0,1] and normalised; "distributions are sampled to create a candidate solution" (one sample per evaluation); best distributions shifted toward the sampled state with factor ε (ε=0 gives a one-hot basis state) | **HIGH** — closest prior art to the classical twin | linear probabilities, not amplitudes; PSO not DMO/MRFO; no floor (probabilities may hit 0); no purity; static benchmarks/NK landscapes |
+| MICPSO | Goodman, Thornton, Strasser, Sheppard | 2016 | IEEE SIS 2016 | https://www.cs.montana.edu/sheppard/pubs/sis-2016.pdf | ICPSO with Markov-network dependencies | MEDIUM | dependency model |
+| Discrete Multi-Valued PSO | Pugh, Martinoli | 2006 | IEEE SIS 2006 | https://infoscience.epfl.ch/handle/20.500.14299/228838 | n×m real matrix per particle; P(s_j = k) = S(x_ijk)/Σ_k S(x_ijk) (sigmoid + normalisation); sampled at evaluation, fitness averaged; standard PSO on the matrix | HIGH-MEDIUM | sigmoid logits; no basis-state attractors; no floor; no dynamics |
+| Discrete binary PSO | Kennedy, Eberhart | 1997 | IEEE SMC 1997 | (OpenAlex) | sigmoid of velocity as Bernoulli probability | MEDIUM | binary; probability from velocity |
+| PSO in the EDA framework; EDA-PSO; cooperative PSO with probabilistic models | Santucci & Milani 2011; Bengoetxea & Larrañaga 2010; El-Abd & Kamel 2009 | — | — | (Semantic Scholar) | continuous/population-level models | LOW | not per-particle discrete registers |
+| EDAs for Multi-Valued Decision Variables | Ben Jedidia, Doerr, Krejca | 2023/2024 | GECCO 2023; TCS 2024 | (OpenAlex) | univariate EDAs for r-valued variables; genetic drift faster with r values | MEDIUM | population-level model; no swarm equations |
+
+## 3. Multi-valued Q-bit / qudit / integer QIEA
+| Title | Authors | Year | Venue | URL | What it does | Overlap | What differs |
+|---|---|---|---|---|---|---|---|
+| QIEA for combinatorial optimization | Han, Kim | 2002 | IEEE TEVC 6(6) | (OpenAlex 10.1109/TEVC.2002.804320) | binary Q-bits; observation with prob |β|²; rotation toward the best observed solution | HIGH for Born measurement + basis-state attractor (binary) | binary; rotation gates, not swarm difference vectors; no floor until 2004 |
+| QIGA with qudits under simulated decoherence | Maslennikov, Demidova | 2024 | Computational Nanotechnology 11(2) | https://journals.eco-vector.com/2313-223X/article/view/635827 | qudit genes with density matrices; "decoherence" = Gaussian noise on rotation angles; threshold decoding | MEDIUM | GA; threshold not Born sampling; no depolarising channel, no floor |
+| Qudit-Based Imaginary Time Evolution | Åsgrim, Awan | 2025 | arXiv 2512.04710 | https://arxiv.org/abs/2512.04710 | integer variables as qudits (product state); ITE with gradient-chosen generators; Born measurement | MEDIUM-HIGH for the representation | single state, no population/swarm; no floor/shock |
+| Qudit-inspired optimization for graph coloring | Jansen, Heightman, Mortimer, Perito, Acín | 2024 | Phys. Rev. Applied 22, 064002 | https://arxiv.org/abs/2406.00792 | product state of qudits; gradient descent / local quantum annealing | MEDIUM | gradient-based |
+| QIEDA for the TSP | Soloviev, Bielza, Larrañaga | 2021 | IEEE CEC 2021 | https://oa.upm.es/74088/1/LARRANAGA_CONG_03.pdf | permutation rows sampled from W states with amplitudes √γ (one-hot rows), γ from a Bayesian-network EDA | MEDIUM-HIGH for m-ary one-hot Born sampling | amplitudes = √(EDA statistics); population-level model |
+| QIEA for the QAP | Chmiel, Kwiecień | 2018 | Entropy 20(10):781 | https://pmc.ncbi.nlm.nih.gov/articles/PMC7512343/ | binary Q-bits + repair | LOW-MEDIUM | binary |
+
+## 4. Born-rule sampling in classical optimisation
+Han & Kim 2002 (binary, canonical); GEO / TN-GEO (Alcazar, Ghazi Vakili, Kalayci, Perdomo-Ortiz, arXiv 2101.06250; Nature Comms 15:2761, 2024: MPS Born machine sampled by |ψ|², EDA-style) — MEDIUM; QIEDA 2021 — MEDIUM-HIGH; QDMO/DMOAQ (binary) — MEDIUM. A classical "squared-probability EDA" outside the QIEA family: NOT FOUND.
+
+## 5. Depolarising / decoherence operators; probability floors
+| Title | Authors | Year | Venue | URL | What it does | Overlap | What differs |
+|---|---|---|---|---|---|---|---|
+| QIEAs with Hε gate | Han, Kim | 2004 | IEEE TEVC 8(2) | (OpenAlex 10.1109/TEVC.2004.823467) | Hε gate clamps the angle to [ε, π/2−ε] "to prevent premature convergence" | **HIGH** (floor preventing full collapse) | binary; hard clamp rather than a mixing channel; not calibrated by purity |
+| Angle-expressed QEA for QKP | Hao Li | 2019 | IOP MSE 631 | https://iopscience.iop.org/article/10.1088/1757-899X/631/5/052054/pdf | Hε gate restated | HIGH (floor) | as above |
+| PBIL (CMU-CS-94-163) | Baluja | 1994 | CMU tech report | https://publications.ri.cmu.edu/storage/publications/pub_files/pub1/baluja_shumeet_1994_2/baluja_shumeet_1994_2.pdf | mutate probability vector: P ← P(1−MUT_SHIFT) + random(0 or 1)·MUT_SHIFT, to stop convergence to 0/1 | **HIGH** (stochastic mixing; in expectation = binary depolarising step) | binary; population-level vector; no purity control |
+| Hyper-Learning for PBIL in Dynamic Environments | Yang, Richter | 2009 | IEEE CEC 2009 | https://bura.brunel.ac.uk/bitstream/2438/5859/2/Fulltext.pdf | PBIL mutation shrinks probabilities toward 0.5 | HIGH (deterministic pull to uniform) | binary |
+| PBIL with Immigrants in Changing Environments | Mavrovouniotis, Yang | 2015 | IEEE SSCI 2015 | https://mavrovouniotis.github.io/Papers/SSCI15.pdf | mutation "toward the central probability vector … to increase exploration" | HIGH | binary |
+| Theory of EDAs (survey) | Krejca, Witt | 2018 | arXiv 1806.05392 | https://arxiv.org/abs/1806.05392 | frequencies restricted to [m, 1−m], "margin" usually 1/n, to prevent fixation | **HIGH** (classical name for the floor) | clamp not mixing; binary |
+| MAX–MIN Ant System | Stützle, Hoos | 2000 | FGCS 16 | (OpenAlex 10.1016/S0167-739X(00)00043-1) | pheromone bounded in [τ_min, τ_max]; re-initialisation on stagnation | MEDIUM | pheromone; stagnation-triggered |
+| Explicit "depolarizing channel" in an EA/swarm | — | — | — | — | NOT FOUND | — | — |
+
+## 6. Dynamic optimisation: partial re-initialisation, hypermutation, forgetting
+| Title | Authors | Year | Venue | URL | What it does | Overlap | What differs |
+|---|---|---|---|---|---|---|---|
+| PBIL for dynamic optimization | Yang, Yao | 2005 | Soft Computing 9(11) | (Semantic Scholar 10.1007/s00500-004-0422-3) | dual probability vectors | MEDIUM | not partial mixing |
+| Hyper-Learning for PBIL | Yang, Richter | 2009 | IEEE CEC 2009 | (above) | at a change: full reset (PBILr) or hypermutation (raise p_m for n_hm generations = temporary pull toward uniform) or hyper-learning | **HIGH** (classical analogue of the decoherence shock) | binary; several generations of raised mutation rather than a single mixing step |
+| PBIL with immigrants | Mavrovouniotis, Yang | 2015 | IEEE SSCI | (above) | random/elitist immigrants | MEDIUM | diversity via immigrants |
+| Pheromone Modification Strategies for Dynamic TSP | Guntsch, Middendorf | 2001 | EvoWorkshops 2001, LNCS 2037 | (Semantic Scholar 10.1007/3-540-45365-2_22) | on city insertion/deletion, global or local "pheromone equalization" instead of reset | **HIGH conceptually** (partial equalisation incl. deletion of a city) | ACO pheromone; restart formula UNVERIFIED |
+| ACO memetic algorithm for dynamic TSP | Mavrovouniotis, Müller, Yang | 2015 | GECCO 2015 | https://mavrovouniotis.github.io/Papers/GECCO15.pdf | full re-initialisation "generally not efficient" | MEDIUM | ACO |
+| Triggered hypermutation vs random immigrants | Cobb, Grefenstette | 1993 | ICGA 1993 | https://apps.dtic.mil/sti/tr/pdf/ADA294075.pdf | hypermutation when performance degrades | MEDIUM | population GA |
+| QIEA with Q-bit partial reset at change | — | — | — | — | NOT FOUND | — | — |
+
+## 7. Quantum Dwarf Mongoose; DMO cloud scheduling
+QDMO (Almutairi et al., IEEE Access 2023; full text via reader proxy): Q-bit per feature q = e^{iθ}, rotation gate q(t+1) = q(t)·R(Δθ), feature BX_j = 1 if rand < |β|²; classical DMO equations kept separately; how Δθ links to positions is unspecified; no floor — MEDIUM overlap (name, host, Born measurement), binary feature selection only. DMOAQ (Abd Elaziz et al. 2022) same template. DMO cloud scheduling (Abraham et al. 2025 IJACSA; CLSDMO 2025; MDMOSA; MABFDMO 2026): classical DMO, static — LOW.
+
+## 8. Purity / expected Hamming distance as a control measure
+Mani, Gursaran & Mani (arXiv 1612.08109): convergence measured by the number of Q-bits near 0/1 — MEDIUM (a per-register collapse measure; purity is its smooth version; used as termination criterion only). Han & Kim 2004 termination criterion — MEDIUM-LOW. Purity Σp² used to set or track the expected number of reassigned variables: NOT FOUND.
+
+## 9. Quantum-inspired dynamic cloud scheduling with VM failure / re-optimisation
+QBCSSA (Mishra et al. 2021) — LOW-MEDIUM (UNVERIFIED); QI-AMHML/RQWOA (Divya et al., Sci Rep 2026) — LOW-MEDIUM; Chauhan & Alam QEA — LOW; Balicki 2021 static — MEDIUM; QHRMOF — LOW. VM removal as column deletion with warm re-optimisation and controlled forgetting: NOT FOUND (closest: city deletion in Guntsch & Middendorf 2001, ACO).
+
+## Verdict (strict)
+(a) Already published: per-variable probability registers updated by unchanged swarm equations, renormalised, sampled once per evaluation, with attractors pulled toward one-hot samples = ICPSO (Strasser et al. 2016; precursors Pugh & Martinoli 2006, Kennedy & Eberhart 1997) — our classical twin is essentially ICPSO with MRFO/DMO as host. Born-rule measurement of unit-vector registers = Han & Kim 2002 (binary); m-ary one-hot Born sampling exists in QIEDA 2021 and qudit ITE 2025. A floor against full collapse = Hε gate (Han & Kim 2004), EDA margins (Krejca & Witt 2018), Baluja's mutation shift, PBIL pull-to-centre (Yang & Richter 2009). Controlled forgetting at a change = PBIL hypermutation/hyper-learning and ACO pheromone equalisation. "Quantum DMO" exists only as binary feature selection; qudit + "decoherence" exists as angle noise in a GA.
+(b) Published separately, not combined: amplitude (√p) registers with swarm difference-vector updates; m-ary registers + floor + change-triggered shock.
+(c) Not found: a literal per-candidate depolarising channel in any EA/swarm; purity used to calibrate expected reassignments; a decoherence shock of strength γ_shock; VM removal as projective column deletion with warm re-optimisation; the full combination for dynamic VM scheduling. Defensible novelty: the amplitude-vs-probability comparison, the purity-calibrated floor and shock, the column-deletion dynamics, and the failure-mode analysis of rounding encodings — positioned against ICPSO and QIEA, not claimed as a new probabilistic-register swarm.
+
+## Sources
+https://www.scirp.org/journal/paperinformation?paperid=56319 ; https://link.springer.com/chapter/10.1007/978-3-642-13495-1_17 ; https://pmc.ncbi.nlm.nih.gov/articles/PMC8775184/ ; https://www.cs.montana.edu/users/john.sheppard/pubs/gecco-2016a.pdf ; https://www.cs.montana.edu/sheppard/pubs/sis-2016.pdf ; https://infoscience.epfl.ch/handle/20.500.14299/228838 ; https://journals.eco-vector.com/2313-223X/article/view/635827 ; https://pubs.aip.org/aip/acp/article-abstract/3390/1/060028/3382867 ; https://arxiv.org/abs/2512.04710 ; https://arxiv.org/abs/2406.00792 ; https://oa.upm.es/74088/1/LARRANAGA_CONG_03.pdf ; https://pmc.ncbi.nlm.nih.gov/articles/PMC7512343/ ; https://www.mdpi.com/2078-2489/13/9/438 ; https://arxiv.org/abs/2101.06250 ; https://www.nature.com/articles/s41467-024-46959-5 ; https://iopscience.iop.org/article/10.1088/1757-899X/631/5/052054/pdf ; https://publications.ri.cmu.edu/storage/publications/pub_files/pub1/baluja_shumeet_1994_2/baluja_shumeet_1994_2.pdf ; https://bura.brunel.ac.uk/bitstream/2438/5859/2/Fulltext.pdf ; https://mavrovouniotis.github.io/Papers/SSCI15.pdf ; https://mavrovouniotis.github.io/Papers/GECCO15.pdf ; https://arxiv.org/abs/1806.05392 ; https://apps.dtic.mil/sti/tr/pdf/ADA294075.pdf ; https://arxiv.org/abs/2402.16863 ; https://arxiv.org/abs/1612.08109 ; https://ieeexplore.ieee.org/document/10156784 ; https://thesai.org/Publications/ViewPaper?Volume=16&Issue=12&Code=ijacsa&SerialNo=73 ; OpenAlex/Semantic Scholar records for 10.1109/TEVC.2002.804320, 10.1109/TEVC.2004.823467, 10.1016/S0167-739X(00)00043-1, 10.1109/ICSMC.1997.637339, 10.1007/s00500-004-0422-3, 10.1007/3-540-45365-2_22, 10.1007/s11227-021-03695-7, 10.1038/s41598-026-43125-3

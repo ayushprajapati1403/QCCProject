@@ -1,0 +1,8 @@
+=== churn severity rho=0.8
+QI-MRFO restart              post-change gap=  4.59% (sd 0.76)  AUC-gap= 15.28%
+QI-MRFO continue_struct      post-change gap=  4.79% (sd 0.65)  AUC-gap= 13.57%
+QI-MRFO shock 0.25           post-change gap=  4.67% (sd 0.82)  AUC-gap= 13.50%
+QI-MRFO shock 0.5            post-change gap=  5.39% (sd 1.05)  AUC-gap= 15.23%
+QI-MRFO shock 0.75           post-change gap=  4.72% (sd 0.68)  AUC-gap= 14.26%
+GA continue                  post-change gap=  5.40% (sd 0.78)  AUC-gap=  9.17%
+GA hypermut                  post-change gap=  6.11% (sd 0.76)  AUC-gap= 15.70%

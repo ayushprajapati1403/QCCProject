@@ -1,0 +1,3 @@
+FROM qi-sched:latest
+RUN pip install --no-cache-dir markdown playwright && playwright install --with-deps chromium
+WORKDIR /work

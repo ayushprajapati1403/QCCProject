@@ -1,0 +1,1101 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<script>window.MathJax = {tex: {inlineMath: [['$','$']], displayMath: [['$$','$$']]}, svg: {fontCache: 'global'}, startup: {typeset: true}};</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 10.5pt; line-height: 1.45; color: #111; max-width: 190mm; margin: 0 auto; }
+h1 { font-size: 20pt; margin-top: 0; } h2 { font-size: 14pt; margin-top: 1.4em; border-bottom: 1px solid #ccc; padding-bottom: 2px; } h3 { font-size: 11.5pt; }
+table { border-collapse: collapse; font-size: 8.5pt; margin: 0.6em 0; width: 100%; }
+th, td { border: 1px solid #bbb; padding: 3px 5px; vertical-align: top; } th { background: #f0f0f0; }
+code { font-family: Consolas, monospace; font-size: 9pt; background: #f5f5f5; padding: 0 2px; }
+pre { background: #f5f5f5; padding: 6px; font-size: 8.5pt; white-space: pre-wrap; }
+blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
+</style></head><body><h1 id="quantum-inspired-manta-ray-foraging-optimization-for-cloud-task-scheduling">Quantum-Inspired Manta Ray Foraging Optimization for Cloud Task Scheduling</h1>
+<h2 id="an-implementation-first-research-investigation-report-22-september-2026">An implementation-first research investigation (report, 22 September 2026)</h2>
+<p><strong>Scope.</strong> Quantum-<em>inspired</em> classical optimization for cloud computing. Every experiment in this report ran on an ordinary laptop CPU (Windows 11, Python 3.13 / NumPy 2.3 for the pilots; a Docker image with Python 3.12 for the notebook). No quantum hardware, quantum circuits, QPU or annealer was used or is required.</p>
+<p><strong>Rules.</strong> Every number labelled <em>measured</em> was produced by the code in this folder (<code>observe_v0.py … observe_v3.py</code>, <code>observe_dyn*.py</code>, the notebook). Anything not measured is labelled UNMEASURED; illustrative numbers are labelled HYPOTHETICAL. All literature statements come from pages opened by live web search on 22 September 2026 (see <code>literature/</code>), never from memory.</p>
+<p><strong>Deliverables.</strong> <code>quantum_inspired_cloud_scheduler.ipynb</code> (18 sections, runs top-to-bottom), this report, <code>README.md</code>, <code>lab_log.md</code>, <code>phd_research_proposal.md</code>, <code>literature/*.md</code>, <code>results/</code>.</p>
+<hr />
+<h2 id="1-selected-algorithm">1. Selected algorithm</h2>
+<p><strong>MRFO (Manta Ray Foraging Optimization; Zhao, Zhang &amp; Wang, 2020)</strong> is the primary host of the quantum-inspired mechanism (QI-MRFO). <strong>DMO (Dwarf Mongoose Optimization; Agushaka, Ezugwu &amp; Abualigah, 2022)</strong> is implemented as a second host (QI-DMO) because the mechanism is host-agnostic and DMO is the algorithm of the candidate's prior project; showing the transfer is part of the evidence. PSO was not selected.</p>
+<h2 id="2-why-it-was-selected-phase-3">2. Why it was selected (Phase 3)</h2>
+<p>The choice was made <em>after</em> the literature mapping and <em>after</em> the first pilot, on the criteria requested:</p>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>PSO</th>
+<th>DMO</th>
+<th>MRFO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Weakness of the original optimizer on cloud scheduling (measured, §17–18)</td>
+<td>degrades with n (gap 21 % at n=100)</td>
+<td>random-search level for n ≥ 50 (gap 76 %)</td>
+<td>random-search level for n ≥ 50 (gap 98 %); collapses diversity</td>
+</tr>
+<tr>
+<td>Literature gap for a quantum-inspired version</td>
+<td>saturated: ≥ 20 QPSO/QI-PSO papers incl. cloud (<code>literature/qpso_literature_map.md</code>)</td>
+<td>5 quantum-labelled papers, all binary Q-bit feature selection or a relabelled Gaussian jump; none for scheduling</td>
+<td>6 quantum-labelled items, all continuous, none discrete, none for scheduling; the two MRFO surveys each index a single one</td>
+</tr>
+<tr>
+<td>Suitability for the amplitude representation</td>
+<td>fine, but already done (Balicki 2022, Jeong 2010)</td>
+<td>natural mapping (babysitter reset = full decoherence)</td>
+<td>natural mapping (best-centred moves become perturbations of the best basis state; somersault = reflection about it)</td>
+</tr>
+<tr>
+<td>Cloud-scheduling relevance</td>
+<td>high</td>
+<td>growing (Abraham/Ngadi line 2025–26)</td>
+<td>~10 papers, mostly regional; one 2025 study shows hybrid MRFO losing to PSO-GA</td>
+</tr>
+<tr>
+<td>Discrete compatibility</td>
+<td>needs transfer functions</td>
+<td>needs transfer functions</td>
+<td>needs transfer functions (Yıldızdan 2023; Bouaita 2026)</td>
+</tr>
+<tr>
+<td>Implementation feasibility</td>
+<td>done</td>
+<td>done (MATLAB/MEALPY-faithful)</td>
+<td>done (MEALPY-faithful)</td>
+</tr>
+<tr>
+<td>Measured improvement from the mechanism (pilot)</td>
+<td>UNMEASURED (not implemented)</td>
+<td>76 % → 3.9 % gap at n=100; 1.4 % with a greedy next-position step</td>
+<td>98 % → 1.0 % gap at n=100; ties/beats the discrete GA on all four pilot instances</td>
+</tr>
+<tr>
+<td>Identity preservation</td>
+<td>—</td>
+<td>preserved, but the original's unconditional "next position" move is a handicap</td>
+<td>preserved; greedy replacement in every phase makes the mechanism most effective</td>
+</tr>
+</tbody>
+</table>
+<p>MRFO is primary because the measured effect is largest and cleanest and the literature gap is documented by a 2025 survey; DMO is secondary because the candidate's background is DMO and because the transfer result strengthens the science (the mechanism is representational, not host-specific). PSO was excluded because quantum-inspired PSO is the most crowded corner of the literature and a Q-bit PSO for VM placement already exists (Balicki, Entropy 2022).</p>
+<h2 id="3-existing-quantum-inspired-versions-phase-1">3. Existing quantum-inspired versions (Phase 1)</h2>
+<p>Full tables with URLs: <code>literature/qpso_literature_map.md</code> (23 papers), <code>literature/dmo_literature_map.md</code> (5 quantum DMO papers + 9 cloud DMO papers), <code>literature/mrfo_literature_map.md</code> (6 quantum MRFO items + 12 cloud MRFO papers), <code>literature/qi_cloud_and_classical_equivalents.md</code> (19 quantum-inspired cloud schedulers + the mechanism-without-the-word-quantum analysis). Highlights:</p>
+<ul>
+<li><strong>QPSO</strong> (Sun, Feng &amp; Xu 2004; Sun et al. 2011/2012): $x = p \pm \alpha |mbest - x| \ln(1/u)$. Its authors state it is a bare-bones PSO sampling a double-exponential distribution; Mikki &amp; Kishk (2006) show the delta well <em>is</em> a Laplace kernel. Cloud uses (Yu et al. 2021 HWQPSO; Wang et al. 2023 DE3C; Elsedimy 2025; Aminu 2026) round the continuous position to a VM index and evaluate static batches; the Naik/Bey group replaces the sampler by Q-bits + hashing (an EDA). No verified QPSO cloud paper tests dynamic workloads.</li>
+<li><strong>Quantum DMO</strong>: DMOAQ (Abd Elaziz et al., Mathematics 2022: binary Q-bit, Han–Kim rotation table, threshold measurement, DMO operators on the angle vector); three papers copy its equations into deep-learning pipelines (Almutairi 2023; Deepa 2024; Sivakumaran 2025); EDMO (arXiv 2511.09020, Nov 2025) relabels a fitness-scaled Gaussian jump as "quantum tunnelling". None is multi-valued, none is for scheduling.</li>
+<li><strong>Quantum MRFO</strong>: Gupta &amp; Kumar (IJCSE 2024, Bloch-phase encoding, 20 continuous benchmarks); Turgut et al. (Sci Rep 2025, QPSO delta-well move on the worst third of the population); Wang et al. (Biomimetics 2023, Bloch-coded initialization only); QFLN-QIMRO (J. Supercomputing, 20 Sep 2026, quantum-behaved MRFO for 6G MEC orchestration; equations paywalled); two unreadable items (Ramadan 2021; CRC 2022 chapter). None discrete, none for cloud task/workflow/VM scheduling, none with code.</li>
+<li><strong>Quantum-inspired cloud schedulers on other hosts</strong> (2021–2026): QIGA/QIEA with Q-bit chromosomes and rotation gates (Hussain 2022/2024; Lilhore 2025 QHRMOF; Hammouda 2026 FOG-QIEA; Chauhan &amp; Alam 2024; Galavani 2025), Q-bit PSO for VM placement (Balicki 2022), Q-bit DE (Priyanka 2024), RQWOA (Divya 2026), and two "quantum" heuristics with no probabilistic structure at all (QBDS 2026, QIARM 2025). A 2026 arXiv benchmark of QUBO/quantum-inspired HPC workflow mapping (Sharma et al.) finds classical solvers preferable.</li>
+</ul>
+<h2 id="4-literature-comparison-the-quantum-innovation-map-condensed">4. Literature comparison (the quantum-innovation map, condensed)</h2>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Quantum mechanism</th>
+<th>Classical equivalent</th>
+<th>Representation for scheduling</th>
+<th>Genuinely different mechanism?</th>
+<th>What it does NOT solve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QPSO (delta well)</td>
+<td>wave-function sampling around an attractor</td>
+<td>Laplace mutation with population-spread scale (authors' own statement)</td>
+<td>continuous + rounding</td>
+<td>No (kernel choice)</td>
+<td>attractor collapse; lossy discretisation; dynamics untested</td>
+</tr>
+<tr>
+<td>Q-bit QIEA/QIGA/QI-PSO/QI-DE</td>
+<td>qubit amplitudes + rotation gate + measurement</td>
+<td>PBIL/cGA/UMDA with a self-damping learning rate (Platel, Schliebs &amp; Kasabov 2007/2009)</td>
+<td>binary Q-bits, hashing/random keys</td>
+<td>No (univariate EDA)</td>
+<td>needs a decoder; no theory; no dynamics</td>
+</tr>
+<tr>
+<td>"Quantum tunnelling" variants</td>
+<td>jump probability from a pseudo-potential</td>
+<td>Cauchy/Lévy mutation (Yao 1999; Lee &amp; Yao 2004)</td>
+<td>continuous</td>
+<td>No</td>
+<td>discrete problems</td>
+</tr>
+<tr>
+<td>Quantum-behaved MRFO/DMO (Turgut 2025; QFLN-QIMRO 2026; EDMO 2025)</td>
+<td>QPSO move or tunnelling jump inside the host</td>
+<td>Laplace/Gaussian jumps</td>
+<td>continuous</td>
+<td>No</td>
+<td>scheduling; discrete encodings</td>
+</tr>
+<tr>
+<td>Bloch-phase MRFO (Gupta &amp; Kumar 2024)</td>
+<td>phase-angle encoding, three real points per individual</td>
+<td>reparameterised continuous search</td>
+<td>continuous</td>
+<td>Partial (representation)</td>
+<td>discrete; applications</td>
+</tr>
+<tr>
+<td>Simulated quantum annealing / quantum walks (physics literature)</td>
+<td>transverse-field replica coupling; ballistic spreading</td>
+<td>parallel tempering; random walk</td>
+<td>binary/QUBO</td>
+<td>Partial (different classical dynamics)</td>
+<td>not used by any cloud paper; QUBO mapping loses feasibility beyond ~15 tasks (Sharma 2026)</td>
+</tr>
+<tr>
+<td><strong>This work</strong></td>
+<td>m-ary amplitude registers per task, Born measurement, basis-state attractors, depolarising channel, swarm difference-vector updates</td>
+<td>probability-vector swarm with a mutation floor (classical twin implemented and tested)</td>
+<td>native task→VM registers, no decoder</td>
+<td>Partial: the <em>representation</em> is what matters; squaring and sign are measurably irrelevant (§19)</td>
+<td>static heavy-tailed batches (Max-Min wins); very severe change</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-existing-classical-equivalents-phase-1b-mandatory">5. Existing classical equivalents (Phase 1B, mandatory)</h2>
+<p>For every quantum mechanism the same idea was searched without the word "quantum" (<code>literature/qi_cloud_and_classical_equivalents.md</code>, Part 2):</p>
+<table>
+<thead>
+<tr>
+<th>Quantum mechanism</th>
+<th>Classical equivalent</th>
+<th>Who showed it</th>
+<th>Mathematical difference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q-bit rotation gate</td>
+<td>PBIL probability-vector update, $p' = \sin^2(\theta+\Delta\theta) \approx p + 2\sqrt{p(1-p)}\,\Delta\theta$</td>
+<td>Platel, Schliebs &amp; Kasabov 2007, 2009 ("QEA is an EDA"); da Silva &amp; Schirru 2014 ("quantum PBIL")</td>
+<td>none for sampling; a self-damping learning-rate schedule</td>
+</tr>
+<tr>
+<td>Tunnelling</td>
+<td>Cauchy / Lévy mutation, restarts</td>
+<td>Yao, Liu &amp; Lin 1999; Lee &amp; Yao 2004</td>
+<td>none in metaheuristics; partial for path-integral SQA (Santoro 2002; Isakov 2016)</td>
+</tr>
+<tr>
+<td>Quantum walk</td>
+<td>random walk; classical wave simulation</td>
+<td>Knight, Roldán &amp; Sipe 2003; Xue &amp; Sanders 2013</td>
+<td>ballistic vs diffusive spreading is a classical interference effect; decoherence restores the random walk</td>
+</tr>
+<tr>
+<td>Decoherence / depolarising channel</td>
+<td>Baluja's mutation shift $p \leftarrow (1-\lambda)p + \lambda\,\text{rand}$; Yang &amp; Yao's central-vector mixing; Cobb's hypermutation; Branke's memory</td>
+<td>Baluja 1994; Cobb 1990; Branke 1999; Yang &amp; Yao 2005/2008</td>
+<td>none on product states (diagonal of $\rho$ is all that sampling sees)</td>
+</tr>
+<tr>
+<td>Superposition + measurement</td>
+<td>sampling a product distribution: UMDA/PBIL/cGA; EDAs already used for cloud (Chen 2014) and fog (Wu, Li, Wang &amp; Zomaya 2018)</td>
+<td>—</td>
+<td>none</td>
+</tr>
+<tr>
+<td>Born rule</td>
+<td>squared reparameterisation of a probability vector</td>
+<td>Glasser et al. 2019 (separations only for entangled Born machines)</td>
+<td>none for product states</td>
+</tr>
+<tr>
+<td>Purity floor</td>
+<td>cGA margins $[1/n, 1-1/n]$; Han &amp; Kim's Hε gate</td>
+<td>Doerr &amp; Zheng 2020; Han &amp; Kim 2004</td>
+<td>none</td>
+</tr>
+</tbody>
+</table>
+<p>Conclusion of Phase 1B: in the cloud-scheduling corpus every quantum-inspired operator is a relabelled EDA/PBIL, Lévy mutation or mutation shift. The genuinely distinct physics-derived algorithms (SQA, quantum walks, entangled Born machines) are not used by any cloud paper — and our own experiments (§19) confirm the same verdict for our mechanism: the useful content is representational.</p>
+<h2 id="6-the-weakness-we-target-observation">6. The weakness we target (OBSERVATION)</h2>
+<p>Measured in the V0 pilot (<code>observe_v0.py</code>, 5 seeds, 20 000 evaluations, floor encoding $a_i = \lfloor x_i \rfloor$):</p>
+<table>
+<thead>
+<tr>
+<th>Instance</th>
+<th>LB</th>
+<th>Max-Min</th>
+<th>PSO</th>
+<th>DMO</th>
+<th>MRFO</th>
+<th>GA (discrete)</th>
+<th>Random</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>n=30, m=5, uniform tasks, heterogeneous VMs</td>
+<td>44.53</td>
+<td>45.46</td>
+<td>45.71 (2.7 %)</td>
+<td>45.73 (2.7 %)</td>
+<td>47.64 (7.0 %)</td>
+<td>44.87 (0.8 %)</td>
+<td>47.03 (5.6 %)</td>
+</tr>
+<tr>
+<td>n=50, m=10, bimodal (heavy-tailed) tasks</td>
+<td>25.11</td>
+<td>27.06</td>
+<td>28.75 (14.5 %)</td>
+<td>36.50 (45.4 %)</td>
+<td>35.45 (41.2 %)</td>
+<td>28.74 (14.5 %)</td>
+<td>34.41 (37.1 %)</td>
+</tr>
+<tr>
+<td>n=100, m=10, uniform</td>
+<td>47.06</td>
+<td>47.45</td>
+<td>56.86 (20.8 %)</td>
+<td>82.62 (75.6 %)</td>
+<td>93.39 (98.5 %)</td>
+<td>47.72 (1.4 %)</td>
+<td>90.22 (91.7 %)</td>
+</tr>
+<tr>
+<td>n=50, m=10, homogeneous VMs</td>
+<td>28.39</td>
+<td>28.98</td>
+<td>30.47 (7.3 %)</td>
+<td>33.04 (16.4 %)</td>
+<td>33.26 (17.2 %)</td>
+<td>29.37 (3.5 %)</td>
+<td>32.90 (15.9 %)</td>
+</tr>
+</tbody>
+</table>
+<p>(makespan in seconds; brackets = gap to the lower bound.) The instrumentation shows why: at n=100 a DMO candidate changes on average <strong>48.9</strong> task assignments, an MRFO candidate <strong>43.9</strong>, a PSO candidate 13.8, a GA child 5.4; only 1.4 % (MRFO) and 2.8 % (PSO) of candidates improve; MRFO's population diversity (mean pairwise Hamming distance / n) collapses to 0.02 while 15 % of its evaluations are spent on candidates identical to the parent. The landscape probe shows that improving moves on this landscape change 1–5 tasks (90–100 % of 1-move local optima are improvable by a 2-task swap). <strong>The floor encoding gives the swarm no controllable notion of move size</strong>: steps are proportional to inter-individual distances in $[0,m)^n$ and become random re-draws after rounding. This is not a parameter problem (PSO shares the trend) and not a metaphor problem (the same algorithms are competent on continuous functions); it is the representation.</p>
+<h2 id="7-our-quantum-inspired-mechanism-mechanism">7. Our quantum-inspired mechanism (MECHANISM)</h2>
+<ol>
+<li><strong>Representation.</strong> Individual $i$ holds $\Psi_i \in \mathbb{R}^{n \times m}$: one <em>m</em>-level real amplitude register (a "rebit" generalised to $m$ outcomes) per task, rows on the unit sphere $\sum_j \Psi_i[t,j]^2 = 1$. Initial state: the uniform superposition $m^{-1/2}\mathbf{1}$.</li>
+<li><strong>Measurement (Born rule).</strong> $\Pr(a_t = j) = \Psi[t,j]^2$, tasks sampled independently; one measurement = one evaluation; a measured schedule $b$ is encoded back as the basis state $E(b)$ (one-hot rows).</li>
+<li><strong>Host dynamics unchanged.</strong> Every MRFO (or DMO) equation is applied to the amplitude matrices, followed by the projection $\Pi$ (row renormalisation). Attractors are basis states: $E(b_{best})$ for MRFO, $E(b_\alpha)$ for DMO ("the alpha peeps its measured food position").</li>
+<li><strong>Decoherence.</strong> Each candidate register passes through the depolarising channel $\mathcal{D}_\gamma(p) = (1-\gamma)p + \gamma/m$ (amplitudes $\leftarrow \operatorname{sign}(\Psi)\sqrt{\mathcal{D}_\gamma(\Psi^2)}$), $\gamma = c/n$. It bounds purity away from 1 and therefore guarantees a floor on the expected number of reassigned tasks per measurement. With $\gamma = 1$ it is the classical random reset (DMO's babysitter exchange); intermediate $\gamma$ is <em>controlled forgetting</em>.</li>
+<li><strong>Purity as the move-size dial.</strong> $\pi_t = \sum_j p_{tj}^2$; the expected number of tasks that differ between two measurements of the same register set is $n - \sum_t \pi_t$. The host's own dynamics move purity continuously: attraction to a basis state raises it (exploitation), mixing with a diffuse register or a random basis state lowers it (exploration).</li>
+<li><strong>Structural rules for dynamic environments.</strong> VM removal = delete the column and renormalise (a projective measurement onto the surviving VMs); VM addition = a new column with the uniform share $1/(m+1)$; a replaced task = its register reset to the uniform superposition.</li>
+</ol>
+<h2 id="8-original-equations">8. Original equations</h2>
+<p><strong>MRFO</strong> ($r, r_1, r_2, r_3 \sim U(0,1)$; $t$ = iteration, $T$ = iteration budget; greedy replacement after each phase; $i=1$ uses $x_{best}$ as predecessor):
+* Chain: $x_i^{t+1} = x_i^t + r(x_{i-1}^t - x_i^t) + \alpha(x_{best} - x_i^t)$, $\alpha = 2r\sqrt{|\log r|}$.
+* Cyclone: $x_i^{t+1} = x_{best} + r(x_{i-1}^t - x_i^t) + \beta(x_{best} - x_i^t)$, $\beta = 2e^{r_1(T-t+1)/T}\sin(2\pi r_1)$; while $t/T < \mathrm{rand}$, a uniformly random $x_{rand}$ replaces $x_{best}$.
+* Somersault: $x_i^{t+1} = x_i^t + S(r_2 x_{best} - r_3 x_i^t)$, $S = 2$.</p>
+<p><strong>DMO</strong> (MATLAB/MEALPY form, which is what the field actually runs; the paper-vs-code discrepancies are documented in <code>literature/dmo_literature_map.md</code>): alpha selection by roulette on $e^{-f_i/\bar f}$; alpha-group candidate $X_\alpha + \varphi \odot (X_\alpha - X_k)$, $\varphi \sim \tfrac{peep}{2}U(-1,1)^n$; scout candidate $X_i + \varphi \odot (X_i - X_k)$ with sleeping mound $sm_i = (f_{cand} - f_i)/\max(f_{cand}, f_i)$; babysitter exchange (uniform re-initialisation of the first $B$ mongooses when $C_i \ge L = 0.6nB$); next position $X_i \mp CF\,\varphi\,r\,(X_i - sm_i)$, $CF = (1-t/T)^{2t/T}$, applied unconditionally.</p>
+<p>Symbols: $x_i$ position of individual $i$ (one coordinate per task); $x_{best}$ best position; $r$-type factors are uniform random scalars; $\alpha, \beta, S, \varphi, CF$ are the step-size coefficients defined by the respective papers.</p>
+<h2 id="9-modified-equations-what-changed-and-why">9. Modified equations (what changed and why)</h2>
+<p>Replace every position by a register matrix and every attractor by a basis state; wrap each update in $\mathcal{D}_\gamma \Pi[\cdot]$; measure the candidate to obtain the schedule that is evaluated:</p>
+<ul>
+<li>Chain: $\Psi_{cand} = \mathcal{D}_\gamma\Pi\big[\Psi_i + r(\Psi_{i-1} - \Psi_i) + \alpha(E(b_{best}) - \Psi_i)\big]$.</li>
+<li>Cyclone: $\Psi_{cand} = \mathcal{D}_\gamma\Pi\big[E(b_{best}) + r(\Psi_{i-1} - \Psi_i) + \beta(E(b_{best}) - \Psi_i)\big]$ (exploration: $E(b_{rand})$, the basis state of a uniformly random schedule).</li>
+<li>Somersault: $\Psi_{cand} = \mathcal{D}_\gamma\Pi\big[\Psi_i + S(r_2 E(b_{best}) - r_3\Psi_i)\big]$.</li>
+<li>Acceptance: measure $a_{cand} \sim \Psi_{cand}$; if $f(a_{cand}) < f_i$ adopt $(\Psi_{cand}, a_{cand}, f(a_{cand}))$.</li>
+<li>DMO: alpha group $\mathcal{D}_\gamma\Pi[E(b_\alpha) + \varphi \odot (E(b_\alpha) - \Psi_k)]$; scouts $\mathcal{D}_\gamma\Pi[\Psi_i + \varphi \odot (\Psi_i - \Psi_k)]$; babysitter exchange $\Psi_i \leftarrow \mathcal{D}_{\gamma_{reset}}(\Psi_i)$; next position $\mathcal{D}_\gamma\Pi[\Psi_i \mp CF\,\varphi\,r\,(\Psi_i - sm_i)]$; $\varphi$ drawn per task (per row).</li>
+</ul>
+<p>What changed: (i) the state space ($[0,m)^n \to$ product of $n$ unit spheres in $\mathbb{R}^m$); (ii) attractors are collapsed schedules, not raw states; (iii) a projection and a noise channel after every update; (iv) schedules are sampled, not decoded. What did <em>not</em> change: the operators, the control flow, the number of evaluations per iteration, the greedy acceptance — the algorithm is still recognisably MRFO/DMO. Complexity: $O(nm)$ per candidate (update + measurement) instead of $O(n)$; memory $Pnm$ floats.</p>
+<p>State-transition process: $(\Psi_i, b_i, f_i) \xrightarrow{\text{operator}} \tilde\Psi \xrightarrow{\Pi,\ \mathcal{D}_\gamma} \Psi_{cand} \xrightarrow{\text{measure}} a_{cand} \xrightarrow{f} f_{cand} \xrightarrow{\text{greedy}} (\Psi_i', b_i', f_i')$.</p>
+<h2 id="10-why-the-mechanism-is-genuinely-quantum-inspired">10. Why the mechanism is genuinely quantum-inspired</h2>
+<p>The three ingredients are the textbook objects of quantum measurement theory: a normalised amplitude vector per subsystem (a product state over $n$ subsystems), the Born rule that turns amplitudes into outcome probabilities by squaring, and the depolarising channel $\rho \to (1-\gamma)\rho + \gamma I/m$, the standard model of decoherence. Purity $\operatorname{Tr}\rho^2$ is the standard measure of how mixed a state is, and the observation that <em>purity controls the expected Hamming distance between two measurements</em> is the quantum-information reading of the move-size problem. Signed amplitudes admit cancellation when registers are mixed (interference). The mapping is complete and teachable, and it is <em>not</em> decoration: it produced a testable prediction (move size follows purity; a decoherence floor is needed; the optimal $\gamma$ is small) that the experiments confirmed. What we also report honestly is that the quantum-specific parts (squaring, sign) turned out to be measurably irrelevant (§19), which is exactly the kind of result Phase 1B predicts for product states.</p>
+<h2 id="11-why-this-is-not-quantum-computing">11. Why this is NOT quantum computing</h2>
+<p>No joint state of $n$ qubits is ever formed (that would need $m^n$ amplitudes); the registers are independent, real, $m$-dimensional unit vectors updated by ordinary arithmetic; no unitary evolution, no entanglement, no interference across subsystems is simulated; "measurement" is <code>numpy</code> sampling. The whole optimizer is $O(Pnm)$ memory and runs in seconds on a laptop. Nothing here would run faster on a quantum computer, and nothing here requires one.</p>
+<h2 id="12-scientific-hypothesis-stated-before-the-experiments-phase-45">12. Scientific hypothesis (stated before the experiments, Phase 4/5)</h2>
+<ul>
+<li><strong>Observation.</strong> Floor-encoded DMO/MRFO change ~n/2 tasks per candidate and perform at random-search level for n ≥ 50 (§6).</li>
+<li><strong>Mechanism.</strong> Amplitude registers + Born measurement + basis-state attractors + decoherence floor (§7).</li>
+<li><strong>Causal reasoning.</strong> With registers, the number of tasks changed per candidate is $n - \sum_t \pi_t$, a continuous function of the state that the host's attraction/repulsion dynamics move; therefore the host's exploration–exploitation schedule (which is meaningless after rounding) becomes an effective move-size schedule on the assignment lattice.</li>
+<li><strong>H1 (encoding).</strong> QI-X reaches lower makespans than X at equal evaluation budgets, with the gain increasing with n and m; QI-X approaches the discrete GA.</li>
+<li><strong>H2 (decoherence).</strong> Without the channel the registers collapse (purity → 1) and evaluations are wasted re-measuring the same schedule; a weak channel ($c \approx 0.25$–1) removes the waste and improves results; strong decoherence ($c \ge 2$) degrades monotonically (dose–response).</li>
+<li><strong>H3 (classical twin).</strong> If the benefit is representational, the linear-probability twin captures it; if the Born rule matters, the twin is worse.</li>
+<li><strong>H4 (dynamic).</strong> After a workload change, carrying the register state beats a restart; a decoherence shock $\gamma_{shock} \in (0,1)$ ("controlled forgetting") beats both naive continuation and restart, and the optimal $\gamma_{shock}$ grows with change severity.</li>
+<li><strong>Falsification.</strong> H1 fails if QI-X does not beat X on n ≥ 50 or is dominated by the GA by a wide margin; H2 fails if $c = 0$ is best or if performance is flat in $c$; H3 is decided either way; H4 fails if no $\gamma_{shock} \in (0,1)$ beats plain continuation.</li>
+<li><strong>Anticipated effect size (HYPOTHETICAL, written before the run):</strong> 20–40 % lower makespan than classical DMO/MRFO at n = 100 and a gap to the GA below 5 %; 5–15 % better post-change quality for the shock strategy on moderate churn.</li>
+</ul>
+<h2 id="13-expected-behaviour-before-the-experiments">13. Expected behaviour BEFORE the experiments</h2>
+<p>Move size decays smoothly from ~n/2 to a few tasks as purity rises; improving-candidate fraction rises from ~1 % to ≥ 10 %; diversity collapses <em>unless</em> the channel is on; QI-MRFO and QI-DMO converge to within a few percent of the lower bound; the linear twin close behind; the register attractor variant (using the alpha's superposition instead of its measured schedule) expected to be worse because nothing concentrates the registers.</p>
+<h2 id="14-what-result-would-support-the-hypothesis">14. What result would support the hypothesis</h2>
+<p>Consistent improvement over the classical host on all instances with the gain growing with n; a U-shaped or monotone dose–response in $c$ with an interior optimum; wasted-evaluation fraction dropping to ~0 with the channel; and, for H4, a strategy with $0 < \gamma_{shock} < 1$ dominating both restart and continuation with the optimum shifting with severity.</p>
+<h2 id="15-what-result-would-falsify-it">15. What result would falsify it</h2>
+<p>No gain at n ≥ 50; a flat response in $c$; the twin performing differently in the direction that contradicts H3; no interior optimum in $\gamma_{shock}$; or the discrete GA / Max-Min dominating everywhere (which would make the contribution "fixing a broken baseline" rather than a competitive scheduler).</p>
+<hr />
+<h2 id="16-first-implementation-v1-v3-what-exists-and-how-it-was-built">16. First implementation (V1 → V3, what exists and how it was built)</h2>
+<p>All code is pure NumPy/SciPy and lives in three modules that the notebook embeds verbatim (<code>build_notebook.py</code> slices them by section markers, so notebook and modules cannot drift):</p>
+<ul>
+<li><code>qi_core.py</code> — instance model (<code>CloudInstance</code>, <code>make_instance</code>), objective with evaluation counting (<code>Objective</code>), the floor decoder, instrumentation (<code>Tracker</code>: best-so-far, diversity, per-candidate move size, wasted/neutral/improving/worse classification, global-best improvements), Min-Min/Max-Min heuristics, a 1-move hill climber for landscape probes, and the classical optimizers PSO, DMO (faithful to the authors' MATLAB code as ported by MEALPY, including the unconditional next-position move; <code>greedy_next=True</code> gives the MEALPY-developed variant), MRFO (faithful to MEALPY's <code>OriginalMRFO</code>), a discrete GA and random search. Every optimizer accepts and returns a <code>state</code> for warm-started re-optimisation.</li>
+<li><code>qi_quantum.py</code> — the mechanism (<code>born_probs</code>, <code>measure</code>, <code>basis_state</code>, <code>project</code>, <code>purity</code>, <code>depolarise</code>, structural-change operators <code>remove_vm_state</code>, <code>add_vm_state</code>, <code>add_tasks_state</code>, <code>shock_state</code>) and the two hosts <code>run_qimrfo</code>, <code>run_qidmo</code> with <code>mode ∈ {born_signed, born_abs, linear}</code>, <code>decoherence</code> ($\gamma$), <code>attractor ∈ {basis, register}</code>, <code>gamma_reset</code>, <code>greedy_next</code>.</li>
+<li><code>qi_dynamic.py</code> — dynamic environments (task churn, VM failure, VM addition, speed drift) and the strategies restart / continue / continue_struct / shock / hypermutation.</li>
+</ul>
+<p>Version history (each version has one evidence-driven change; see <code>lab_log.md</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Change</th>
+<th>Reason (evidence)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V0</td>
+<td>classical PSO/DMO/MRFO/GA with floor encoding + instrumentation</td>
+<td>OBSERVE</td>
+</tr>
+<tr>
+<td>V1</td>
+<td>amplitude registers, Born measurement, basis-state attractor, $\gamma_{reset}=1$</td>
+<td>move size uncontrollable (V0)</td>
+</tr>
+<tr>
+<td>V2</td>
+<td>per-candidate depolarising channel $\gamma = c/n$; transfer to MRFO</td>
+<td>26–76 % wasted evaluations after collapse (V1)</td>
+</tr>
+<tr>
+<td>V3</td>
+<td>ablations: greedy next-position for DMO, register attractor, $c$ sweep for MRFO, linear twin, unsigned, population size</td>
+<td>QI-DMO &lt; QI-MRFO (V2): is it the host's unconditional move?; is the Born rule doing anything?</td>
+</tr>
+<tr>
+<td>Dyn</td>
+<td>warm-start harness, structural rules, shock, severity sweep</td>
+<td>H4</td>
+</tr>
+</tbody>
+</table>
+<p>The notebook's Section 10 runs 18 validation tests (objective vs brute force, decoder bounds, chi-square test that measurement follows the Born rule, channel normalisation and monotone purity, strict evaluation-budget accounting for every optimizer, determinism, $\gamma = 1$ reduces to uniform sampling, valid schedules in all modes). One bug was found by these tests and fixed: DMO/QI-DMO exceeded the budget by the babysitter re-initialisation evaluations (about 0.1 % in the pilots; the pilot numbers below are therefore, for DMO/QI-DMO, a few evaluations above budget — immaterial, but recorded).</p>
+<h2 id="17-pilot-methodology-phase-9">17. Pilot methodology (Phase 9)</h2>
+<ul>
+<li>Instances (generator seed 1): (n=30, m=5, uniform tasks U(1000, 10000) MI, heterogeneous VMs 250–2000 MIPS), (50, 10, bimodal heavy-tailed tasks, heterogeneous), (100, 10, uniform, heterogeneous), (50, 10, uniform, homogeneous VMs). Same instance for every algorithm and seed.</li>
+<li>Budget: 20 000 objective evaluations per run for every algorithm (each measurement = one evaluation); population 30; 5 run seeds (0–4); objective = makespan; results reported as mean makespan and gap to the Q||Cmax lower bound; Max-Min and Min-Min as heuristic references; random search as the floor.</li>
+<li>Controlled initial conditions: all population methods start from the uniform distribution over schedules (uniform positions / uniform superposition / uniform integers).</li>
+<li>Mechanism metrics: per-candidate move size (tasks changed vs parent), wasted/neutral/improving/worse fractions, global-best improvements per 1 000 evaluations, population diversity (mean pairwise Hamming/n), register purity, runtime.</li>
+<li>Notebook <code>full</code> mode repeats everything with 30 seeds and adds held-out instance shapes (n=200 m=20; lognormal tasks with low heterogeneity; bimodal on homogeneous VMs).</li>
+</ul>
+<h2 id="18-experimental-results-measured-pilot-5-seeds-20-000-evaluations">18. Experimental results (measured; pilot = 5 seeds, 20 000 evaluations)</h2>
+<p><strong>V1 — the encoding (H1).</strong> Gap to LB, mean over seeds:</p>
+<table>
+<thead>
+<tr>
+<th>Instance</th>
+<th>DMO</th>
+<th>QI-DMO (V1, no channel)</th>
+<th>P-DMO linear twin (V1)</th>
+<th>GA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>n30 m5</td>
+<td>2.7 %</td>
+<td>2.0 %</td>
+<td>2.1 %</td>
+<td>0.8 %</td>
+</tr>
+<tr>
+<td>n50 m10 bimodal</td>
+<td>45.4 %</td>
+<td>21.6 %</td>
+<td>20.5 %</td>
+<td>14.5 %</td>
+</tr>
+<tr>
+<td>n100 m10</td>
+<td>75.6 %</td>
+<td>4.9 %</td>
+<td>4.0 %</td>
+<td>1.4 %</td>
+</tr>
+<tr>
+<td>n50 m10 homogeneous</td>
+<td>16.4 %</td>
+<td>8.3 %</td>
+<td>8.3 %</td>
+<td>3.5 %</td>
+</tr>
+</tbody>
+</table>
+<p>At n=100 the mean move size fell from 48.9 to 11.3 tasks and the population reached 51.9 s at 25 % of the budget (DMO: 101.9 s). The gain grows with n as predicted. But the Born-rule registers collapsed (end purity 0.996–0.999, end diversity 0.001–0.07) and 26–76 % of evaluations re-measured the parent's schedule.</p>
+<p><strong>V2 — decoherence dose–response (H2) and transfer (H1 on MRFO).</strong> Gap to LB for QI-DMO with $\gamma = c/n$:</p>
+<table>
+<thead>
+<tr>
+<th>Instance</th>
+<th>c=0</th>
+<th>c=0.25</th>
+<th>c=0.5</th>
+<th>c=1</th>
+<th>c=2</th>
+<th>wasted (c=0 → c≥0.25)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>n30 m5</td>
+<td>2.0 %</td>
+<td><strong>1.6 %</strong></td>
+<td>2.1 %</td>
+<td>2.1 %</td>
+<td>2.7 %</td>
+<td>76 % → 1 %</td>
+</tr>
+<tr>
+<td>n50 bimodal</td>
+<td>21.6 %</td>
+<td><strong>15.9 %</strong></td>
+<td>15.9 %</td>
+<td>18.5 %</td>
+<td>21.3 %</td>
+<td>14 % → 0 %</td>
+</tr>
+<tr>
+<td>n100 m10</td>
+<td>4.9 %</td>
+<td><strong>3.9 %</strong></td>
+<td>5.5 %</td>
+<td>8.1 %</td>
+<td>11.2 %</td>
+<td>26 % → 0 %</td>
+</tr>
+<tr>
+<td>n50 homog</td>
+<td>8.3 %</td>
+<td><strong>6.6 %</strong></td>
+<td>10.4 %</td>
+<td>12.6 %</td>
+<td>14.8 %</td>
+<td>38 % → 0 %</td>
+</tr>
+</tbody>
+</table>
+<p>QI-MRFO (mean makespan, gap in brackets):</p>
+<table>
+<thead>
+<tr>
+<th>Instance</th>
+<th>MRFO</th>
+<th>QI-MRFO c=0</th>
+<th>QI-MRFO c=0.5</th>
+<th>QI-MRFO c=1</th>
+<th>GA</th>
+<th>Max-Min</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>n30 m5</td>
+<td>47.64 (7.0 %)</td>
+<td>45.70 (2.6 %)</td>
+<td>45.08 (1.2 %)</td>
+<td>44.93 (0.9 %)</td>
+<td>44.87 (0.8 %)</td>
+<td>45.46</td>
+</tr>
+<tr>
+<td>n50 bimodal</td>
+<td>35.45 (41.2 %)</td>
+<td>30.18 (20.2 %)</td>
+<td>28.10 (11.9 %)</td>
+<td>27.54 (9.7 %)</td>
+<td>28.74 (14.5 %)</td>
+<td>27.06</td>
+</tr>
+<tr>
+<td>n100 m10</td>
+<td>93.39 (98.5 %)</td>
+<td>53.93 (14.6 %)</td>
+<td>47.54 (1.0 %)</td>
+<td>47.51 (1.0 %)</td>
+<td>47.72 (1.4 %)</td>
+<td>47.45</td>
+</tr>
+<tr>
+<td>n50 homog</td>
+<td>33.26 (17.2 %)</td>
+<td>30.60 (7.8 %)</td>
+<td>29.38 (3.5 %)</td>
+<td>29.22 (2.9 %)</td>
+<td>29.37 (3.5 %)</td>
+<td>28.98</td>
+</tr>
+</tbody>
+</table>
+<p>Effect sizes actually observed versus the HYPOTHETICAL prediction (20–40 % lower makespan at n=100): measured <strong>49 %</strong> lower makespan than MRFO (93.4 → 47.5) and <strong>41 %</strong> lower than DMO (82.6 → 48.9); the gap to the GA is not "below 5 %" but zero or negative (QI-MRFO ties or beats the GA on all four instances). The prediction was too conservative on the first part and right on the second.</p>
+<p><strong>V3 — mechanism tests.</strong> (a) DMO's unconditional next-position move explains QI-DMO's deficit: with a greedy version QI-DMO reaches 1.1 / 12.0 / 1.4 / 3.2 %, on par with QI-MRFO (classical DMO with the same change: 2.3 / 17.9 / 30.7 / 12.4 %). (b) Register attractor (alpha's superposition instead of its measured schedule): 7.1 / 34.2 / 87.8 / 14.2 % — purity stays at 0.1–0.2 and 24–90 tasks change per candidate: the search never concentrates. (c) Linear twin of QI-MRFO: 0.9 / 9.7 / — / 3.2 % versus Born 0.9 / 9.7 / 1.0 / 2.9 %: identical within seed noise. (d) Unsigned amplitudes: 0.9 % on n30 (= signed). (e) Population size 15/30/60: differences below one percentage point. (f) Runtime: QI-MRFO about 14 s versus MRFO about 3 s per 20 000 evaluations at n=100, m=10 in pure Python/NumPy (the objective is cheap; in a CloudSim-class simulator evaluation cost dominates and the overhead disappears).</p>
+<p><strong>What the mechanism changed (Phase 10).</strong> It changed one measurable search property, the distribution of move sizes (from about n/2 tasks per candidate to a purity-controlled few), which raised the improving-candidate fraction and the number of global-best improvements per 1 000 evaluations (n=100: 2.7 for QI-MRFO c=1 while MRFO improves on 1.4 % of candidates), and the decoherence channel changed a second property, the floor of that distribution (wasted fraction from 63 % to 5–17 %). Diversity is <em>not</em> what it improved: QI-MRFO's end diversity is about 0.001 (the population sits on the best schedule and explores by measurement noise), lower than MRFO's 0.02 and the GA's 0.09.</p>
+<h2 id="19-ablation-phase-11-did-the-quantum-inspired-component-cause-the-effect">19. Ablation (Phase 11): did the quantum-inspired component cause the effect?</h2>
+<table>
+<thead>
+<tr>
+<th>Ladder (n100 m10 unless noted)</th>
+<th>gap to LB</th>
+<th>verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MRFO (classical, floor encoding)</td>
+<td>98.5 %</td>
+<td>baseline failure</td>
+</tr>
+<tr>
+<td>+ registers, Born measurement, basis-state attractor (QI-MRFO c=0)</td>
+<td>14.6 %</td>
+<td>the representation causes most of the gain</td>
+</tr>
+<tr>
+<td>+ depolarising floor c=1 (QI-MRFO)</td>
+<td>1.0 %</td>
+<td>the floor causes the rest</td>
+</tr>
+<tr>
+<td>Born rule replaced by linear mixing (P-MRFO twin, c=0.5; n50 bimodal / n30 / homog)</td>
+<td>9.7 / 0.9 / 3.2 % versus 9.7–11.9 / 0.9–1.2 / 2.9–3.5 %</td>
+<td><strong>no measurable effect of the Born rule</strong></td>
+</tr>
+<tr>
+<td>signed → unsigned amplitudes (n30)</td>
+<td>0.9 % versus 0.9 %</td>
+<td><strong>no measurable effect of interference</strong></td>
+</tr>
+<tr>
+<td>basis-state attractor → superposition attractor (QI-DMO)</td>
+<td>87.8 %</td>
+<td>collapse-conditioned attraction is necessary</td>
+</tr>
+<tr>
+<td>DMO's unconditional move → greedy (QI-DMO)</td>
+<td>1.4 % (from 3.9 %)</td>
+<td>host quirk, not mechanism</td>
+</tr>
+</tbody>
+</table>
+<p>Answer: the effect is caused by (i) the superposition-and-measurement representation and (ii) the decoherence floor; the specifically quantum parts (amplitude squaring, sign/interference) contribute nothing measurable at this sample size. The mechanism is best described as a <em>measurement-based register representation with a purity-calibrated noise floor</em>; "quantum-inspired" is an accurate description of where it came from, not of why it works.</p>
+<h2 id="20-failure-analysis-phase-12-adversarial-measured-where-stated">20. Failure analysis (Phase 12, adversarial; measured where stated)</h2>
+<ul>
+<li><strong>Heavy-tailed static batches:</strong> on the bimodal instance the Max-Min list heuristic (27.06) beats every metaheuristic (best QI-MRFO 27.54, GA 28.74). The landscape probe explains it: 43 % neutral 1-move neighbours and 38 % median barriers; a list heuristic that places big tasks first is structurally right. A population method must be seeded with Max-Min or given an objective a list heuristic cannot optimise (energy/cost/deadlines) to be worth its cost there.</li>
+<li><strong>Dynamic workloads (H4, the "big-result" hypothesis):</strong> carrying the register state beats a restart on all four change types (AUC 2–4× lower) and beats the GA's carried population on drift, VM failure and VM addition; but the decoherence shock does <strong>not</strong> beat plain continuation at any churn severity between 10 % and 80 % (<code>lab_log.md</code>, severity table), and GA hypermutation — the classical analogue — is worse than GA continuation everywhere. At 80 % churn restart and continuation are indistinguishable. H4's strong form is falsified for uniform shocks; the boundary is measured.</li>
+<li><strong>Population collapse:</strong> even with the floor, QI-MRFO's end diversity is about 0.001 and 5–47 % of candidates are wasted for small c; the search relies on measurement noise around one schedule. This is a documented weakness, not hidden by the good makespans.</li>
+<li><strong>Overhead:</strong> about 4–5× wall time and $m$× memory relative to the floor encoding in pure Python (measured); irrelevant in a simulator, relevant for embedded/edge use.</li>
+<li><strong>Adversarial cases from the notebook (fast mode: 3 seeds, 10 000 evaluations; <code>results/failure_cases_fast.csv</code>; 30-seed update in §26).</strong></li>
+<li><em>17a tiny (n=10, m=3):</em> every method within 0.1–0.5 % of the lower bound, random search included (0.15 %); Max-Min is the worst (1.8 %). The mechanism is unnecessary here, as predicted.</li>
+<li><em>17b two VMs (n=40, m=2):</em> all population methods identical (≤ 0.02 % gap); the floor encoding is lossless when $m=2$, so the representational advantage vanishes, as predicted.</li>
+<li><em>17c identical tasks on homogeneous VMs (n=40, m=8; optimum = 5 tasks per VM):</em> GA, Max-Min and QI-DMO reach the optimum (25.0) in every seed; <strong>QI-MRFO reaches it in one seed of three</strong> (28.3 ± 2.9), MRFO and DMO never (30.0). This landscape is a pure plateau: an improvement requires moving one task from a 6-task VM to a 4-task VM and <em>every</em> other move is neutral. QI-MRFO's strict greedy acceptance rejects neutral moves, and its collapsed population cannot drift; QI-DMO's unconditional next-position move — the very quirk that hurts it elsewhere — provides neutral drift and solves the instance. <strong>A new, unpredicted boundary: when neutrality dominates, the decoherence floor is not a substitute for accepting neutral moves.</strong> The obvious classical fix (accept equal-fitness candidates) was tested immediately (V4, 5 seeds, <code>lab_log.md</code>): it halves the plateau gap (16 % → 8 %) but does not reach the optimum in every seed, is neutral on the uniform instances and possibly harmful on the bimodal one (within one standard deviation). Greedy acceptance therefore stays the default; the plateau failure is a <em>population-collapse</em> problem (one point relocating on a plateau cannot find a two-step exchange quickly), which points to purity-regulated decoherence rather than to acceptance rules.</li>
+<li><em>17d makespan + energy (n=100, m=10, additive objective):</em> QI-MRFO 0.212 = GA 0.212 ≈ Max-Min 0.211 (combined objective), QI-DMO 0.219, MRFO/DMO 0.37, random 0.40. The mechanism keeps its advantage over the classical hosts on the smooth objective, but so does the list heuristic: the energy term here is dominated by idle power during the makespan, so Max-Min remains hard to beat.</li>
+<li><em>17e many VMs (n=40, m=20):</em> Max-Min 3.2 % ≪ QI-MRFO 12.7 % &lt; GA 18.1 % &lt; QI-DMO 33.7 % ≪ MRFO/DMO 80–91 %. With two tasks per VM the problem is heuristic-friendly and the population methods' 10 000 evaluations are far from enough; QI-MRFO still beats the GA. <strong>Boundary: large $m/n$ favours list heuristics.</strong></li>
+<li><em>17f bimodal tall barriers (n=50, m=10, 10 000 evaluations, c=1):</em> QI-MRFO 26.41 (5.2 %) versus Max-Min 27.06 (7.8 %) and GA 29.25 (16.5 %) — the opposite of the 5-seed pilot at c=0.5 (28.10). The bimodal instance has the largest seed variance of the suite (sd 0.8–3.7); the 30-seed run decides this comparison (§26).</li>
+</ul>
+<h2 id="21-version-2-improvement-plan-what-to-change-next-evidence-driven">21. Version 2 improvement plan (what to change next, evidence-driven)</h2>
+<ol>
+<li><strong>Task-selective, severity-scaled decoherence</strong> for dynamic environments: shock only the registers of tasks whose execution-time row changed, with $\gamma$ proportional to the relative change (predicted to recover the churn/drift gains without harming structural changes) — the uniform shock is the proven-wrong version.</li>
+<li><strong>Purity-regulated $\gamma$</strong> (V3 of the static algorithm): set $\gamma_t$ so that the population's expected move size stays in a target band (e.g. 1–3 tasks) instead of a fixed $c/n$; prediction: removes the residual 5–47 % wasted evaluations at small $c$ without the quality loss seen at large $c$.</li>
+<li><strong>Max-Min seeding</strong> (one individual initialised as $E(b_{MaxMin})$): predicted to close the heavy-tailed gap; must be tested against Max-Min + local search to avoid a trivial win.</li>
+<li><strong>Objective where heuristics do not apply:</strong> the energy-aware objective (Section 17d), then deadlines/cost, evaluated in CloudSim-class simulation.</li>
+<li><strong>Drop the quantum-specific parts that do nothing</strong> (sign, squaring) from the <em>default</em> configuration and keep the honest name: measurement-based register swarm with decoherence floor; keep the Born variant as an option with its documented convergence-speed difference.</li>
+</ol>
+<h2 id="22-prior-art-recheck-after-implementation-phase-15-literatureprior_art_recheckmd">22. Prior-art recheck after implementation (Phase 15; <code>literature/prior_art_recheck.md</code>)</h2>
+<p>Searched with our own terminology, the classical equivalents, quantum, cloud and optimisation terms. <strong>(a) Already published:</strong> the classical twin is essentially ICPSO (Strasser, Goodman, Sheppard &amp; Butcher, GECCO 2016: one probability distribution per variable, unchanged PSO equations, renormalisation, one sample per evaluation, best-distributions shifted toward the sampled state — $\varepsilon = 0$ is exactly our basis-state attractor), with Pugh &amp; Martinoli (2006) and Kennedy &amp; Eberhart (1997) as precursors; Born-rule measurement of unit-vector registers is Han &amp; Kim (2002) in the binary case and appears m-ary in QIEDA (Soloviev et al. 2021) and qudit imaginary-time evolution (Åsgrim &amp; Awan 2025); a floor against full collapse exists as the Hε gate (Han &amp; Kim 2004), EDA margins (Krejca &amp; Witt 2018), Baluja's mutation shift and PBIL's pull-to-centre (Yang &amp; Richter 2009); controlled forgetting at a change exists as PBIL hypermutation/hyper-learning and ACO pheromone equalisation after city deletion (Guntsch &amp; Middendorf 2001). <strong>(b) Separately published, never combined:</strong> amplitude registers with swarm difference-vector updates; m-ary registers + floor + change-triggered shock. <strong>(c) Not found:</strong> a per-candidate depolarising channel in any EA/swarm; purity used to calibrate expected reassignments; a decoherence shock of strength $\gamma_{shock}$; VM removal as projective column deletion with warm re-optimisation; any of this in a cloud scheduler. The defensible novelty is therefore narrow and must be stated as such: the purity-calibrated floor and its dose–response, the amplitude-versus-probability comparison (negative), the structural-change rules and the failure-mode analysis of rounding encodings — positioned against ICPSO and QIEA, not as a new probabilistic-register swarm.</p>
+<h2 id="23-possible-research-contribution-phase-1617">23. Possible research contribution (Phase 16/17)</h2>
+<p>In the requested form: <em>We identify the condition — task-to-VM scheduling with $n \gtrsim 50$ tasks under the floor encoding used by most swarm-scheduling papers — under which the classical optimizers DMO and MRFO exhibit the failure mode "move size ≈ n/2, ≤ 2 % improving candidates, random-search-level makespan", and show that a measurement-based register representation with a purity-calibrated decoherence floor changes the property "expected number of reassigned tasks per candidate" (from ≈ n/2 to a controllable few, with a measured dose–response in the floor strength) and therefore improves the outcome "makespan at equal evaluation budget" from a 76–98 % gap to ≈ 1 %, matching a discrete GA. We further show (negative result) that the quantum-specific ingredients — amplitude squaring and signed interference — are measurably irrelevant, and that uniform decoherence shocks do not improve re-optimisation after workload changes at any tested severity, whereas the representation's structural adaptation rules do.</em></p>
+<p>Outcome type by the Phase 16 taxonomy: <strong>B (works under a characterised regime: n large, heuristics inapplicable, warm re-optimisation) plus a clean negative for the "quantum" part and for uniform forgetting.</strong> It is not outcome D (no advantage): the advantage over the algorithms the field actually uses (floor-encoded swarms) is large and reproducible (30 seeds, 7 instances, Holm-corrected p &lt; 10⁻⁴, Cliff's δ ≈ −1); the advantage over a proper discrete baseline is small or zero on static batches (GA-class; significantly better on one of seven instances) and real on dynamic ones; and a two-pass list heuristic beats it on six of seven static heterogeneous batches at this budget (§26). The contribution is therefore a <em>representation result with a measured boundary</em>, not a new best static scheduler.</p>
+<h2 id="24-two-year-extension-phase-20">24. Two-year extension (Phase 20)</h2>
+<ul>
+<li>0–3 months — literature + fundamentals: this report's maps; ICPSO/QIEA/EDA theory (genetic drift with r-valued variables, Ben Jedidia, Doerr &amp; Krejca 2024); CloudSim 7G/iFogSim familiarisation.</li>
+<li>3–6 months — algorithm + pilot: the notebook's <code>full</code> study on a held-out instance family and real traces (GoCJ, HPC2N, Google), Max-Min-seeded variants, energy/cost/deadline objectives; first workshop paper: "Why rounding breaks swarm schedulers and what a measurement-based representation fixes".</li>
+<li>6–10 months — mechanism refinement: purity-regulated $\gamma$, task-selective severity-scaled shocks, structural rules for VM heterogeneity changes; dynamic benchmark suite with change generators; second paper (dynamic re-optimisation).</li>
+<li>10–14 months — theoretical analysis: expected-move-size and drift analysis of the register swarm with a floor (runtime analysis in the style of Neumann's chance-constrained makespan work; margins/drift results from EDA theory transfer directly because the twin is a univariate model).</li>
+<li>14–18 months — large-scale experiments: CloudSim/WorkflowSim with DAG workflows, 30+ seeds, DRL and list-scheduling baselines, statistical protocol as in Section 14 of the notebook.</li>
+<li>18–21 months — prototype: a Kubernetes scheduler plugin/descheduler using the warm-started register swarm for pod placement under node churn (iContinuum/GreenK8s-style testbed).</li>
+<li>21–24 months — publication + thesis.</li>
+</ul>
+<p>Minimum viable thesis: the failure-mode analysis + representation fix + dose–response + dynamic structural rules, all reproducible (already in hand as a pilot). Main contribution: severity-aware re-optimisation with a measurement-based representation, with theory. Optional extension: Kubernetes prototype. Negative-result contribution (already obtained, publishable as a short paper): quantum-specific ingredients and uniform decoherence shocks add nothing measurable — a caution to the growing "quantum-inspired scheduler" literature.</p>
+<h2 id="25-exact-next-experiment">25. Exact next experiment</h2>
+<p><em>Task-selective decoherence under churn.</em> Same harness as <code>observe_dyn_severity.py</code> (n=50, m=10, 15 000-evaluation warm start, 6 changes × 4 000 evaluations, 10 seeds), churn $\rho \in \{0.1, 0.2, 0.5\}$; strategies: continue_struct (control), uniform shock $\gamma \in \{0.25, 0.5\}$ (known-negative control), <strong>selective shock</strong> (registers of tasks sharing a VM with a replaced task receive $\gamma_{sel}$), and <strong>severity-scaled shock</strong> $\gamma_t = \kappa \cdot |ET'_t - ET_t|_1 / |ET_t|_1$ for drift. Metrics: post-change gap and AUC. Prediction (falsifiable): selective/scaled shocks reduce AUC below continue_struct by at least 10 % at $\rho = 0.5$ and are neutral at $\rho = 0.1$; if they do not, the forgetting line is closed and the programme concentrates on structural rules, purity regulation and the theory.</p>
+<h2 id="26-30-seed-confirmation-notebook-full-mode-executed-in-docker-measured">26. 30-seed confirmation (notebook <code>full</code> mode, executed in Docker; measured)</h2>
+<p><strong>Part A — baseline (2 100 runs: 7 instances × 10 algorithms × 30 seeds; 20 000 evaluations each; <code>results/baseline_full.csv</code>, <code>results/stats_full.csv</code>).</strong> Three instance shapes are new relative to the pilot (held-out): n=200 m=20; n=100 m=10 lognormal tasks on low-heterogeneity VMs; n=60 m=8 bimodal tasks on homogeneous VMs.</p>
+<p>Mean gap to the lower bound (%), 30 seeds:</p>
+<table>
+<thead>
+<tr>
+<th>Instance</th>
+<th>Max-Min</th>
+<th>Random</th>
+<th>PSO</th>
+<th>DMO</th>
+<th>MRFO</th>
+<th>GA</th>
+<th>QI-MRFO</th>
+<th>QI-DMO</th>
+<th>P-MRFO (linear twin)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>n30 m5 uniform, hetero</td>
+<td>2.10</td>
+<td>6.76</td>
+<td>3.01</td>
+<td>2.89</td>
+<td>6.52</td>
+<td>0.87</td>
+<td><strong>1.06</strong></td>
+<td>1.65</td>
+<td>0.93</td>
+</tr>
+<tr>
+<td>n50 m10 bimodal, hetero</td>
+<td>7.77</td>
+<td>34.50</td>
+<td>14.06</td>
+<td>40.85</td>
+<td>42.15</td>
+<td>13.55</td>
+<td><strong>11.99</strong></td>
+<td>18.04</td>
+<td>13.27</td>
+</tr>
+<tr>
+<td>n100 m10 uniform, hetero</td>
+<td>0.83</td>
+<td>95.34</td>
+<td>33.84</td>
+<td>75.39</td>
+<td>83.94</td>
+<td>1.44</td>
+<td><strong>1.12</strong></td>
+<td>3.96</td>
+<td>1.25</td>
+</tr>
+<tr>
+<td>n50 m10 uniform, homogeneous</td>
+<td>2.10</td>
+<td>15.23</td>
+<td>6.44</td>
+<td>16.05</td>
+<td>17.70</td>
+<td>3.55</td>
+<td><strong>3.14</strong></td>
+<td>7.17</td>
+<td>3.17</td>
+</tr>
+<tr>
+<td>n200 m20 uniform, hetero (held-out)</td>
+<td>0.82</td>
+<td>160.41</td>
+<td>78.16</td>
+<td>246.16</td>
+<td>150.00</td>
+<td>3.25</td>
+<td><strong>2.79</strong></td>
+<td>9.02</td>
+<td>2.61</td>
+</tr>
+<tr>
+<td>n100 m10 lognormal, low hetero (held-out)</td>
+<td>0.79</td>
+<td>14.82</td>
+<td>4.40</td>
+<td>15.79</td>
+<td>13.67</td>
+<td>1.07</td>
+<td><strong>1.07</strong></td>
+<td>3.16</td>
+<td>0.92</td>
+</tr>
+<tr>
+<td>n60 m8 bimodal, homogeneous (held-out)</td>
+<td>3.96</td>
+<td>19.83</td>
+<td>11.65</td>
+<td>18.46</td>
+<td>21.64</td>
+<td>8.04</td>
+<td><strong>8.68</strong></td>
+<td>9.23</td>
+<td>10.34</td>
+</tr>
+</tbody>
+</table>
+<p>Paired statistics (Wilcoxon signed-rank by seed, Holm-corrected across the 7 instances; Cliff's δ; 95 % bootstrap CI of the mean difference in percentage points):</p>
+<table>
+<thead>
+<tr>
+<th>Comparison</th>
+<th>Result over the 7 instances</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QI-MRFO vs MRFO</td>
+<td>QI-MRFO better on all 7: Holm p &lt; 10⁻⁴ everywhere, δ = −0.97 … −1.00; differences −5.5 pp (n30) to −147 pp (n200)</td>
+</tr>
+<tr>
+<td>QI-DMO vs DMO</td>
+<td>QI-DMO better on all 7: Holm p &lt; 10⁻⁴, δ = −0.82 … −1.00; −1.2 pp (n30) to −237 pp (n200)</td>
+</tr>
+<tr>
+<td>QI-MRFO vs GA</td>
+<td>equal or slightly better: significantly better only at n100 (−0.32 pp, CI [−0.54, −0.08], Holm p = 0.011, δ = −0.55); raw p &lt; 0.05 but not after Holm at n50-homogeneous (−0.41 pp) and n200 (−0.46 pp); no difference on the other four (</td>
+</tr>
+<tr>
+<td>QI-MRFO vs P-MRFO (linear twin)</td>
+<td><strong>no significant difference on any instance after Holm</strong> (smallest Holm p = 0.34;</td>
+</tr>
+<tr>
+<td>QI-MRFO vs Max-Min</td>
+<td>Max-Min significantly better on 6 of 7 (Holm p ≤ 0.013; by 0.3 pp at n100 and lognormal, 1.0 pp homogeneous, 2.0 pp n200, 4.2 pp bimodal-hetero, 4.7 pp bimodal-homogeneous); QI-MRFO better only at n30 (−1.05 pp, Holm p &lt; 10⁻⁴)</td>
+</tr>
+<tr>
+<td>QI-MRFO vs QI-DMO</td>
+<td>QI-MRFO better on 6 of 7 (Holm p ≤ 0.002), tie on bimodal-homogeneous</td>
+</tr>
+<tr>
+<td>QI-DMO vs GA</td>
+<td>GA better on 6 of 7 (Holm p ≤ 0.014); tie on bimodal-homogeneous</td>
+</tr>
+</tbody>
+</table>
+<p>Mechanism metrics (means over 30 seeds; largest instances): tasks changed per candidate — MRFO 126, DMO 121, QI-MRFO 19, linear twin 27, GA 7.6 (n200 m20); MRFO 46, QI-MRFO 10, GA 5.4 (n100). Global-best improvements per 1 000 evaluations at n200: QI-MRFO 5.1, GA 3.4, MRFO 0.48. Wasted candidates QI-MRFO 9–21 % (c = 1), end diversity 0.001–0.02, end purity 0.92–0.99. Runtime per 20 000 evaluations: QI-MRFO 2.5–4.6× MRFO (16–41 s vs 4–12 s in the Docker container with 18 concurrent processes); QI-DMO 2–3× DMO.</p>
+<p><strong>What the 30 seeds change relative to the pilot.</strong> (i) The encoding effect and its growth with $n$ are confirmed with overwhelming evidence, including on the three held-out shapes (n=200, m=20: MRFO 150 % → QI-MRFO 2.8 %). (ii) The Born-rule irrelevance is confirmed: no instance separates QI-MRFO from its linear-probability twin. (iii) The pilot's "ties or beats the GA on all four instances" softens to "equal or slightly better, significant on one instance": QI-MRFO is a GA-class optimizer, not a better one. (iv) The pilot's suggestion that QI-MRFO matches Max-Min at n=100 (47.54 vs 47.45) does not survive: with 30 seeds Max-Min is significantly better on 6 of 7 static instances by 0.3–4.7 pp; QI-MRFO beats it only on the smallest instance. The boundary stated in §20 therefore widens: <strong>on static independent-task makespan batches with heterogeneous VMs, a two-pass list heuristic is the right tool, and the population method's case rests on objectives and dynamics the heuristic does not handle</strong> — which is exactly the direction the proposal takes.</p>
+<p><strong>Part B — ablation, sensitivity, adversarial and dynamic sections of the <code>full</code> run (measured; <code>results/ablation_full.csv</code>, <code>sensitivity_full.csv</code>, <code>failure_cases_full.csv</code>, <code>dynamic_full.csv</code>; the executed notebook is <code>results/executed_full.ipynb</code>, zero cell errors).</strong></p>
+<p><em>Ablation (30 seeds, 20 000 evaluations, 4 instances; mean gap to LB in %):</em></p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>n30 m5</th>
+<th>n50 bimodal</th>
+<th>n100 m10</th>
+<th>n50 homogeneous</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MRFO (classical)</td>
+<td>6.52</td>
+<td>42.15</td>
+<td>83.94</td>
+<td>17.70</td>
+</tr>
+<tr>
+<td>QI-MRFO no-decoherence (registers + measurement only)</td>
+<td>2.46</td>
+<td>17.74</td>
+<td>13.12</td>
+<td>7.84</td>
+</tr>
+<tr>
+<td><strong>QI-MRFO</strong> (c = 1)</td>
+<td>1.06</td>
+<td>11.99</td>
+<td>1.12</td>
+<td>3.14</td>
+</tr>
+<tr>
+<td>QI-MRFO unsigned amplitudes</td>
+<td>1.24</td>
+<td>13.91</td>
+<td>1.16</td>
+<td>3.65</td>
+</tr>
+<tr>
+<td>P-MRFO linear twin (no Born rule)</td>
+<td>0.93</td>
+<td>13.27</td>
+<td>1.25</td>
+<td>3.17</td>
+</tr>
+<tr>
+<td>DMO (classical)</td>
+<td>2.89</td>
+<td>40.85</td>
+<td>75.39</td>
+<td>16.05</td>
+</tr>
+<tr>
+<td>DMO greedy-next</td>
+<td>2.26</td>
+<td>17.65</td>
+<td>30.03</td>
+<td>12.58</td>
+</tr>
+<tr>
+<td>QI-DMO no-decoherence</td>
+<td>2.43</td>
+<td>23.30</td>
+<td>4.33</td>
+<td>8.02</td>
+</tr>
+<tr>
+<td><strong>QI-DMO</strong> (c = 0.25)</td>
+<td>1.65</td>
+<td>18.04</td>
+<td>3.96</td>
+<td>7.17</td>
+</tr>
+<tr>
+<td>QI-DMO greedy-next</td>
+<td>1.33</td>
+<td>10.12</td>
+<td>1.46</td>
+<td>3.69</td>
+</tr>
+<tr>
+<td>P-DMO linear twin</td>
+<td>1.71</td>
+<td>16.25</td>
+<td>4.72</td>
+<td>7.53</td>
+</tr>
+<tr>
+<td>QI-DMO register-attractor (negative control)</td>
+<td>6.70</td>
+<td>32.87</td>
+<td>91.16</td>
+<td>15.12</td>
+</tr>
+<tr>
+<td>GA</td>
+<td>0.87</td>
+<td>13.55</td>
+<td>1.44</td>
+<td>3.55</td>
+</tr>
+</tbody>
+</table>
+<p>The ladder holds at 30 seeds: representation first (84 % → 13 % at n100), decoherence floor second (13 % → 1.1 %); unsigned and linear-twin variants are within one standard deviation of QI-MRFO on every instance (SD 0.4–0.5 pp on the uniform instances, 7 pp on bimodal); the superposition attractor destroys the search; DMO's unconditional move explains the QI-DMO deficit (greedy-next QI-DMO: 1.46 % at n100, 10.1 % on bimodal — the best population result on that instance). One nuance the pilot missed: for QI-DMO the decoherence floor matters little (4.33 → 3.96 at n100) because DMO's own unconditional noise step already acts as a floor; for QI-MRFO, which is greedy in every phase, the floor is essential (13.1 → 1.1).</p>
+<p><em>Sensitivity (30 seeds; n100 m10, n200 m20, n50 bimodal; gap %):</em></p>
+<table>
+<thead>
+<tr>
+<th>c in γ = c/n</th>
+<th>0</th>
+<th>0.25</th>
+<th>0.5</th>
+<th>1</th>
+<th>2</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QI-MRFO n100</td>
+<td>13.12</td>
+<td>1.43</td>
+<td>1.34</td>
+<td><strong>1.12</strong></td>
+<td>1.35</td>
+<td>1.65</td>
+</tr>
+<tr>
+<td>QI-MRFO n200 m20</td>
+<td>75.04</td>
+<td>5.64</td>
+<td>3.36</td>
+<td><strong>2.79</strong></td>
+<td>3.37</td>
+<td>5.05</td>
+</tr>
+<tr>
+<td>QI-MRFO bimodal</td>
+<td>17.74</td>
+<td>12.32</td>
+<td>12.19</td>
+<td>11.99</td>
+<td>11.78</td>
+<td>11.32</td>
+</tr>
+<tr>
+<td>QI-DMO n100</td>
+<td>4.33</td>
+<td><strong>3.96</strong></td>
+<td>5.49</td>
+<td>7.66</td>
+<td>10.66</td>
+<td>22.22</td>
+</tr>
+<tr>
+<td>QI-DMO n200 m20</td>
+<td>12.76</td>
+<td><strong>9.02</strong></td>
+<td>11.55</td>
+<td>17.38</td>
+<td>29.73</td>
+<td>55.60</td>
+</tr>
+<tr>
+<td>QI-DMO bimodal</td>
+<td>23.30</td>
+<td>18.04</td>
+<td><strong>16.63</strong></td>
+<td>18.17</td>
+<td>22.22</td>
+<td>25.48</td>
+</tr>
+</tbody>
+</table>
+<p>QI-MRFO's wasted-candidate fraction falls monotonically with c (0.62 → 0.44 → 0.31 → 0.17 → 0.05 → 0.002 at n100) while quality is flat between c = 0.5 and 2: a broad, forgiving optimum. QI-DMO's optimum is sharp (c = 0.25) and large c is destructive (55.6 % at n200 for c = 4): the host's own noise compounds the channel. Population size 15/30/60 and somersault factor 1/2/3 change QI-MRFO by ≤ 0.4 pp at n100 (P = 15 is slightly better at n200: 2.42 vs 2.79 vs 3.22 for P = 60, i.e. more iterations help when the budget is tight).</p>
+<p><em>Adversarial cases (30 seeds, 10 000 evaluations; gap % unless stated):</em></p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Max-Min</th>
+<th>Random</th>
+<th>MRFO</th>
+<th>QI-MRFO</th>
+<th>GA</th>
+<th>DMO</th>
+<th>QI-DMO</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>17a tiny (n10 m3)</td>
+<td>1.77</td>
+<td><strong>0.17</strong></td>
+<td>0.85</td>
+<td>0.33</td>
+<td>0.21</td>
+<td>0.22</td>
+<td>0.33</td>
+</tr>
+<tr>
+<td>17b two VMs (n40 m2)</td>
+<td>0.35</td>
+<td>0.004</td>
+<td>0.02</td>
+<td>0.005</td>
+<td>0.003</td>
+<td>0.002</td>
+<td>0.001</td>
+</tr>
+<tr>
+<td>17c identical tasks, homogeneous VMs (n40 m8)</td>
+<td><strong>0.00</strong></td>
+<td>17.3</td>
+<td>18.7</td>
+<td>11.3 (27.83 ± 2.5)</td>
+<td><strong>0.00</strong></td>
+<td>17.3</td>
+<td>3.3</td>
+</tr>
+<tr>
+<td>17d makespan + energy (combined objective, lower is better)</td>
+<td><strong>0.211</strong></td>
+<td>0.400</td>
+<td>0.375</td>
+<td>0.212</td>
+<td>0.213</td>
+<td>0.375</td>
+<td>0.218</td>
+</tr>
+<tr>
+<td>17e many VMs (n40 m20)</td>
+<td><strong>3.19</strong></td>
+<td>96.6</td>
+<td>96.6</td>
+<td>15.4</td>
+<td>18.6</td>
+<td>90.7</td>
+<td>33.2</td>
+</tr>
+<tr>
+<td>17f bimodal tall barriers (n50 m10, 10k)</td>
+<td><strong>7.77</strong></td>
+<td>36.8</td>
+<td>44.5</td>
+<td>13.2</td>
+<td>14.7</td>
+<td>53.0</td>
+<td>19.6</td>
+</tr>
+</tbody>
+</table>
+<p>All four predicted boundaries are confirmed: tiny and two-VM instances need no mechanism (random search is within 0.2 %); the pure plateau defeats QI-MRFO (11.3 %) while the GA and Max-Min solve it exactly and QI-DMO nearly does (3.3 %, its unconditional move supplies neutral drift); many VMs per task and heavy-tailed batches belong to the list heuristic (Max-Min 3.2 % and 7.8 % versus QI-MRFO 15.4 % and 13.2 %); the fast-mode hint that QI-MRFO beats Max-Min on the bimodal instance was a 3-seed artefact. On the smooth makespan + energy objective QI-MRFO (0.212) equals the GA (0.213) and Max-Min (0.211) and beats its classical host (0.375) by 43 %.</p>
+<p><em>Dynamic workloads (10 seeds; n50 m10; 15 000-evaluation warm start, then 5 changes × 4 000 evaluations; QI-MRFO c = 1; mean post-change gap % / area under the gap curve %):</em></p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>churn 20 %</th>
+<th>drift</th>
+<th>VM addition</th>
+<th>VM failure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QI-MRFO restart</td>
+<td>4.73 / 14.2</td>
+<td>5.62 / 20.6</td>
+<td>8.82 / 24.6</td>
+<td>2.16 / 8.3</td>
+</tr>
+<tr>
+<td><strong>QI-MRFO continue</strong> (carried registers + structural rules)</td>
+<td><strong>4.12 / 5.6</strong></td>
+<td>4.40 / <strong>8.8</strong></td>
+<td><strong>6.96 / 8.8</strong></td>
+<td>2.13 / <strong>3.2</strong></td>
+</tr>
+<tr>
+<td>QI-MRFO shock γ = 0.25</td>
+<td>4.23 / 8.2</td>
+<td>4.27 / 9.0</td>
+<td>7.73 / 12.5</td>
+<td>2.10 / 3.8</td>
+</tr>
+<tr>
+<td>QI-MRFO shock γ = 0.5</td>
+<td>4.66 / 10.3</td>
+<td>4.25 / 12.0</td>
+<td>7.34 / 15.3</td>
+<td>2.07 / 4.8</td>
+</tr>
+<tr>
+<td>QI-MRFO shock γ = 0.75</td>
+<td>4.75 / 13.4</td>
+<td>5.03 / 17.7</td>
+<td>8.18 / 19.8</td>
+<td>2.20 / 6.2</td>
+</tr>
+<tr>
+<td>MRFO restart / continue</td>
+<td>51 / 50</td>
+<td>79 / 72</td>
+<td>76 / 72</td>
+<td>34 / 15</td>
+</tr>
+<tr>
+<td>GA restart</td>
+<td>5.93 / 16.0</td>
+<td>6.21 / 22.9</td>
+<td>9.92 / 25.5</td>
+<td>2.53 / 9.3</td>
+</tr>
+<tr>
+<td>GA continue</td>
+<td>5.00 / 7.2</td>
+<td>5.51 / 10.0</td>
+<td>8.92 / 11.5</td>
+<td>2.81 / 5.1</td>
+</tr>
+<tr>
+<td>GA hypermutation</td>
+<td>5.79 / 11.2</td>
+<td>6.37 / 15.9</td>
+<td>10.50 / 14.2</td>
+<td>2.82 / 8.6</td>
+</tr>
+</tbody>
+</table>
+<p>With 10 seeds the picture of the 5-seed pilot is unchanged and sharper: carrying the register state is the best or within noise of the best strategy on every change type, with recovery areas 2.5–3× smaller than a restart; <strong>QI-MRFO-continue beats GA-continue on all four change types</strong> (by 0.7–2.0 pp in final gap and 20–45 % in recovery area; seed SDs 0.4–1.1 pp); the decoherence shock never improves on continuation by more than 0.15 pp (drift, γ ≤ 0.5) and always slows recovery; GA hypermutation is worse than GA continuation everywhere. The value of the mechanism for cloud resource management is therefore not "quantum forgetting" but the warm-startable, structurally adaptable state that a measurement-based representation provides.</p>
+<h2 id="final-decision">Final decision</h2>
+<p><strong>PROCEED — with the revised framing.</strong> The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"</p></body></html>

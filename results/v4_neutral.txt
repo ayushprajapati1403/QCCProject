@@ -1,0 +1,16 @@
+
+=== n=40 m=8 identical none LB=25.000 MaxMin=25.000
+QI-MRFO c=1 accept_equal=False best=  29.000 sd= 2.000 gap= 16.00%  wasted=0.072 neutral=0.287
+QI-MRFO c=1 accept_equal=True  best=  27.000 sd= 2.449 gap=  8.00%  wasted=0.127 neutral=0.236
+
+=== n=100 m=10 uniform high LB=47.061 MaxMin=47.449
+QI-MRFO c=1 accept_equal=False best=  47.512 sd= 0.065 gap=  0.96%  wasted=0.165 neutral=0.019
+QI-MRFO c=1 accept_equal=True  best=  47.542 sd= 0.116 gap=  1.02%  wasted=0.171 neutral=0.025
+
+=== n=50 m=10 bimodal high LB=25.107 MaxMin=27.058
+QI-MRFO c=1 accept_equal=False best=  27.538 sd= 1.391 gap=  9.68%  wasted=0.117 neutral=0.163
+QI-MRFO c=1 accept_equal=True  best=  28.306 sd= 1.493 gap= 12.74%  wasted=0.127 neutral=0.177
+
+=== n=30 m=5 uniform high LB=44.528 MaxMin=45.463
+QI-MRFO c=1 accept_equal=False best=  44.932 sd= 0.174 gap=  0.91%  wasted=0.206 neutral=0.005
+QI-MRFO c=1 accept_equal=True  best=  45.012 sd= 0.324 gap=  1.09%  wasted=0.220 neutral=0.004

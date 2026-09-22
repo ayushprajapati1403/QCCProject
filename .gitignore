@@ -1,0 +1,24 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Notebook and test caches
+.ipynb_checkpoints/
+.pytest_cache/
+.mypy_cache/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Transient build logs
+*.log

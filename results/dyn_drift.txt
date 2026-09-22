@@ -1,0 +1,12 @@
+=== dynamic pilot: change=drift n=50 m=10 K=6 budget0=15000 budget=4000
+QI-MRFO restart              mean post-change gap=  6.09% (sd 0.74)  AUC-gap= 22.10%  best/MaxMin=1.0412
+QI-MRFO continue             mean post-change gap=  4.30% (sd 0.32)  AUC-gap= 10.05%  best/MaxMin=1.0235
+QI-MRFO continue_struct      mean post-change gap=  4.30% (sd 0.32)  AUC-gap= 10.05%  best/MaxMin=1.0235
+QI-MRFO shock 0.25           mean post-change gap=  4.51% (sd 0.40)  AUC-gap=  8.58%  best/MaxMin=1.0256
+QI-MRFO shock 0.5            mean post-change gap=  4.13% (sd 0.49)  AUC-gap= 10.60%  best/MaxMin=1.0218
+QI-MRFO shock 0.75           mean post-change gap=  6.56% (sd 1.96)  AUC-gap= 18.49%  best/MaxMin=1.0456
+MRFO restart                 mean post-change gap= 69.29% (sd 21.63)  AUC-gap= 81.70%  best/MaxMin=1.6607
+MRFO continue                mean post-change gap= 66.50% (sd 6.60)  AUC-gap= 71.63%  best/MaxMin=1.6332
+GA restart                   mean post-change gap=  6.19% (sd 1.35)  AUC-gap= 20.81%  best/MaxMin=1.0420
+GA continue                  mean post-change gap=  5.62% (sd 0.48)  AUC-gap=  9.80%  best/MaxMin=1.0365
+GA hypermut                  mean post-change gap=  6.70% (sd 0.93)  AUC-gap= 16.09%  best/MaxMin=1.0472

@@ -1,0 +1,13 @@
+
+=== n=100 m=10 tasks=uniform vms=high  LB=47.06 MaxMin=47.45
+DMO(classical)         best=   82.62 sd= 6.16 gap= 75.6% | wasted_frac=0.037 improving_frac=0.261 mean_move_size=48.855 runtime_s=3.525 div_end=0.565 best@25%=101.911
+QI-DMO gamma=0.0/n     best=   49.36 sd= 0.49 gap=  4.9% | wasted_frac=0.257 improving_frac=0.170 mean_move_size=11.319 runtime_s=7.456 div_end=0.015 best@25%=51.928 purity_end=0.996
+QI-DMO gamma=0.25/n    best=   48.88 sd= 0.26 gap=  3.9% | wasted_frac=0.001 improving_frac=0.344 mean_move_size=22.273 runtime_s=11.249 div_end=0.143 best@25%=51.459 purity_end=0.939
+QI-DMO gamma=0.5/n     best=   49.67 sd= 0.54 gap=  5.5% | wasted_frac=0.000 improving_frac=0.350 mean_move_size=29.372 runtime_s=10.376 div_end=0.317 best@25%=54.138 purity_end=0.871
+QI-DMO gamma=1.0/n     best=   50.88 sd= 0.32 gap=  8.1% | wasted_frac=0.000 improving_frac=0.355 mean_move_size=36.558 runtime_s=10.588 div_end=0.430 best@25%=54.779 purity_end=0.810
+QI-DMO gamma=2.0/n     best=   52.34 sd= 0.36 gap= 11.2% | wasted_frac=0.000 improving_frac=0.356 mean_move_size=44.809 runtime_s=11.229 div_end=0.582 best@25%=57.915 purity_end=0.718
+P-DMO linear g=0.5/n   best=   49.75 sd= 0.37 gap=  5.7% | wasted_frac=0.000 improving_frac=0.368 mean_move_size=34.690 runtime_s=10.023 div_end=0.221 best@25%=60.604 purity_end=0.918
+MRFO(classical)        best=   93.39 sd=12.86 gap= 98.5% | wasted_frac=0.145 improving_frac=0.014 mean_move_size=43.858 runtime_s=3.129 div_end=0.022 best@25%=94.248
+QI-MRFO gamma=0        best=   53.93 sd= 3.25 gap= 14.6% | wasted_frac=0.632 improving_frac=0.024 mean_move_size=6.909 runtime_s=7.561 div_end=0.001 best@25%=55.857 purity_end=0.996
+QI-MRFO gamma=0.5/n    best=   47.54 sd= 0.19 gap=  1.0% | wasted_frac=0.314 improving_frac=0.038 mean_move_size=8.825 runtime_s=13.156 div_end=0.001 best@25%=48.701 purity_end=0.985
+GA                     best=   47.72 sd= 0.05 gap=  1.4% | wasted_frac=0.032 improving_frac=0.238 mean_move_size=5.353 runtime_s=4.902 div_end=0.089 best@25%=48.139
