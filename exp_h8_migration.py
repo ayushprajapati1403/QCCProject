@@ -5,7 +5,7 @@ research_plan_v5.md §14 before this script was run.
 After the first epoch the objective is  cost(a) = makespan(a) x (1 + lambda x voluntary migrations / eligible tasks),
 relative to the previous DEPLOYED schedule (qi_core.Objective kind 'makespan_migration').
 
-  python exp_h8_migration.py run       # 6 scenarios x 10 FRESH seeds (201-210) x 3 lambdas x 6 strategies
+  python exp_h8_migration.py run       # 6 scenarios x 10 FRESH seeds (201-210) x 3 lambdas x 7 strategies
   python exp_h8_migration.py analyze   # statistics -> results/h8_analysis.md
 
 Outputs are new, write-once files: results/h8_migration/, results/h8_analysis.md.
