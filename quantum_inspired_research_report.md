@@ -720,6 +720,107 @@ duplicates, reproducing V2's low-c waste. The move-size distribution is bimodal 
 ones), so mean purity is a poor control signal. A controller on a direct signal, such as the per-register or
 parent-identical duplicate rate, is UNMEASURED.
 
+## 33. V5 — event-aware elite under migration pricing (H11; measured, fresh seeds)
+
+**Why.** Twice (H6b, H10a) the carried elite helped after every event type except a VM addition. After a VM addition
+the carried schedule leaves the new VM empty and, as the attractor, blocks the register swarm's coordinated escape
+(§30). The rule "no elite after a VM addition" was derived post hoc, so it was pre-registered (`research_plan_v5.md`
+§21) and tested on **fresh seeds 401–410** (720 runs; `results/h11_analysis.md`).
+
+| Pooled cost gap % | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Chooser (best heuristic) | 3.44 | 8.72 | 29.78 |
+| QI-MRFO+CXM continue, no elite | 3.02 | 7.23 | 19.26 |
+| … + elite always | 4.37 | 9.90 | 19.59 |
+| **… + event-aware elite** | **2.61** | **6.45** | **17.07** |
+
+**Verdicts.**
+* **H11a retained at every λ.** Event-aware − no elite: −0.41, −0.78 and −2.19 pp; 41/9, 41/9 and 40/10 wins;
+  Holm p < 1e-4.
+* **H11b retained at every λ.** Event-aware − always-elite: −1.76, −3.45 and −2.52 pp.
+* **H11c.** The event-aware swarm beats the Chooser at **every** λ: −0.83, −2.27 and −12.7 pp. It wins on drift, mixed
+  events, VM failure and (at λ ≥ 0.2) VM addition. It is still worse on pure churn at λ ≥ 0.2, where zero-migration
+  incremental repair is best.
+* **Replication.** The unconditional elite remains n.s. on fresh seeds.
+
+**Reading.** The rule combines two mechanisms, each where it helps: the deployed schedule as a zero-migration anchor
+after local events, and the register representation's uniform-share rule for new capacity, which produces coordinated
+multi-task moves, after a VM addition. Of all V5 results this is the most specific to the register representation.
+The (1+1)-EA with the same moves cannot make these moves (§30), and this configuration beats the best heuristic
+chooser at every migration price tested. The remaining boundary (churn) suggests repairing the elite by greedy
+placement of new tasks; that is UNMEASURED.
+
+## 34. V5 summary — every hypothesis, its test, its verdict
+
+All hypotheses were pre-registered in `research_plan_v5.md` before their runs, and every result directory is
+write-once with its git commit in `meta.json`. Unit = instance (static) or scenario-seed pair (dynamic). Held-out
+seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
+`results/fig_v5_dynamic_tradeoff.png`, `results/fig_v5_migration_heatmap.png`.
+
+| # | Hypothesis | Held-out test | Verdict |
+|---|---|---|---|
+| H5 | Critical exchange measurement (CXM) lowers the static gap | 80 instances (seeds 101–110) | **confirmed** (−2.86 pp, 76/80); beats Max-Min on 6/8 families; Born rule *worse* than the linear twin; GA gains far less |
+| H6 | CXM under change; elite carry-over; vs Max-Min recompute with migrations | 60 pairs (seeds 101–110) | **H6a confirmed** (60/60); **H6b rejected** (hurts after VM addition); **H6d confirmed** (lower gap, 41 % fewer migrations than Max-Min recompute) |
+| H7 | The swarm is needed once CXM exists; Max-Min seeding | 80 fresh instances (seeds 201–210) | **H7a failed**: a (1+1)-EA with the same moves wins 58/80, so the static gain belongs to CXM; **H7b confirmed** (seeding fixes the plateau family) |
+| H8 | Migration-priced re-optimisation beats the best heuristic chooser | 60 pairs × 3 λ (seeds 201–210) | retained at λ = 0.2 and 1.0; heterogeneous by change type; the (1+1)-EA is stuck after VM additions |
+| H9 | Purity-regulated γ (report §21 item 2) removes waste without loss | 80 instances (seeds 301–310) | **falsified** with and without CXM (duplicates rise, gap worsens) |
+| H10 | The deployed schedule as an elite anchor under migration pricing | 60 pairs × 3 λ (seeds 301–310) | **rejected** pooled (wins 10/10 on churn and VM failure, loses 0–1/10 on VM addition) |
+| H11 | Event-aware elite (none after VM addition) | 60 pairs × 3 λ (seeds 401–410) | **confirmed at every λ**; beats the best heuristic chooser at every λ; remaining boundary: pure churn at λ ≥ 0.2 |
+
+### Threats to validity (V5)
+
+* **Synthetic workloads only.** All instances come from the project's generator: independent tasks, uniform /
+  lognormal / bimodal lengths, three VM-heterogeneity levels. Real traces (GoCJ, Google, Alibaba) and DAG workflows
+  are UNMEASURED.
+* **Fixed budgets and sizes.** Static runs use 20 000 evaluations; dynamic runs use 20 000 + 8 × 4 000 per scenario,
+  P = 30, n ≤ 300. Other budgets, and whether the population pays off at larger budgets (H7 alternative (a)), are
+  UNMEASURED.
+* **Tuning asymmetry.** p_x was tuned for QI-MRFO+CXM and the GA, and (c, p_x) for the (1+1)-EA, but c = 1 was not
+  re-tuned for the swarm under CXM. This favours the control, not the swarm, so it cannot explain H7a in the swarm's
+  favour.
+* **Migration cost model.** Multiplicative, one λ per run, every migration equal. Real costs depend on task state size
+  and network (UNMEASURED); three λ values bracket the trade-off.
+* **Multiplicity across hypotheses.** Each hypothesis has its own pre-registered primary test; there is no correction
+  across H5–H11. Within a hypothesis Holm is applied across families or λ.
+* **Post hoc elements.** P2's relative re-expression, the H8 barrier check and the H11 rule are post hoc. They are
+  labelled, and the one that became a claim (H11) was re-tested on fresh seeds.
+* **Same generator shapes.** H7 reuses H5's family shapes with new seeds, and the dynamic scenarios reuse shapes
+  across H6/H8/H10/H11 with disjoint seeds. Generalisation beyond these shapes is UNMEASURED.
+
+
+### Status of the §21 improvement plan and the §25 "exact next experiment" after V5
+
+| §21 / §25 item | V5 status |
+|---|---|
+| 1. Task-selective, severity-scaled decoherence under change (§25) | Not run: superseded. CXM under change (H6a, 60/60) and the event-aware elite (H11) addressed recovery. Selective shocks remain UNMEASURED. |
+| 2. Purity-regulated γ | **Tested (H9) and falsified** for the band controller as specified. A controller on a direct duplicate signal is UNMEASURED. |
+| 3. Max-Min seeding | **Tested (H7b), confirmed.** Against Max-Min + local search (H7c) the seeded (1+1)-EA is marginally better. |
+| 4. Objectives where heuristics do not apply | **Migration-priced re-optimisation tested (H8, H10, H11).** Energy, SLA and monetary cost are UNMEASURED in V5. |
+| 5. Drop the quantum-specific parts from the default | **Supported by data.** The linear twin beats the Born rule under CXM (H5: 68/80; H6: 55/60; H7: 54/16), and is n.s. under migration pricing (H8). |
+
 ## Final decision
 
 **PROCEED — with the revised framing.** The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"
+
+### V5 update to the decision (22 September 2026)
+
+**PROCEED, with claims that V5's own controls have both sharpened and narrowed.**
+1. **Research quality.** Findings now rest on development/held-out splits, instance-level statistics, pre-registered
+   hypotheses, write-once experiments and 237 tests. The tests include bit-exact golden fingerprints of the original
+   code, and the smoke results reproduce to within 1.1e-16.
+2. **What V5 added that is positive and measured.**
+   * **Move-type diagnosis.** The product-state measurement cannot produce the correlated exchange that
+     relocation-optimal schedules need. The correlated exchange measurement fixes it: −2.86 pp static on 76/80,
+     −2.98 pp under change on 60/60.
+   * **Structural rules under migration pricing.** In migration-priced re-optimisation, the register representation's
+     rule for new capacity produces coordinated moves that a (1+1)-EA with the same moves cannot. With an event-aware
+     elite the swarm beats the best heuristic chooser at every migration price tested.
+3. **What V5's controls took away.**
+   * The Born rule is measurably worse than the classical linear twin under CXM.
+   * For static makespan a (1+1)-EA with the same moves is at least as good as the swarm; the best static method
+     tested is Max-Min seeding + (1+1)-EA with CXM moves.
+   * The purity-regulated decoherence controller proposed in §21 is falsified.
+   * The unconditional elite is rejected.
+4. **PhD question, restated.** Which properties of a measurement-based schedule representation (move types,
+   structural rules for capacity changes, anchoring on the deployed schedule) matter for re-optimising a running cloud
+   when reconfiguration has a price, and where does single-trajectory local search suffice?

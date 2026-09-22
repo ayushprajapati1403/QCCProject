@@ -432,3 +432,32 @@ p < 0.05 and the 95 % CI excludes 0).
 Mechanism: the mean-purity signal is dominated by a few diffuse registers, so the controller lowers γ and starves the
 collapsed registers that produce duplicates. The original report's §21 item 2 prediction is falsified for this
 (untuned) controller.
+
+## 23. H11 outcome (recorded after `results/h11_analysis.md`)
+
+| Test | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| H11a event-aware < no elite (primary) | **retained** (−0.41 pp, 41/9) | **retained** (−0.78 pp, 41/9) | **retained** (−2.19 pp, 40/10) |
+| H11b event-aware < always-elite | **retained** (−1.76 pp) | **retained** (−3.45 pp) | **retained** (−2.52 pp) |
+| H11c event-aware < Chooser | **−0.83 pp** (47/13) | **−2.27 pp** (45/15) | **−12.7 pp** (47/13) |
+| H10a replication (always-elite vs no elite) | n.s. | n.s. | n.s. |
+
+Remaining boundary: pure churn at λ ≥ 0.2, where zero-migration incremental repair stays best. Next (UNMEASURED): an
+elite repaired by greedy placement of the new tasks.
+
+
+## 24. Status of the brief's improvement list after V5 (what was tested, what was not)
+
+| Brief item | V5 status | Evidence |
+|---|---|---|
+| Adaptive, feedback-controlled decoherence | **tested as H9 and falsified** (the purity-regulated band from the original report §21 raises duplicates) | `results/h9_analysis.md` |
+| Event-aware adaptation (churn, VM failure/addition, drift) | **tested**: CXM under change (H6a ✓); unconditional elite (H6b ✗, H10 ✗); **event-aware elite (H11 ✓, every λ)**; structural rule for new VMs (H8 mechanism) | `results/h6_*`, `h8_*`, `h10_*`, `h11_*` |
+| Hybrid initialisation (Max-Min / Min-Min / HEFT) | **tested as H7b** (Max-Min seed ✓). Min-Min and HEFT not tested (HEFT does not apply to independent tasks) | `results/h7_analysis.md` |
+| Discrete local search, critical-VM relocation, two-task swap | **CXM** (H5 ✓, H6a ✓). A (1+1)-EA with the same moves is the H7 control, and it wins for static makespan | `results/h5_*`, `h7_*` |
+| Archive-based or multi-register diversity | **not tested** (UNMEASURED) | — |
+| Stagnation detection + partial register resets | **not tested** (UNMEASURED). H5 moved stagnation from 54 % to 76 % of the budget | `results/h5_analysis.md` |
+| Self-adaptive exploration parameters | partially: H9's controller. A self-adjusting mutation rate for the (1+1)-EA was not tested | — |
+| Multi-objective (makespan, energy, SLA, cost, migration) | **migration tested** (H8, H10). Energy, SLA and monetary cost not tested in V5 (the V0–V4 energy objective is unchanged) | `results/h8_*`, `h10_*` |
+| Larger and more diverse held-out families | done: 8 families up to n = 300, m = 30 with lognormal / bimodal / low-heterogeneity shapes; four disjoint fresh seed sets (101–110, 201–210, 301–310, 401–410) | `qi_experiment.py` |
+| Vectorisation, caching, profiling, parallel execution | profiled (no micro-optimisation, since results must stay bit-identical); parallel checkpointed harness; duplicate diagnostics. No evaluation cache (the (1+1)-EA's 36 % duplicates make one a clear next step) | `research_plan_v5.md` §3 |
+| Reproducibility, tests, configuration, checkpointing | done: 237 tests incl. golden fingerprints; JSON specs; write-once experiments with commit hashes; pinned requirements; deterministic notebook builds | `tests/`, `qi_experiment.py` |

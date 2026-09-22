@@ -982,6 +982,18 @@ md(r"""
   escape.
 * **What H10 tests next.** Anchoring the swarm on the deployed schedule (the elite) for local changes.
 """)
+md(r"""
+### 20.3 H9–H11 (`results/h9_analysis.md`, `h10_analysis.md`, `h11_analysis.md`)
+
+* **H9: purity-regulated decoherence (the original report's §21 proposal) is falsified.** It raises duplicate
+  evaluations (27 % → 46 %) and worsens the gap. Mean purity is dominated by a few diffuse registers, so the controller
+  lowers γ exactly where the collapsed registers needed it.
+* **H10: an unconditional elite is rejected.** It wins every churn and VM-failure pair but loses badly after VM
+  additions, where the carried schedule leaves the new VM empty and anchors the swarm away from it.
+* **H11: the event-aware elite (none after a VM addition) is confirmed on fresh seeds at every λ.** It beats the best
+  heuristic chooser at every migration price. The remaining boundary is pure churn at λ ≥ 0.2, where zero-migration
+  repair is best.
+""")
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
       "language_info": {"name": "python", "version": "3.12"}}, "nbformat": 4, "nbformat_minor": 5}

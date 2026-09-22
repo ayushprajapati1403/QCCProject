@@ -497,3 +497,46 @@ hypothesis. The pre-registered, untuned version from the original report is fals
 
 **Decision.** Not adopted. Fixed c = 1 stays the default. A future controller should use a direct signal, such as the
 per-register duplicate rate or the parent-identical rate. That is UNMEASURED.
+
+## V5 / H11 — event-aware elite: no elite after a VM addition (`results/h11_event_elite/`, `results/h11_analysis.md`)
+
+**Origin.** The elite hurt after VM additions twice: in H6b and in H10a. There the carried schedule leaves the new VM
+empty and, as the attractor, blocks the coordinated escape. It helped after every other event. The post hoc rule "no
+elite after a VM addition" was pre-registered (plan §21) and tested on **fresh seeds 401–410**; 720 runs.
+
+Pooled cost gap % (makespan gap %, voluntary migrations per epoch):
+
+| Strategy | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Chooser | 3.44 (1.39, 49.2) | 8.72 (3.24, 32.1) | 29.78 (20.08, 11.8) |
+| QI-MRFO+CXM continue (no elite) | 3.02 (1.09, 41.0) | 7.23 (2.11, 27.3) | 19.26 (7.79, 11.6) |
+| + elite (always) | 4.37 (2.99, 29.8) | 9.90 (6.46, 18.6) | 19.59 (12.66, 7.3) |
+| **+ event-aware elite** | **2.61** (0.93, 36.8) | **6.45** (2.23, 23.1) | **17.07** (7.64, 9.8) |
+
+**What happened?**
+* **H11a (primary) retained at every λ.** Event-aware elite − no elite: −0.41 pp [−0.63, −0.22], −0.78 pp
+  [−1.15, −0.37] and −2.19 pp [−3.09, −1.32]; 41/9, 41/9 and 40/10 wins; Holm p < 1e-4 each. The 10 ties per λ are the
+  VM-addition pairs, identical by construction.
+* **H11b retained at every λ.** Event-aware − always-elite: −1.76, −3.45 and −2.52 pp (Holm p ≤ 0.018). The
+  VM-addition losses disappear.
+* **H11c.** The event-aware swarm **beats the Chooser at every λ**: −0.83, −2.27 and −12.7 pp; 47/13, 45/15, 47/13;
+  Holm p ≤ 1.4e-4.
+  * By scenario (Holm p = 0.012 unless stated) it is better on drift and mixed events at every λ, on VM failure at
+    every λ (Holm p = 0.039 at λ = 1.0), on VM addition at λ ≥ 0.2 (8/2 at λ = 0.05, n.s.), and on heavy-tailed n200
+    at λ = 1.0 (Holm p = 0.039).
+  * It is still **worse on pure churn** at λ ≥ 0.2 (0/10; +2.5 and +6.8 pp). There, zero-migration incremental
+    repair is best.
+* **Replication.** H10a's rejection of the unconditional elite replicates on the fresh seeds (n.s. at every λ).
+
+**Why?** The event-aware rule keeps the two mechanisms where each helps:
+* after local events, the deployed schedule is a zero-migration anchor;
+* after a VM addition, no anchor, so the register swarm's uniform-share rule for the new VM can produce the coordinated
+  multi-task moves that single moves cannot (the H8 barrier).
+
+**Remaining boundary / next.**
+* **Churn.** The carried elite keeps each new task's slot from the old schedule. The incremental heuristic instead
+  places new tasks greedily, and that stays cheaper at λ ≥ 0.2. Repairing the elite by greedy placement of new tasks
+  (an "incremental-repaired elite") is the obvious next hypothesis. UNMEASURED.
+
+**Decision.** Adopt the event-aware elite (`carry_elite="except_vm_add"`) as the recommended configuration for
+migration-priced re-optimisation.
