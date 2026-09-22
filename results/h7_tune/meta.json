@@ -1,0 +1,26 @@
+{
+ "experiment": "h7_tune",
+ "git_commit": "77a3bdd698048e96c367b37d7ee86ff1d6589726",
+ "python": "3.11.15",
+ "numpy": "2.2.6",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "started": "2026-09-22 22:18:20",
+ "n_jobs": 240,
+ "config": {
+  "stage": "tune",
+  "c_grid": [
+   0.25,
+   1.0,
+   2.0
+  ],
+  "px_grid": [
+   0.5,
+   1.0
+  ],
+  "budget": 20000,
+  "note": "development set; selection bias applies"
+ },
+ "finished": "2026-09-22 22:19:16",
+ "n_records": 240,
+ "wall_s_last_session": 55.92614197731018
+}
