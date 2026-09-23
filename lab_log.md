@@ -821,3 +821,68 @@ seeds, fewer problems, runs and sizes.
 * the Google Drive mount itself (standard `google.colab.drive` calls, with a guard that stops if Drive is not mounted);
 * run times on Colab. Full mode is about 5 CPU-hours here (A 0.5, B 0.7, C 3.4, D 0.8 h); the notebook's "roughly 3–5
   hours on free Colab" is an estimate from that.
+
+## V5 / H14 — the swap move transferred to QI-DMO (`results/h14_test/`, `results/h14_scale/`, `results/h14_analysis.md`)
+
+**Origin.** The standalone QI-DMO notebook requested by the supervisor should show how the swap move improves
+QI-DMO, but the move existed only for QI-MRFO, the GA and the (1+1)-EA. It was added to `run_qidmo` as an opt-in
+option: the QI-MRFO operator unchanged, in all three search phases, p_x = 1 fixed a priori. H14 was pre-registered in
+plan §31 and tested on **fresh instance seeds 701–710** (480 runs) plus the 5 scaling problems (50 runs). Before the
+pre-registration was committed, one job was dry-run to validate the code; that result was not used.
+
+Mean gap2 (%) on the 80 fresh problems: DMO 74.37, **QI-DMO 7.39**, QI-DMO+CXM 9.72.
+
+**What happened?**
+* **P1 fails; the move makes QI-DMO worse.** QI-DMO+CXM − QI-DMO = +2.33 pp [+1.44, +3.18]. It is better on only 15
+  of 80 problems; Wilcoxon p = 9e-8.
+* **P2 fails.** 6 of 8 families are Holm-significantly worse. On the other two (n300 m30 uniform, n100 m20 lognormal
+  low) the difference is not significant.
+* **P3 (descriptive): the opposite on the scaling problems.** The move is better at every size: 77.16 vs 90.73 s at
+  500 tasks, 129.87 vs 143.55 s at 1000, 261.84 vs 324.00 s at 1500, 426.72 vs 478.84 s at 2000 and 1198.89 vs
+  1402.89 s at 5000. Every run is better at 1500, 2000 and 5000 tasks; Holm p = 0.0009 at every size.
+* **Mechanism.** With the move, QI-DMO converges less: end purity 0.95 → 0.83, move size 33 → 53 tasks, more
+  improving swaps left unused (371 → 525), and the last global-best improvement comes earlier (85 % → 75 % of the
+  budget).
+* **Reference.** QI-DMO beats the original DMO on all 80 problems (−67 pp).
+
+**Why? (post hoc, plan §32).** Every QI-MRFO candidate is kept only if it improves, so a bad swap is discarded. QI-DMO's
+third phase (next position) keeps every candidate. There, at p_x = 1, every candidate carries a swap, and a worsening
+swap is kept too. Far from convergence (the large problems, gaps of 40–166 %), most swaps on the critical VM improve,
+which fits the gains there.
+
+**Decision (pre-registered rule).** REJECT for the 30–300-task range. The explanation became H15 (plan §33): the swap
+only in the two phases that keep improvements, with p_x chosen on the development set and tested on fresh seeds.
+
+## V5 / H15 — the swap move only in QI-DMO's greedy phases (`results/h15_tune/`, `results/h15_selection.json`, `results/h15_test/`, `results/h15_scale/`, `results/h15_analysis.md`)
+
+**Origin.** H14's post-hoc explanation: a worsening swap is harmless where a candidate is kept only if it improves,
+and harmful in QI-DMO's next-position phase, which keeps every candidate. `run_qidmo(..., exchange_phases="greedy")`
+applies the move only in the alpha-group and scout phases. H15 was pre-registered in plan §33 with H5's protocol:
+* tune phases × p_x on the 4 pilot instances (360 runs);
+* freeze the choice;
+* test once on **fresh instance seeds 801–810** (480 runs), plus the scaling problems (50 runs).
+
+**Selection (development set, selection bias applies).** Phases = greedy, p_x = 0.1 (mean rank 3.45 of 8). All 8
+configurations had a lower dev-set mean gap2 than QI-DMO (7.43 %): 5.64–7.39 %.
+
+Mean gap2 (%) on the 80 fresh problems: QI-DMO 6.89, **greedy p_x = 0.1: 6.08**, H14 configuration 8.78.
+
+**What happened?**
+* **P1 fails narrowly.** Greedy p_x = 0.1 − QI-DMO = −0.81 pp [−1.43, −0.25]: the mean is better and the CI excludes 0.
+  It is better on 47 of 80 problems, but the pre-registered Wilcoxon test gives p = 0.067.
+* **P2 holds.** No family is significantly worse. The largest gains are on n300 m30 uniform (−3.57 pp, 9/10, Holm
+  p = 0.11) and n100 m20 lognormal low (−2.72 pp, 8/10).
+* **The phase explanation holds.** Greedy p_x = 0.1 beats the H14 configuration on 71 of 80 problems (−2.70 pp,
+  p < 1e-4), and the H14 configuration is again worse than QI-DMO (65/80 worse) on these fresh seeds.
+* **Mechanism.** 6.7 % of candidates carry a swap, and 42 % of those improve their parent. End purity is 0.93 vs 0.94,
+  improving swaps left fall 401 → 365, and the last global-best improvement comes later (80 % → 84 % of the budget).
+* **P3 (scaling, descriptive).** Better on average at every size: −9.0 s at 500 tasks … −33.1 s at 5000. Not
+  significant after Holm (p 0.13–0.24). The H14 configuration's gains there are much larger (−13.6 … −204.0 s).
+
+**Why?** Far from convergence (large problems), almost any swap on the critical VM helps, so a high swap rate in every
+phase pays. Near convergence (30–300 tasks), a swap is often worse and must be filtered by greedy acceptance; then only
+a low rate is safe, and its gain is small.
+
+**Decision (pre-registered rule).** REJECT. QI-DMO keeps no swap move by default. The standalone QI-DMO notebook shows
+both versions with their measured results; these negative and inconclusive outcomes are reported as they are.
+Untested: making the next-position phase greedy (`greedy_next=True`) together with the move.

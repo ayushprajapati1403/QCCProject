@@ -1,0 +1,26 @@
+{
+ "phases": "greedy",
+ "px": 0.1,
+ "selected": "QI-DMO+CXM greedy px=0.1",
+ "mean_ranks": {
+  "QI-DMO+CXM greedy px=0.1": 3.45,
+  "QI-DMO+CXM all px=0.1": 4.0375,
+  "QI-DMO+CXM greedy px=0.25": 4.225,
+  "QI-DMO+CXM greedy px=1.0": 4.4,
+  "QI-DMO+CXM greedy px=0.5": 4.5125,
+  "QI-DMO+CXM all px=1.0": 4.9,
+  "QI-DMO+CXM all px=0.5": 4.9625,
+  "QI-DMO+CXM all px=0.25": 5.5125
+ },
+ "mean_gap2": {
+  "QI-DMO+CXM greedy px=0.1": 0.057352,
+  "QI-DMO+CXM all px=0.1": 0.056422,
+  "QI-DMO+CXM greedy px=0.25": 0.05911,
+  "QI-DMO+CXM greedy px=1.0": 0.059306,
+  "QI-DMO+CXM greedy px=0.5": 0.059632,
+  "QI-DMO+CXM all px=1.0": 0.07393,
+  "QI-DMO+CXM all px=0.5": 0.066378,
+  "QI-DMO+CXM all px=0.25": 0.066172
+ },
+ "reference_QI-DMO_mean_gap2": 0.074254
+}

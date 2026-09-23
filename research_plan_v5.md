@@ -728,3 +728,31 @@ and the standalone QI-DMO notebook shows the negative results as they are.
 
 **Files.** `exp_h15_qidmo_greedy_cxm.py` writes the write-once `results/h15_tune/`, `results/h15_selection.json`,
 `results/h15_test/`, `results/h15_scale/` and `results/h15_analysis.md`.
+
+
+## 34. H15 outcome (recorded after `results/h15_analysis.md`)
+
+**Development stage.** The frozen choice is phases = greedy, p_x = 0.1: mean rank 3.45 of the 8 configurations,
+dev-set gap2 5.74 % vs 7.43 % for QI-DMO (selection bias applies).
+
+| Prediction | Result | Verdict |
+|---|---|---|
+| P1 (primary) | −0.81 pp [−1.43, −0.25], better on 47/80 instances, but Wilcoxon p = 0.067 | **fails** (p ≥ 0.05) |
+| P2 (safety) | no family significantly worse (best: n300 m30, 9/10 better, Holm p = 0.11) | holds |
+| P3 (descriptive, scaling) | better on average at every size (−9.0, −6.3, −12.9, −7.3, −33.1 s), Holm p 0.13–0.24 | — |
+| H14 replication | all phases, p_x = 1: +1.89 pp, worse on 65/80, p < 1e-4 | the H14 result replicates |
+| greedy p_x = 0.1 vs H14 configuration | −2.70 pp, better on 71/80, p < 1e-4 | the phase explanation holds |
+
+**Verdict: REJECT** by the pre-registered rule. The mean improvement's CI excludes 0 and no family is harmed, but the
+pre-registered rank test is not significant.
+
+**What this means for QI-DMO.**
+* The swap move is **not** established as an improvement for QI-DMO on 30–300-task problems.
+* Restricting it to the greedy phases removes the harm of the H14 version (71/80 better than H14) but leaves only a
+  small average gain (−0.81 pp) that the pre-registered test does not confirm.
+* On the large scaling problems the H14 version (all phases, p_x = 1) is clearly better than QI-DMO at every size,
+  and the greedy p_x = 0.1 version is better on average but not significantly so.
+* Recommendation: QI-DMO without the swap move for 30–300 tasks. For ≥ 500 tasks at a 20 000-evaluation budget, the
+  H14 version is better (descriptive evidence only, one problem per size).
+* **Not tested.** A greedy next-position phase (`greedy_next=True`) combined with the move. The notebooks show both
+  swap versions with their measured results.
