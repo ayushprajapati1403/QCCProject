@@ -576,3 +576,35 @@ for λ ≥ 0.2. At λ = 0.05 it is added only if H13a is retained there too.
 
 The decision rule is met for λ ≥ 0.2: the recommended configuration adds the event-aware γ there. H13b shows that the
 VM-addition exception is not needed. The gain comes from removing the floor after local changes.
+
+## 29. Scaling study: 500–5000 tasks (requested by the supervisor; descriptive; registered before it was run)
+
+**Question.** How do the algorithms behave when the number of tasks grows to 500, 1000, 1500, 2000 and 5000? All
+earlier static studies used n ≤ 300.
+
+**Design** (`exp_scale_tasks.py`, write-once `results/scale_tasks/`).
+* **Problems.** One problem per size on a pool of **50 heterogeneous VMs**: speeds 250–2000 MIPS, task lengths uniform
+  1000–10000 MI, `make_instance(n, 50, seed=1, "uniform", "high")`. Only the number of tasks changes across sizes; the
+  VM count is fixed at 50, so tasks per VM go from 10 to 100.
+* **Runs.** 10 independent runs per algorithm and size (run seeds 0–9); the deterministic heuristics run once.
+  20 000 evaluations per run, population 30, as in every earlier static study.
+* **Algorithms.** Each uses its setting from the earlier studies, with no re-tuning:
+  * DMO, QI-DMO (c = 0.25), MRFO, QI-MRFO (c = 1), PSO, GA and random search, as in the V4 baseline;
+  * QI-MRFO + swap move (CXM, p_x = 1) and GA + swap move (p_x = 1), as in H5;
+  * the (1+1)-EA + swap move (c = 1, p_x = 0.5) and the Max-Min-seeded QI-MRFO + swap and (1+1)-EA + swap, as in H7;
+  * the Max-Min and Min-Min heuristics.
+* **Measures.** Makespan (s): mean ± SD, best and worst of the 10 runs. Gap to the lower bound (%), runtime per run (s)
+  and energy (Wh).
+
+**Expectations (descriptive, not tests).**
+* At a fixed budget of 20 000 evaluations, the gaps of the population methods grow with n, because the search space
+  grows while the budget does not.
+* The list heuristics stay close to the bound, because with many tasks per VM, balancing is easy for them.
+* The Max-Min-seeded variants can only improve on Max-Min.
+* The classical-rounding DMO / MRFO stay near random search.
+* The runtime of the register methods grows about linearly with n: each task keeps a probability over 50 VMs.
+
+**Threats.**
+* One problem per size, so problem-to-problem variation is not sampled.
+* A fixed budget disadvantages the population methods at large n; that is a property of the budget, not of the methods.
+* Synthetic workload.
