@@ -669,3 +669,62 @@ correlated two-task exchange that relocation-optimal schedules need.
 
 **Files.** `exp_h14_qidmo_cxm.py` writes the write-once `results/h14_test/`, `results/h14_scale/` and
 `results/h14_analysis.md`.
+
+
+## 32. H14 outcome (recorded after `results/h14_analysis.md`)
+
+| Prediction | Result | Verdict |
+|---|---|---|
+| P1 (primary) | +2.33 pp [+1.44, +3.18] (QI-DMO+CXM **worse**), better on 15/80 instances, Wilcoxon p = 9e-8 | **fails** |
+| P2 (safety) | 6/8 families Holm-significantly worse; n300 m30 and n100 m20 lognormal not significant | **fails** |
+| P3 (descriptive, scaling) | better at every size: 500 tasks 77.16 vs 90.73 s … 5000 tasks 1198.89 vs 1402.89 s; every run better at 1500, 2000 and 5000; Holm p = 0.0009 per size | — |
+
+**Verdict: REJECT** for the 30–300-task range of the pre-registered test. The transferred swap move is not
+recommended for QI-DMO as specified in §31.
+
+**Mechanism (diagnostics, H14 test set).** With CXM at p_x = 1 in all three phases, QI-DMO's end purity falls
+(0.95 → 0.83), its move size rises (33 → 53 tasks), and more improving swaps are left at the returned schedule
+(371 → 525). Its last global-best improvement comes earlier (85 % → 75 % of the budget). The search stays noisier
+instead of converging.
+
+**Post-hoc explanation (not tested by H14).** Every QI-MRFO candidate is accepted only if it improves (greedy), so a
+swap that makes a schedule worse is simply discarded. QI-DMO's third phase (next position) accepts every candidate,
+so there a worsening swap is kept, and at p_x = 1 every candidate of that phase carries one. On large problems, far
+from convergence (gaps 40–166 %), most swaps on the critical VM improve, which fits the P3 gains. §33 tests this
+explanation on fresh instances.
+
+
+## 33. H15 — the swap move only in QI-DMO's greedy phases, p_x chosen on the development set (pre-registered before H15 was run)
+
+**Statement.** The swap move improves QI-DMO when it is applied only where a candidate is kept only if it improves:
+the alpha-group and scout phases. That is `run_qidmo(..., exchange=p_x, exchange_phases="greedy")`. The next-position
+phase, which keeps every candidate, gets no swap. The explanation comes from H14 (§32); it is tested here on
+instances that no QI-DMO experiment has used.
+
+**Development (TUNE) stage.**
+* **Problems.** The 4 pilot instances (inst_seed 1) × run seeds 0–9, 20 000 evaluations, P = 30, c = 0.25.
+* **Configurations.** Phases ∈ {greedy, all} × p_x ∈ {0.1, 0.25, 0.5, 1.0}: 8 configurations. QI-DMO without the
+  move is run as a reference.
+* **Selection.** The configuration with the best mean rank of gap2 among the 8, over the 40 (instance, run seed)
+  blocks. Ties are broken by the lower mean gap2, then by the smaller p_x. The choice is frozen in
+  `results/h15_selection.json` before the TEST stage runs.
+
+**Held-out TEST stage.**
+* **Problems.** The 8 TEST families × **fresh instance seeds 801–810** × run seeds 0–1, 20 000 evaluations.
+* **Arms.** QI-DMO, the selected configuration, and the H14 configuration (all phases, p_x = 1). The H14 arm is a
+  replication only: it plays no part in P1 or P2.
+* **P1 (primary) and P2 (safety).** As in §31, with the selected configuration in place of QI-DMO+CXM.
+* **P3 (descriptive).** As in §31: the selected configuration on the scaling problems (500–5000 tasks, 10 runs),
+  against the committed `results/scale_tasks` QI-DMO runs.
+
+**Acceptance criteria.** As in §31: RETAIN / RETAIN WITH BOUNDARY / REJECT. If REJECT, QI-DMO keeps no swap move,
+and the standalone QI-DMO notebook shows the negative results as they are.
+
+**Threats.**
+* The phase explanation is post hoc (from the H14 test set); fresh instances guard against fitting it.
+* The development set has only 4 problems.
+* If the tuning selects phases = all with a small p_x, the test then measures a milder dose of the H14 move, not the
+  phase explanation.
+
+**Files.** `exp_h15_qidmo_greedy_cxm.py` writes the write-once `results/h15_tune/`, `results/h15_selection.json`,
+`results/h15_test/`, `results/h15_scale/` and `results/h15_analysis.md`.

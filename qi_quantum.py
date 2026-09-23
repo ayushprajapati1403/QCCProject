@@ -104,13 +104,17 @@ def collapse_rows(psi, rows, outcomes, gamma, m, mode):
 # ----------------------------------------------------------------------------------------------
 def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="born_signed",
               gamma_reset=1.0, decoherence=0.0, attractor="basis", greedy_next=False, track=True, init_state=None,
-              exchange=0.0):
+              exchange=0.0, exchange_phases="all"):
     """decoherence: per-candidate depolarising strength gamma (0 = V1); gamma_reset: babysitter channel strength;
     attractor: 'basis' (alpha peeps its measured schedule) or 'register' (alpha's superposition state).
     exchange>0 (V5, hypothesis H14): the swap move of QI-MRFO (H5) transferred unchanged to QI-DMO. With this probability
     a measured candidate of the three search phases (alpha group, scouts, next position) additionally exchanges a task of
     its critical VM with a shorter task on another VM (qi_core.critical_exchange), and the pair's registers collapse onto
-    that outcome. The babysitter reset is a restart, not a search move, and is left unchanged."""
+    that outcome. The babysitter reset is a restart, not a search move, and is left unchanged.
+    exchange_phases (V5, H15): "all" = the three search phases (H14); "greedy" = only the alpha-group and scout phases,
+    whose candidates are kept only if they improve, as every QI-MRFO candidate is. The next-position phase keeps every
+    candidate, so there a worsening swap would be kept too (the post-hoc explanation of H14)."""
+    if exchange_phases not in ("all", "greedy"): raise ValueError(exchange_phases)
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
     tr = Tracker(n, m, inst); tr.purity = []
     if init_state is None:
@@ -179,7 +183,8 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
             tau = new_tau
             new = dec(project(new, m, mode))
             a_new = measure(new, rng, mode)
-            new, a_new, xm = xmeasure(new, a_new)
+            xm = False
+            if exchange_phases == "all": new, a_new, xm = xmeasure(new, a_new)
             f = obj(a_new)
             if track: tr.candidate(A[i], a_new, F[i], f); xtrack(xm, f, F[i])
             if (not greedy_next) or f < F[i]: Psi[i], A[i], F[i] = new, a_new, f

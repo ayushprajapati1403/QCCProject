@@ -52,3 +52,32 @@ def test_exchange_works_without_tracking_and_in_linear_mode(inst):
     assert r_t["best_f"] == r_f["best_f"]                                   # tracking never changes the search
     r_l, o_l = _run(inst, exchange=1.0, mode="linear")
     assert o_l.n_evals <= 3000 and r_l["best_assign"].max() < inst.m
+
+
+def test_greedy_phases_only(inst):
+    # H15: exchange_phases="greedy" applies the move only in the alpha-group and scout phases (at most 2 of the 3P
+    # candidates per iteration), is deterministic, and differs from "all"
+    r_g, o_g = _run(inst, exchange=1.0, exchange_phases="greedy")
+    r_g2, _ = _run(inst, exchange=1.0, exchange_phases="greedy")
+    r_a, o_a = _run(inst, exchange=1.0)
+    assert r_g["best_f"] == r_g2["best_f"] and o_g.n_evals <= 3000
+    assert 0 < r_g["tracker"].x_cands < r_a["tracker"].x_cands
+    assert r_g["tracker"].x_cands <= 2 * (o_g.n_evals - 12) / 3 + 12
+    r0, _ = _run(inst, exchange=0.0, exchange_phases="greedy")      # no move -> the unchanged algorithm
+    rd, _ = _run(inst)
+    assert r0["best_f"] == rd["best_f"] and np.array_equal(r0["best_assign"], rd["best_assign"])
+    with pytest.raises(ValueError):
+        _run(inst, exchange=1.0, exchange_phases="some")
+
+
+def test_default_phases_reproduce_the_h14_record():
+    # the H14 configuration (all phases) must stay exactly as it was run
+    import os
+    import pandas as pd
+    from qi_experiment import run_job, spec
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results", "h14_test", "records.csv")
+    rec = pd.read_csv(path, float_precision="round_trip")
+    row = rec[(rec.algo == "QI-DMO+CXM") & (rec.family == "n80 m8 uniform high") & (rec.inst_seed == 701) & (rec.run_seed == 0)].iloc[0]
+    job = {"exp": "t", "algo": "QI-DMO+CXM", "spec": spec("run_qidmo", decoherence_c=0.25, exchange=1.0),
+           "family": [80, 8, "uniform", "high"], "inst_seed": 701, "run_seed": 0, "budget": 20000, "P": 30}
+    assert run_job(job)["makespan"] == row.makespan
