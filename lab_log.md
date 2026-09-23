@@ -739,3 +739,55 @@ not needed for makespan.
 `decoherence_by_event={"churn": 0, "drift": 0, "vm_fail": 0}`. H13b shows that dropping the floor after VM additions as
 well is statistically indistinguishable, but that variant did not pass the pre-registered bar. At λ = 0.05 neither H12
 nor H13 met the bar: both win the rank test, but the mean CI includes 0. Every swarm variant beats the Chooser there.
+
+## V5 — scaling study: 500–5000 tasks (supervisor request; `results/scale_tasks/`, `results/scale_tasks_analysis.md`, `results_scale_tasks.pdf`)
+
+**Design (plan §29, registered before the run).** 500, 1000, 1500, 2000 and 5000 tasks on 50 heterogeneous VMs, one
+problem per size. 10 runs per algorithm (the heuristics run once), 20 000 evaluations, population 30, and the settings of
+the earlier studies without re-tuning; 610 runs in total. Descriptive.
+
+Mean makespan (s) over 10 runs (lower bound in the last row):
+
+| Algorithm | 500 | 1000 | 1500 | 2000 | 5000 |
+|---|---|---|---|---|---|
+| DMO (original) | 200.61 | 377.84 | 707.12 | 995.60 | 2140.14 |
+| QI-DMO | 90.73 | 143.55 | 324.00 | 478.84 | 1402.89 |
+| MRFO (original) | 169.84 | 317.91 | 571.56 | 837.58 | 1917.67 |
+| QI-MRFO | 76.89 | 138.95 | 336.44 | 510.95 | 1698.02 |
+| **QI-MRFO + swap** | **54.10** | **102.60** | **171.27** | **255.97** | **693.00** |
+| **QI-MRFO + swap + Max-Min seed** | **53.49** | **101.47** | **164.93** | **231.69** | **528.30** |
+| GA | 66.65 | 123.90 | 290.29 | 460.46 | 1532.38 |
+| GA + swap | 59.87 | 108.86 | 185.05 | 286.70 | 861.06 |
+| (1+1)-EA + swap | 53.46 | 101.46 | 165.10 | 232.64 | 589.93 |
+| (1+1)-EA + swap + Max-Min seed | 53.43 | 101.42 | 164.83 | 231.59 | 528.22 |
+| Max-Min heuristic | 53.67 | 101.71 | 165.33 | 231.96 | 528.61 |
+| Lower bound | 53.38 | 101.38 | 164.78 | 231.55 | 528.17 |
+
+**What happened?** Unless a bullet says "on average", the comparison holds in every run at every size: every run of the
+better method beats every run of the other (Mann–Whitney, Holm p = 0.0009).
+* **Quantum-inspired vs original.** QI-DMO beats DMO and QI-MRFO beats MRFO at every size. The advantage shrinks at
+  5000 tasks, where the fixed budget is small for the problem (MRFO 1917.67 → QI-MRFO 1698.02 s).
+* **The swap move.** With it, QI-MRFO beats the GA at every size (693.00 vs 1532.38 s at 5000 tasks). It also beats the
+  GA with the same swap move (861.06 s).
+* **Seeded with Max-Min.** QI-MRFO + swap is within 0.03–0.22 % of the lower bound and beats the Max-Min heuristic in
+  every run.
+* **Negative findings.**
+  * Without the swap move, QI-MRFO is behind the GA on average at all five sizes (in every run at 1000, 1500 and 5000
+    tasks).
+  * The unseeded QI-MRFO + swap drifts from the bound as n grows: 1.36 % at 500 tasks, 31.2 % at 5000.
+  * The simple (1+1)-EA with the same swap move is better than the unseeded swarm at every size: 589.93 vs 693.00 s at
+    5000 tasks.
+  * Seeded, every run of the (1+1)-EA is still slightly better, by less than 0.1 s. The (1+1)-EA is about 16× faster at 5000 tasks:
+    8.5 vs 138.9 s per run.
+* **Side observation.** QI-DMO is ahead of QI-MRFO on average from 1500 tasks on, and in every run at 5000 tasks
+  (1402.89 vs 1698.02 s). UNMEASURED why.
+
+**Why?**
+* **The budget.** A fixed budget of 20 000 evaluations is small for thousands of tasks. The single-trajectory (1+1)-EA
+  spends every evaluation improving one schedule, while a population of 30 spreads them.
+* **Seeding.** Max-Min is already within 0.1–0.6 % of the bound at these sizes, so a seeded method only needs to polish.
+* **Runtime.** The register methods cost O(n · m) per evaluation, which is why their runtime grows with tasks × VMs.
+
+**Consequence.** For one-time batches at scale the recommendation from H7 holds: Max-Min seed plus a local search with
+the swap move. At thousands of tasks the swarm needs either a seed or a larger budget. The swarm's own case remains the
+changing cloud (H11–H13).

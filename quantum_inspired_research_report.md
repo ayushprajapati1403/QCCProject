@@ -905,6 +905,31 @@ H13 tests the rule c = 0 after local changes and c = 1 after VM additions, on to
 it is unnecessary for static makespan (§35). Under a migration price it is harmful after local changes (H13). The
 exchange measurement has taken over its job.
 
+## 38. V5 — scaling to 500–5000 tasks (descriptive; requested by the supervisor)
+
+**Design.** 500, 1000, 1500, 2000 and 5000 tasks on 50 heterogeneous VMs. 10 runs per algorithm, 20 000 evaluations
+each, with the earlier settings; 610 runs (`results/scale_tasks_analysis.md`, `results_scale_tasks.pdf`).
+
+| Mean makespan (s) | 500 | 1000 | 1500 | 2000 | 5000 |
+|---|---|---|---|---|---|
+| MRFO → QI-MRFO | 169.84 → 76.89 | 317.91 → 138.95 | 571.56 → 336.44 | 837.58 → 510.95 | 1917.67 → 1698.02 |
+| DMO → QI-DMO | 200.61 → 90.73 | 377.84 → 143.55 | 707.12 → 324.00 | 995.60 → 478.84 | 2140.14 → 1402.89 |
+| GA / QI-MRFO + swap | 66.65 / 54.10 | 123.90 / 102.60 | 290.29 / 171.27 | 460.46 / 255.97 | 1532.38 / 693.00 |
+| Max-Min / QI-MRFO + swap + seed | 53.67 / 53.49 | 101.71 / 101.47 | 165.33 / 164.93 | 231.96 / 231.69 | 528.61 / 528.30 |
+| Lower bound | 53.38 | 101.38 | 164.78 | 231.55 | 528.17 |
+
+**Findings.**
+* **Positive.** Each of these holds in every run at every size:
+  * the quantum-inspired encoding beats the original DMO and MRFO;
+  * QI-MRFO + swap beats the GA, with or without the same swap move;
+  * seeded with Max-Min, it improves on Max-Min and ends within 0.03–0.22 % of the bound.
+* **Limits.**
+  * Without the swap move, QI-MRFO is behind the GA on average at all sizes.
+  * At a fixed budget, the unseeded swarm drifts from the bound as n grows (31 % at 5000 tasks).
+  * A (1+1)-EA with the same swap move is ahead of it, and about 16× faster.
+* **Reading.** This confirms the V5 reading at scale: for one-time batches, the gain is the swap move and the seed, not
+  the swarm.
+
 ## Final decision
 
 **PROCEED — with the revised framing.** The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"

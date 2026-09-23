@@ -608,3 +608,16 @@ earlier static studies used n ≤ 300.
 * One problem per size, so problem-to-problem variation is not sampled.
 * A fixed budget disadvantages the population methods at large n; that is a property of the budget, not of the methods.
 * Synthetic workload.
+
+
+## 30. Scaling study outcome (recorded after `results/scale_tasks_analysis.md`)
+
+The expectations of §29 held:
+* the gaps of the unseeded population methods grow with n at a fixed budget;
+* the list heuristics stay close to the bound, and the seeded variants improve on Max-Min in every run;
+* the quantum-inspired DMO / MRFO beat the originals at every size, and QI-MRFO + swap beats the GA (with or without the
+  swap) at every size;
+* the (1+1)-EA with the same swap move is ahead of the unseeded swarm, as in H7, and so is the GA ahead of QI-MRFO
+  without the swap.
+
+Details: `lab_log.md` (V5 scaling study) and `results_scale_tasks.pdf`.

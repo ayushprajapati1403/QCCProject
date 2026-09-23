@@ -1,0 +1,119 @@
+{
+ "experiment": "scale_tasks",
+ "git_commit": "257789a26a56ccdcdaa7d029dfff690e71366035",
+ "python": "3.11.15",
+ "numpy": "2.2.6",
+ "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+ "started": "2026-09-23 14:45:06",
+ "n_jobs": 610,
+ "config": {
+  "sizes": [
+   500,
+   1000,
+   1500,
+   2000,
+   5000
+  ],
+  "m": 50,
+  "dist": "uniform",
+  "het": "high",
+  "inst_seeds": [
+   1
+  ],
+  "run_seeds": [
+   0,
+   1,
+   2,
+   3,
+   4,
+   5,
+   6,
+   7,
+   8,
+   9
+  ],
+  "budget": 20000,
+  "P": 30,
+  "algos": {
+   "DMO": {
+    "fn": "run_dmo",
+    "kw": {}
+   },
+   "QI-DMO": {
+    "fn": "run_qidmo",
+    "kw": {
+     "decoherence_c": 0.25
+    }
+   },
+   "MRFO": {
+    "fn": "run_mrfo",
+    "kw": {}
+   },
+   "QI-MRFO": {
+    "fn": "run_qimrfo",
+    "kw": {
+     "decoherence_c": 1.0
+    }
+   },
+   "QI-MRFO+CXM": {
+    "fn": "run_qimrfo",
+    "kw": {
+     "decoherence_c": 1.0,
+     "exchange": 1.0
+    }
+   },
+   "QI-MRFO+CXM+seed": {
+    "fn": "run_qimrfo",
+    "kw": {
+     "decoherence_c": 1.0,
+     "exchange": 1.0,
+     "seed_heuristic": "max_min"
+    }
+   },
+   "GA": {
+    "fn": "run_ga",
+    "kw": {}
+   },
+   "GA+CXM": {
+    "fn": "run_ga",
+    "kw": {
+     "exchange": 1.0
+    }
+   },
+   "PSO": {
+    "fn": "run_pso",
+    "kw": {}
+   },
+   "Random": {
+    "fn": "run_random",
+    "kw": {}
+   },
+   "(1+1)-EA+CXM": {
+    "fn": "run_one_plus_one",
+    "kw": {
+     "decoherence_c": 1.0,
+     "exchange": 0.5
+    }
+   },
+   "(1+1)-EA+CXM+seed": {
+    "fn": "run_one_plus_one",
+    "kw": {
+     "decoherence_c": 1.0,
+     "exchange": 0.5,
+     "seed_heuristic": "max_min"
+    }
+   },
+   "Max-Min": {
+    "fn": "max_min",
+    "kw": {}
+   },
+   "Min-Min": {
+    "fn": "min_min",
+    "kw": {}
+   }
+  }
+ },
+ "finished": "2026-09-23 15:37:03",
+ "n_records": 610,
+ "wall_s_last_session": 3117.3745357990265
+}

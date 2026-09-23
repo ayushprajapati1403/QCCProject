@@ -25,6 +25,7 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 | `make_v5_figures.py` | V5 figures (`results/fig_v5_*.png`) drawn from the committed result files. |
 | `make_results_summary.py` → `results_summary.pdf` | Two-page results summary for sharing: DMO/MRFO vs their quantum-inspired versions, the swap move, the GA comparison and the changing cloud. Every number is computed from the committed result files. |
 | `make_exact_values.py` → `results_exact_values.pdf` | The same results as exact values instead of percentage gaps: makespan in seconds (mean ± SD and best of 30 runs), the lower bounds, and migration counts. |
+| `exp_scale_tasks.py`, `make_scale_pdf.py` → `results_scale_tasks.pdf` | Scaling study requested by the supervisor: 500–5000 tasks on 50 VMs, 14 algorithms, 10 runs each (`results/scale_tasks/`, `results/scale_tasks_analysis.md`); the PDF gives makespans in seconds, gaps, runtimes and a scaling chart. |
 | `observe_v5_*.py` | V5 observation scripts (development seeds, descriptive). They cover duplicate evaluations, the critical-VM condition, stagnation, local optimality of end points, the H8 barrier check (post hoc) and the static decoherence dose-response with and without CXM (`analyze_v5_c_sweep.py` writes the paired contrasts). They also cover the carried elite after churn (origin of H12), the decoherence dose-response under change (origin of H13) and a Max-Min recompute as the elite (not pursued). |
 | `tests/` | `pytest` suite: objective, registers, measurement, channel, dynamic structural rules, determinism, budget accounting, harness, notebook/module synchronisation, and bit-exact golden fingerprints of the V0–V4 code. |
 | `requirements.txt` | Pinned environment (same versions as `docker/Dockerfile`). |
@@ -175,6 +176,14 @@ local changes (H13) adds a further gain, and the final configuration wins at eve
   * With CXM, the gap is flat for c ∈ [0, 2]: the exchange move takes over the floor's job.
   * c then only sets duplicate evaluations (29 % → 7 % → 0.1 % at c = 0 / 1 / 4), so adaptive decoherence has
     little static headroom. An evaluation cache is the better lever (UNMEASURED).
+* **Scaling to 500–5000 tasks (requested; descriptive; `results_scale_tasks.pdf`, report §38).** 50 VMs, 10 runs, 20 000
+  evaluations.
+  * **In every run at every size:**
+    * QI-DMO / QI-MRFO beat DMO / MRFO;
+    * QI-MRFO + swap beats the GA (693 vs 1532 s at 5000 tasks);
+    * seeded with Max-Min, it is within 0.03–0.22 % of the lower bound and better than Max-Min.
+  * **Limits.** Without the swap move, QI-MRFO is behind the GA. The simple (1+1)-EA with the same swap move is better
+    than the unseeded swarm and about 16× faster.
 * **Research quality.**
   * 253 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.
