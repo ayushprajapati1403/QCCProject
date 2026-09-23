@@ -791,3 +791,33 @@ better method beats every run of the other (Mann–Whitney, Holm p = 0.0009).
 **Consequence.** For one-time batches at scale the recommendation from H7 holds: Max-Min seed plus a local search with
 the swap move. At thousands of tasks the swarm needs either a seed or a larger budget. The swarm's own case remains the
 changing cloud (H11–H13).
+
+## One-file Colab notebook for sharing (supervisor request)
+
+**What happened?** `build_colab_notebook.py` assembles `QI_MRFO_DMO_Colab.ipynb`. It is one self-contained notebook with:
+* the tested module code, copied verbatim;
+* four commented experiments:
+  * A = the V4 baseline;
+  * B = the H5 held-out test, plus the (1+1)-EA + swap on the same problems;
+  * C = the 500–5000 task scaling study;
+  * D = H6c (vs the GA) and H13 (with a migration price);
+* saving to a Google Drive folder: every finished run is written at once, and a re-run skips saved runs.
+
+`MODE = "full"` uses the settings of those studies. `MODE = "quick"` is a subset of the same runs: same budgets and
+seeds, fewer problems, runs and sizes.
+
+**Evidence.**
+* **Quick mode end to end.** Executed with `jupyter nbconvert`: 2 processes, 5.4 min, no errors, 26 files written
+  (run CSVs, tables, `all_tables.xlsx`, 4 figures, `summary.txt`).
+* **Quick runs vs the committed records.** All 208 quick runs that have a committed counterpart are bit-identical:
+  320 of 320 values (makespan, energy, gap, cost gap, migrations). The 6 (1+1)-EA runs of B have no H5 counterpart.
+* **Full-mode spot checks.** A further 76 values across A–D match exactly.
+  * pandas' default CSV parser drops the last bit of some values (6 of the 76 at first).
+  * The notebook therefore reads its own files with `float_precision="round_trip"`.
+* **Tests.** `tests/test_colab_notebook.py` keeps the notebook in sync with the modules and re-checks two committed
+  records.
+
+**Not tested here.** No Colab runtime is available in this environment, so two things are UNMEASURED:
+* the Google Drive mount itself (standard `google.colab.drive` calls, with a guard that stops if Drive is not mounted);
+* run times on Colab. Full mode is about 5 CPU-hours here (A 0.5, B 0.7, C 3.4, D 0.8 h); the notebook's "roughly 3–5
+  hours on free Colab" is an estimate from that.

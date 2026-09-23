@@ -938,7 +938,7 @@ each, with the earlier settings; 610 runs (`results/scale_tasks_analysis.md`, `r
 
 **PROCEED, with claims that V5's own controls have both sharpened and narrowed.**
 1. **Research quality.** Findings now rest on development/held-out splits, instance-level statistics, pre-registered
-   hypotheses, write-once experiments and 253 tests. The tests include bit-exact golden fingerprints of the original
+   hypotheses, write-once experiments and 255 tests. The tests include bit-exact golden fingerprints of the original
    code, and the smoke results reproduce to within 1.1e-16.
 2. **What V5 added that is positive and measured.**
    * **Move-type diagnosis.** The product-state measurement cannot produce the correlated exchange that

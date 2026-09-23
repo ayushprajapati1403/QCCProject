@@ -14,6 +14,7 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 | `qi_quantum.py` | The quantum-inspired mechanism (registers, Born measurement, projection, depolarising channel, purity) and QI-DMO / QI-MRFO. |
 | `qi_dynamic.py` | Dynamic-workload harness (task churn, VM failure, VM addition, speed drift; restart / continue / decoherence-shock / hypermutation strategies). |
 | `build_notebook.py` | Assembles the notebook from the modules (`# %% S<k>` markers) plus the experiment cells. |
+| `QI_MRFO_DMO_Colab.ipynb` | **One self-contained Google Colab notebook for sharing.** It holds all algorithms (copied verbatim from the modules), four commented experiments (A: DMO/MRFO vs QI-DMO/QI-MRFO; B: the swap move on 80 unseen problems; C: 500–5000 tasks; D: changing cloud, vs the GA and with a migration cost) and saves every finished run, the tables (CSV + Excel), the figures and a summary to a Google Drive folder. `MODE = "full"` uses exactly the settings of the reported studies (checked against the committed records by `tests/test_colab_notebook.py`); `MODE = "quick"` is a short check. Built by `build_colab_notebook.py`. |
 | `observe_v0.py … observe_v3.py`, `observe_dyn*.py` | The pilot scripts of the research loop (V0 observe → V1 → V2 → V3 → dynamic), exactly as run; their outputs are in `results/*.txt`. |
 | `lab_log.md` | The Senku-style lab log: what happened, why, evidence, alternative explanation, next change — for every version. |
 | `literature/` | Live-web literature maps (QPSO, DMO, MRFO, quantum-inspired cloud scheduling and classical equivalents, prior-art recheck, Australian supervisors + RTP). |
@@ -41,6 +42,8 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 | `full` | 30 | 20 000 | 7 (up to n=200, m=20) | ≈ 1.5–3 h on 18 cores |
 
 In Colab: `import os; os.environ["QI_MODE"] = "smoke"` in a cell *before* Section 2, or leave the default.
+
+**Google Colab, one file, results saved to Google Drive:** upload `QI_MRFO_DMO_Colab.ipynb` to Colab, set `MODE` in its Section 1 (`"quick"` ≈ a check, `"full"` = the reported settings), then *Runtime → Run all* and allow Google Drive access. Results go to *My Drive → `QI_MRFO_DMO_results` → `<mode>_run`*; each run is saved as soon as it finishes, so after a disconnect *Run all* again resumes where it stopped.
 
 **Docker (exactly what was used here):**
 
@@ -185,7 +188,7 @@ local changes (H13) adds a further gain, and the final configuration wins at eve
   * **Limits.** Without the swap move, QI-MRFO is behind the GA. The simple (1+1)-EA with the same swap move is better
     than the unseeded swarm and about 16× faster.
 * **Research quality.**
-  * 253 tests, including bit-exact golden fingerprints of the V0–V4 code.
+  * 255 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.
   * A tighter (preemptive) lower bound.
   * Write-once checkpointed experiments with commit hashes.
