@@ -1,4 +1,4 @@
-"""QI_MRFO_DMO_Colab.ipynb: it must be exactly what build_colab_notebook.py generates from the current modules, its own
+"""QI_MRFO_DMO_Colab.ipynb: it must be exactly what notebooks/build/build_colab_notebook.py generates from the current modules, its own
 cells must run outside Colab (self-check included), and its full-mode settings must reproduce committed records."""
 import json, os, shutil, subprocess, sys
 
@@ -6,18 +6,25 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOTEBOOK = "QI_MRFO_DMO_Colab.ipynb"
 
 
+def build_into(tmp_path, builder):
+    """Run notebooks/build/<builder> with --root tmp_path (a copy of src/), so the committed notebooks are not touched."""
+    os.makedirs(tmp_path / "src", exist_ok=True)
+    for f in ["qi_core.py", "qi_quantum.py", "qi_dynamic.py"]:
+        shutil.copy(os.path.join(ROOT, "src", f), tmp_path / "src" / f)
+    subprocess.run([sys.executable, os.path.join(ROOT, "notebooks", "build", builder), "--root", str(tmp_path)],
+                   check=True, capture_output=True)
+
+
 def test_colab_notebook_matches_builder(tmp_path):
-    for f in ["qi_core.py", "qi_quantum.py", "qi_dynamic.py", "build_colab_notebook.py"]:
-        shutil.copy(os.path.join(ROOT, f), tmp_path / f)
-    subprocess.run([sys.executable, "build_colab_notebook.py"], cwd=tmp_path, check=True, capture_output=True)
-    built = json.load(open(tmp_path / NOTEBOOK, encoding="utf-8"))
-    committed = json.load(open(os.path.join(ROOT, NOTEBOOK), encoding="utf-8"))
-    assert built == committed, f"{NOTEBOOK} is out of sync with the modules: run `python build_colab_notebook.py`"
+    build_into(tmp_path, "build_colab_notebook.py")
+    built = json.load(open(tmp_path / "notebooks" / "colab" / NOTEBOOK, encoding="utf-8"))
+    committed = json.load(open(os.path.join(ROOT, "notebooks", "colab", NOTEBOOK), encoding="utf-8"))
+    assert built == committed, f"{NOTEBOOK} is out of sync with the modules: run `python notebooks/build/build_colab_notebook.py`"
 
 
 def _exec_cells(until, mode):
     """Execute the notebook's code cells up to and including the one containing `until` (results to a local folder)."""
-    nb = json.load(open(os.path.join(ROOT, NOTEBOOK), encoding="utf-8"))
+    nb = json.load(open(os.path.join(ROOT, "notebooks", "colab", NOTEBOOK), encoding="utf-8"))
     ns = {"__name__": "__main__"}
     for c in nb["cells"]:
         if c["cell_type"] != "code":

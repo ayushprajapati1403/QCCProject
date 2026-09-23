@@ -9,7 +9,7 @@ import hashlib, json, os, sys
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(HERE))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "src"))
 from qi_core import make_instance, Objective, run_pso, run_dmo, run_mrfo, run_ga, run_random  # noqa: E402
 from qi_quantum import run_qimrfo, run_qidmo  # noqa: E402
 from qi_dynamic import make_dynamic_sequence, run_dynamic  # noqa: E402

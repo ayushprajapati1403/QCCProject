@@ -1,5 +1,5 @@
 """QI_DMO_Colab.ipynb and QI_MRFO_Colab.ipynb (standalone notebooks): they must be exactly what
-build_algorithm_notebooks.py generates from the current modules, their cells must run outside Colab (self-check included),
+notebooks/build/build_algorithm_notebooks.py generates from the current modules, their cells must run outside Colab (self-check included),
 their full-mode settings must reproduce committed records, and QI-MRFO's changing-cloud driver must equal run_dynamic."""
 import itertools, json, os, shutil, subprocess, sys
 
@@ -11,19 +11,26 @@ NOTEBOOKS = ["QI_DMO_Colab.ipynb", "QI_MRFO_Colab.ipynb"]
 RT = dict(float_precision="round_trip")
 
 
+def build_into(tmp_path, builder):
+    """Run notebooks/build/<builder> with --root tmp_path (a copy of src/), so the committed notebooks are not touched."""
+    os.makedirs(tmp_path / "src", exist_ok=True)
+    for f in ["qi_core.py", "qi_quantum.py", "qi_dynamic.py"]:
+        shutil.copy(os.path.join(ROOT, "src", f), tmp_path / "src" / f)
+    subprocess.run([sys.executable, os.path.join(ROOT, "notebooks", "build", builder), "--root", str(tmp_path)],
+                   check=True, capture_output=True)
+
+
 def test_algorithm_notebooks_match_builder(tmp_path):
-    for f in ["qi_core.py", "qi_quantum.py", "qi_dynamic.py", "build_algorithm_notebooks.py"]:
-        shutil.copy(os.path.join(ROOT, f), tmp_path / f)
-    subprocess.run([sys.executable, "build_algorithm_notebooks.py"], cwd=tmp_path, check=True, capture_output=True)
+    build_into(tmp_path, "build_algorithm_notebooks.py")
     for nb in NOTEBOOKS:
-        built = json.load(open(tmp_path / nb, encoding="utf-8"))
-        committed = json.load(open(os.path.join(ROOT, nb), encoding="utf-8"))
-        assert built == committed, f"{nb} is out of sync with the modules: run `python build_algorithm_notebooks.py`"
+        built = json.load(open(tmp_path / "notebooks" / "colab" / nb, encoding="utf-8"))
+        committed = json.load(open(os.path.join(ROOT, "notebooks", "colab", nb), encoding="utf-8"))
+        assert built == committed, f"{nb} is out of sync with the modules: run `python notebooks/build/build_algorithm_notebooks.py`"
 
 
 def _exec_cells(notebook, until, mode="full"):
     """Execute the notebook's code cells up to and including the one containing `until` (results to a local folder)."""
-    nb = json.load(open(os.path.join(ROOT, notebook), encoding="utf-8"))
+    nb = json.load(open(os.path.join(ROOT, "notebooks", "colab", notebook), encoding="utf-8"))
     ns = {"__name__": "__main__"}
     for c in nb["cells"]:
         if c["cell_type"] != "code":

@@ -1,40 +1,99 @@
 # Quantum-Inspired MRFO / DMO for Cloud Task Scheduling — code and idea
 
-This folder is a complete, runnable research package: a Jupyter notebook that implements classical swarm schedulers (PSO, DMO, MRFO), a quantum-inspired version of them, and the whole experimental loop (baseline, convergence, statistics, ablation, sensitivity, adversarial cases, dynamic workloads). Everything runs on an ordinary CPU with NumPy/SciPy. **No quantum hardware, no quantum circuits.**
+This repository is a complete, runnable research package: notebooks and Python modules that implement classical swarm schedulers (PSO, DMO, MRFO), a quantum-inspired version of them, and the whole experimental loop (baseline, convergence, statistics, ablation, sensitivity, adversarial cases, dynamic workloads). Everything runs on an ordinary CPU with NumPy/SciPy. **No quantum hardware, no quantum circuits.**
 
-## Files
+## Repository layout
+
+```
+QCCProject/
+├── README.md · requirements.txt · pytest.ini
+├── src/                 the algorithm code; everything else imports it
+├── notebooks/
+│   ├── colab/           ready-to-run Google Colab notebooks (the ones to share)
+│   ├── research/        the full research notebook (18 sections) and an executed copy
+│   └── build/           scripts that generate every notebook from src/
+├── experiments/         the pre-registered V5 experiments (H5–H15) and the scaling study
+├── scripts/
+│   ├── observe/         pilot and observation scripts (V0–V5)
+│   └── reports/         scripts that draw the figures and make the PDFs
+├── docs/
+│   ├── report/          the research report (.md, .html, .pdf)
+│   ├── proposal/        the PhD research proposal (.md, .html, .pdf)
+│   ├── summaries/       short results PDFs for sharing
+│   ├── literature/      literature maps
+│   ├── research_plan_v5.md   pre-registrations and outcomes of H5–H15
+│   └── lab_log.md       the lab log of every version
+├── results/             raw results: write-once, never edited
+├── tests/               pytest suite (269 tests)
+└── docker/              reproducible environment
+```
+
+### `src/` — the algorithm code
 
 | File | What it is |
 |---|---|
-| `quantum_inspired_cloud_scheduler.ipynb` | The notebook (18 sections, runs top to bottom in Colab, Jupyter or local Python). Built by `build_notebook.py` from the modules below, so notebook and modules are identical code. `quantum_inspired_MRFO_cloud_scheduler.ipynb` is an identical copy under the algorithm-specific name. |
-| `quantum_inspired_cloud_scheduler_executed_fast.ipynb` | The same notebook with outputs, executed in Docker in `fast` mode (3 seeds); `results/executed_smoke.ipynb` and `results/executed_full.ipynb` (30 seeds) are the other executed copies. The executed copies predate the last rebuild, which only added the Section 17c neutral-acceptance test cell (`accept_equal` flag of `run_qimrfo`). |
-| `quantum_inspired_research_report.md` (+ `.pdf`) | The research report: literature, hypothesis, mathematics, measured results, ablation, failure analysis, contribution, two-year plan. |
-| `phd_research_proposal.md` | The PhD proposal in the requested (Buyya-style) format. |
-| `qi_core.py` | Problem model, instance generator, objective, instrumentation, heuristics, classical PSO / DMO / MRFO / GA / random. |
+| `qi_core.py` | Problem model, instance generator, objective, instrumentation, heuristics (Max-Min, Min-Min), the swap move (`critical_exchange`), and classical PSO / DMO / MRFO / GA / (1+1)-EA / random search. |
 | `qi_quantum.py` | The quantum-inspired mechanism (registers, Born measurement, projection, depolarising channel, purity) and QI-DMO / QI-MRFO. |
-| `qi_dynamic.py` | Dynamic-workload harness (task churn, VM failure, VM addition, speed drift; restart / continue / decoherence-shock / hypermutation strategies). |
-| `build_notebook.py` | Assembles the notebook from the modules (`# %% S<k>` markers) plus the experiment cells. |
-| `QI_DMO_Colab.ipynb`, `QI_MRFO_Colab.ipynb` | **Standalone notebooks, one per algorithm (supervisor request).** Each holds only the code its algorithm needs, copied verbatim function by function from the modules, and saves every run, table (CSV + Excel), figure and a summary to Google Drive (resumable). **Part 1:** the algorithm on its own: 7 benchmark problems × 30 runs and 500–5000 tasks × 10 runs (makespan in s, gap, energy in Wh, run time, convergence, VM finish times). **Part 2:** how it was improved, version by version (original → quantum-inspired → swap move, plus the Max-Min start for QI-MRFO), with per-change tests on benchmark, unseen and large problems. **QI-MRFO Part 3:** the changing-cloud improvements (H6–H13) step by step. Built by `build_algorithm_notebooks.py`; checked by `tests/test_algorithm_notebooks.py`. |
-| `QI_MRFO_DMO_Colab.ipynb` | **One self-contained Google Colab notebook for sharing.** It holds all algorithms (copied verbatim from the modules), four commented experiments (A: DMO/MRFO vs QI-DMO/QI-MRFO; B: the swap move on 80 unseen problems; C: 500–5000 tasks; D: changing cloud, vs the GA and with a migration cost) and saves every finished run, the tables (CSV + Excel), the figures and a summary to a Google Drive folder. `MODE = "full"` uses exactly the settings of the reported studies (checked against the committed records by `tests/test_colab_notebook.py`); `MODE = "quick"` is a short check. Built by `build_colab_notebook.py`. |
-| `observe_v0.py … observe_v3.py`, `observe_dyn*.py` | The pilot scripts of the research loop (V0 observe → V1 → V2 → V3 → dynamic), exactly as run; their outputs are in `results/*.txt`. |
-| `lab_log.md` | The Senku-style lab log: what happened, why, evidence, alternative explanation, next change — for every version. |
-| `literature/` | Live-web literature maps (QPSO, DMO, MRFO, quantum-inspired cloud scheduling and classical equivalents, prior-art recheck, Australian supervisors + RTP). |
-| `docker/Dockerfile` | Reproducible environment (python 3.12 + numpy/scipy/matplotlib/pandas/nbconvert/mealpy). |
-| `results/` | CSV/PKL/PNG outputs of the notebook runs and the pilot logs. **Raw results are immutable**: V5 experiments write to their own write-once directories (`results/<experiment>/` with `jobs.json`, `meta.json` incl. git commit, a JSONL checkpoint, `records.csv`, `DONE`), and a notebook re-run never overwrites committed files (it writes to `results/rerun_<mode>_<timestamp>/` unless `QI_RESULTS_DIR` is set). |
-| `research_plan_v5.md` | V5 audit (risks with file/function citations), profile, observations O1–O4, ranked backlog, and the pre-registered hypothesis H5 with its acceptance criteria. It was written and committed before H5 was run; its §9 amendment was committed before the held-out stage. |
+| `qi_dynamic.py` | Changing-cloud harness: task churn, VM failure, VM addition and speed drift; restart / continue / decoherence-shock / hypermutation strategies; migration counting and pricing. |
 | `qi_experiment.py` | V5 harness: development (TUNE) vs held-out (TEST) instance families, JSON algorithm specs, checkpointed parallel runner for static and dynamic jobs, paired statistics (bootstrap CI, Wilcoxon, rank-biserial, Cliff's δ, A12, Holm). |
-| `exp_h5_cxm.py` … `exp_h13_event_gamma.py` | The V5 experiments H5–H13: each script pre-registered in `research_plan_v5.md`, writes a write-once `results/<name>/` directory, and produces `results/h*_analysis.md`. |
-| `make_v5_figures.py` | V5 figures (`results/fig_v5_*.png`) drawn from the committed result files. |
-| `make_results_summary.py` → `results_summary.pdf` | Two-page results summary for sharing: DMO/MRFO vs their quantum-inspired versions, the swap move, the GA comparison and the changing cloud. Every number is computed from the committed result files. |
-| `make_exact_values.py` → `results_exact_values.pdf` | The same results as exact values instead of percentage gaps: makespan in seconds (mean ± SD and best of 30 runs), the lower bounds, and migration counts. |
-| `exp_scale_tasks.py`, `make_scale_pdf.py` → `results_scale_tasks.pdf` | Scaling study requested by the supervisor: 500–5000 tasks on 50 VMs, 14 algorithms, 10 runs each (`results/scale_tasks/`, `results/scale_tasks_analysis.md`); the PDF gives makespans in seconds, gaps, runtimes and a scaling chart. |
-| `observe_v5_*.py` | V5 observation scripts (development seeds, descriptive). They cover duplicate evaluations, the critical-VM condition, stagnation, local optimality of end points, the H8 barrier check (post hoc) and the static decoherence dose-response with and without CXM (`analyze_v5_c_sweep.py` writes the paired contrasts). They also cover the carried elite after churn (origin of H12), the decoherence dose-response under change (origin of H13) and a Max-Min recompute as the elite (not pursued). |
-| `tests/` | `pytest` suite: objective, registers, measurement, channel, dynamic structural rules, determinism, budget accounting, harness, notebook/module synchronisation, and bit-exact golden fingerprints of the V0–V4 code. |
-| `requirements.txt` | Pinned environment (same versions as `docker/Dockerfile`). |
+
+### `notebooks/`
+
+| File | What it is |
+|---|---|
+| `colab/QI_DMO_Colab.ipynb`, `colab/QI_MRFO_Colab.ipynb` | **Standalone notebooks, one per algorithm (supervisor request).** Each holds only the code its algorithm needs, copied verbatim function by function from `src/`, and saves every run, table (CSV + Excel), figure and a summary to Google Drive (resumable). **Part 1:** the algorithm on its own: 7 benchmark problems × 30 runs and 500–5000 tasks × 10 runs (makespan in s, gap, energy in Wh, run time, convergence, VM finish times). **Part 2:** how it was improved, version by version (original → quantum-inspired → swap move, plus the Max-Min start for QI-MRFO), with per-change tests on benchmark, unseen and large problems. **QI-MRFO Part 3:** the changing-cloud improvements (H6–H13) step by step. Checked by `tests/test_algorithm_notebooks.py`. |
+| `colab/QI_MRFO_DMO_Colab.ipynb` | **One self-contained Colab notebook with all algorithms** and four commented experiments (A: DMO/MRFO vs QI-DMO/QI-MRFO; B: the swap move on 80 unseen problems; C: 500–5000 tasks; D: changing cloud, vs the GA and with a migration cost). It saves every run, table, figure and a summary to Google Drive. `MODE = "full"` uses exactly the settings of the reported studies (checked against the committed records by `tests/test_colab_notebook.py`); `MODE = "quick"` is a short check. |
+| `research/quantum_inspired_cloud_scheduler.ipynb` | The research notebook (18 sections; Colab, Jupyter or local Python). Inside the repository it reads and writes the repository's `results/`. `quantum_inspired_MRFO_cloud_scheduler.ipynb` is an identical copy under the algorithm-specific name. |
+| `research/quantum_inspired_cloud_scheduler_executed_fast.ipynb` | The research notebook with outputs, executed in Docker in `fast` mode (3 seeds); `results/executed_smoke.ipynb` and `results/executed_full.ipynb` (30 seeds) are the other executed copies. They predate later rebuilds that added cells, not changes to earlier results. |
+| `build/build_notebook.py`, `build/build_colab_notebook.py`, `build/build_algorithm_notebooks.py` | Generate the notebooks above from `src/`, so notebook and module code are identical; the tests fail if a notebook is out of sync. |
+
+### `experiments/` — pre-registered experiments
+
+| File | What it is |
+|---|---|
+| `exp_h5_cxm.py` … `exp_h15_qidmo_greedy_cxm.py` | The V5 hypotheses H5–H15. Each was pre-registered in `docs/research_plan_v5.md` before it was run, writes a write-once `results/<name>/` directory and produces `results/h*_analysis.md`. |
+| `exp_scale_tasks.py` | Scaling study requested by the supervisor: 500–5000 tasks on 50 VMs, 14 algorithms, 10 runs each (`results/scale_tasks/`, `results/scale_tasks_analysis.md`). |
+
+### `scripts/`
+
+| File | What it is |
+|---|---|
+| `observe/observe_v0.py` … `observe_v4_neutral.py`, `observe/observe_dyn*.py` | The pilot scripts of the research loop (V0 observe → V1 → V2 → V3 → V4 → dynamic), as run; moved here with a two-line path header. Their outputs are in `results/*.txt`. |
+| `observe/observe_v5_*.py`, `observe/analyze_v5_c_sweep.py` | V5 observation scripts (development seeds, descriptive): duplicate evaluations, the critical-VM condition, stagnation, local optimality of end points, the H8 barrier check (post hoc), the decoherence dose-response with and without the swap move and under change, the carried elite after churn, and a Max-Min recompute as the elite. |
+| `reports/make_results_summary.py`, `reports/make_exact_values.py`, `reports/make_scale_pdf.py` | Make the PDFs in `docs/summaries/`. Every number is computed from the committed result files. |
+| `reports/make_v5_figures.py` | The V5 figures `results/fig_v5_*.png`. |
+| `reports/make_pdf.py` | Renders a Markdown document to PDF (and HTML) with tables and math: the report and the proposal. |
+
+### `docs/`
+
+| File | What it is |
+|---|---|
+| `report/quantum_inspired_research_report.md` (+ `.html`, `.pdf`) | The research report: literature, hypothesis, mathematics, measured results, ablation, failure analysis, V5 held-out tests, contribution, plan. |
+| `proposal/phd_research_proposal.md` (+ `.html`, `.pdf`) | The PhD proposal in the requested (Buyya-style) format. |
+| `summaries/results_summary.pdf` | Two-page results summary: DMO/MRFO vs their quantum-inspired versions, the swap move, the GA comparison and the changing cloud. |
+| `summaries/results_exact_values.pdf` | The same results as exact values: makespan in seconds (mean ± SD and best of 30 runs), the lower bounds, and migration counts. |
+| `summaries/results_scale_tasks.pdf` | The scaling study: makespans in seconds, gaps, run times and a scaling chart. |
+| `research_plan_v5.md` | V5 audit, profile, observations, ranked backlog, and every pre-registration with its recorded outcome (H5–H15). |
+| `lab_log.md` | The lab log: what happened, why, evidence, alternative explanation and the next change, for every version. |
+| `literature/` | Live-web literature maps (QPSO, DMO, MRFO, quantum-inspired cloud scheduling and classical equivalents, prior-art recheck, Australian supervisors + RTP). |
+
+### `results/`, `tests/`, `docker/`
+
+| Folder | What it is |
+|---|---|
+| `results/` | Every raw result. **Raw results are immutable:** V5 experiments write to their own write-once directories (`results/<experiment>/` with `jobs.json`, `meta.json` incl. git commit, a JSONL checkpoint, `records.csv`, `DONE`), and a notebook re-run never overwrites committed files (it writes to `results/rerun_<mode>_<timestamp>/` unless `QI_RESULTS_DIR` is set). |
+| `tests/` | `pytest` suite: objective, registers, measurement, channel, dynamic structural rules, determinism, budget accounting, harness, notebook/module synchronisation, reproduction of committed records, and bit-exact golden fingerprints of the V0–V4 code. |
+| `docker/` | Reproducible environment (python 3.12 + numpy/scipy/matplotlib/pandas/nbconvert/mealpy); `Dockerfile.pdf` adds the PDF tooling. |
+
+`requirements.txt` pins the same versions as `docker/Dockerfile`.
 
 ## How to run
 
-**Colab / Jupyter:** open `quantum_inspired_cloud_scheduler.ipynb` and *Run all*. Section 1 installs anything missing. The run size is controlled by the environment variable `QI_MODE` read in Section 2:
+All commands run from the repository root.
+
+**Google Colab (recommended for sharing):** upload a notebook from `notebooks/colab/`, set `MODE` in its Section 1 (`"quick"` = a short check, `"full"` = the complete runs), then *Runtime → Run all* and allow Google Drive access. Results go to a folder in *My Drive*. Each run is saved as soon as it finishes, so after a disconnect *Run all* again resumes where it stopped.
+
+**The research notebook (Colab / Jupyter):** open `notebooks/research/quantum_inspired_cloud_scheduler.ipynb` and *Run all*. Section 1 installs anything missing. The run size is controlled by the environment variable `QI_MODE` read in Section 2:
 
 | `QI_MODE` | seeds | budget (evaluations) | instances | approximate time |
 |---|---|---|---|---|
@@ -44,22 +103,23 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 
 In Colab: `import os; os.environ["QI_MODE"] = "smoke"` in a cell *before* Section 2, or leave the default.
 
-**Google Colab, one file, results saved to Google Drive:** upload `QI_MRFO_DMO_Colab.ipynb` to Colab, set `MODE` in its Section 1 (`"quick"` ≈ a check, `"full"` = the reported settings), then *Runtime → Run all* and allow Google Drive access. Results go to *My Drive → `QI_MRFO_DMO_results` → `<mode>_run`*; each run is saved as soon as it finishes, so after a disconnect *Run all* again resumes where it stopped.
-
-**Docker (exactly what was used here):**
+**Docker (the environment used here):**
 
 ```bash
 docker build -t qi-sched docker/
-docker run --rm -v "$PWD:/work" -e QI_MODE=fast qi-sched jupyter nbconvert --to notebook --execute quantum_inspired_cloud_scheduler.ipynb --output results/executed_fast.ipynb --ExecutePreprocessor.timeout=36000
+docker run --rm -v "$PWD:/work" -e QI_MODE=fast qi-sched jupyter nbconvert --to notebook --execute notebooks/research/quantum_inspired_cloud_scheduler.ipynb --output-dir results --output executed_fast.ipynb --ExecutePreprocessor.timeout=36000
 ```
 
-**Tests:** `pip install -r requirements.txt && pytest` (about 30 s). The golden test fails if a change alters the behaviour of any V0–V4 configuration; new behaviour must be opt-in.
+**Tests:** `pip install -r requirements.txt && pytest` (about 2 min). The golden test fails if a change alters the behaviour of any V0–V4 configuration; new behaviour must be opt-in.
 
-**V5 experiments (held-out protocol):** `python exp_h5_cxm.py tune`, then `test`, then `analyze` (≈ 3 + 15 min on 4 cores). Set `QI_WORKERS` to the number of processes. A finished experiment directory cannot be overwritten; resume an interrupted one by re-running the same command.
+**V5 experiments (held-out protocol):** `python experiments/exp_h5_cxm.py tune`, then `test`, then `analyze` (≈ 3 + 15 min on 4 cores). Set `QI_WORKERS` to the number of processes. A finished experiment directory cannot be overwritten; resume an interrupted one by re-running the same command.
 
-**Plain Python:** `python observe_v1.py` etc. reproduce the pilot tables in `lab_log.md`; the modules can be imported directly:
+**Notebooks and PDFs:** `python notebooks/build/build_algorithm_notebooks.py` (likewise `build_notebook.py`, `build_colab_notebook.py`) regenerates the notebooks from `src/`. `python scripts/reports/make_results_summary.py` (likewise `make_exact_values.py`, `make_scale_pdf.py`) regenerates the summary PDFs. `python scripts/reports/make_pdf.py docs/report/quantum_inspired_research_report.md docs/report/quantum_inspired_research_report.pdf` regenerates the report; the proposal works the same way.
+
+**Plain Python:** `python scripts/observe/observe_v1.py` etc. reproduce the pilot tables in `docs/lab_log.md`. The modules can be imported directly:
 
 ```python
+import sys; sys.path.insert(0, "src")              # from the repository root
 from qi_core import make_instance, Objective, run_mrfo, run_ga
 from qi_quantum import run_qimrfo
 inst = make_instance(100, 10, seed=1)            # 100 tasks, 10 heterogeneous VMs
@@ -180,7 +240,7 @@ local changes (H13) adds a further gain, and the final configuration wins at eve
   * With CXM, the gap is flat for c ∈ [0, 2]: the exchange move takes over the floor's job.
   * c then only sets duplicate evaluations (29 % → 7 % → 0.1 % at c = 0 / 1 / 4), so adaptive decoherence has
     little static headroom. An evaluation cache is the better lever (UNMEASURED).
-* **Scaling to 500–5000 tasks (requested; descriptive; `results_scale_tasks.pdf`, report §38).** 50 VMs, 10 runs, 20 000
+* **Scaling to 500–5000 tasks (requested; descriptive; `docs/summaries/results_scale_tasks.pdf`, report §38).** 50 VMs, 10 runs, 20 000
   evaluations.
   * **In every run at every size:**
     * QI-DMO / QI-MRFO beat DMO / MRFO;
