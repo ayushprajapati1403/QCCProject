@@ -131,11 +131,25 @@ def study3():
     return ga, rows, wins
 
 
+def study4():
+    """V5 swap move in QI-DMO (H14, H15) on fresh held-out problems, and the greedy-step ablation (V4)."""
+    from scipy.stats import wilcoxon
+    w14, _ = per_instance(os.path.join(RES, "h14_test", "records.csv"), "QI-DMO+CXM", [])
+    worse14 = (int(((w14["QI-DMO+CXM"] - w14["QI-DMO"]) > 0).sum()), len(w14))
+    w15, win15 = per_instance(os.path.join(RES, "h15_test", "records.csv"), "QI-DMO+CXM selected", ["QI-DMO"])
+    d15 = (w15["QI-DMO+CXM selected"] - w15["QI-DMO"]).values
+    better15 = (win15["QI-DMO"][0], win15["QI-DMO"][1], float(wilcoxon(d15[d15 != 0]).pvalue))
+    ab = pd.read_csv(os.path.join(RES, "ablation_full.csv"))
+    g = ab[ab.instance == "n100 m10 uniform high"].groupby("algo").gap.mean() * 100
+    return worse14, better15, (float(g["QI-DMO greedy-next"]), float(g["QI-MRFO"]))
+
+
 # ------------------------------------------------------------------------------------------ document
 def build():
     t1, avg1 = study1()
     t2, m2, twin, ea, wins2 = study2()
     ga3, t3, wins3 = study3()
+    worse14, better15, greedy = study4()
     story = [Paragraph("Quantum-Inspired MRFO and DMO for Cloud Task Scheduling", S["title"]),
              Paragraph("Results summary · makespan scheduling of independent tasks on heterogeneous VMs · all runs on an "
                        "ordinary CPU (no quantum hardware)", S["sub"]),
@@ -162,8 +176,8 @@ def build():
         table(t1, [58 * mm, 26 * mm, 27 * mm, 27 * mm, 32 * mm], ours=(2, 4)),
         Paragraph(f"Setup: V4 study, 7 problems × 30 runs, 20 000 evaluations per run. QI-MRFO is at the level of the GA "
                   f"({avg1['QI-MRFO']:.1f}\u00a0% vs {avg1['GA']:.1f}\u00a0%). DMO gains less because one of its steps moves randomly "
-                  "even when the result gets worse; with that step made greedy (pilot study, lab log V3) QI-DMO matches "
-                  "QI-MRFO. Source: results/baseline_full.csv.", S["note"])]))
+                  f"even when the result gets worse; with that step made greedy, QI-DMO comes close to QI-MRFO ({greedy[0]:.2f}\u00a0% vs "
+                  f"{greedy[1]:.2f}\u00a0% at 100 tasks). Source: results/baseline_full.csv, results/ablation_full.csv.", S["note"])]))
 
     story.append(KeepTogether([
         Paragraph("Table 2 · Adding a swap move for the busiest VM", S["h"]),
@@ -188,11 +202,14 @@ def build():
     bullets = [
         "Runs on a normal CPU. A classical-probability version of the same method (no quantum formula) did as well "
         f"({twin:.2f}\u00a0% in Table 2's setting), so the gain comes from the representation; no quantum advantage is claimed.",
-        f"For a one-time batch, a simple (1+1)-EA using the same swap move is equally good (better on {ea[0]} of {ea[1]} fresh "
-        "problems); the swarm's own strength is the changing cloud, especially when VMs are added.",
+        f"For a one-time batch, a simple (1+1)-EA using the same swap move does as well or slightly better (better on {ea[0]} of "
+        f"{ea[1]} fresh problems); the swarm's own strength is the changing cloud, especially when VMs are added.",
+        f"The swap move does not carry over to QI-DMO. Added to every QI-DMO phase it made QI-DMO worse on {worse14[0]} of "
+        f"{worse14[1]} unseen problems (H14); added only where QI-DMO keeps improvements it was better on {better15[0]} of "
+        f"{better15[1]}, but not significantly (p = {better15[2]:.3f}; H15). The every-phase version does help at 500–5\u00a0000 tasks.",
         "All problems are generated (synthetic). Next: real cloud traces (e.g. Google, Alibaba) and energy / SLA costs.",
         "Method: unseen test problems, predictions written before each experiment, Wilcoxon tests with Holm correction, "
-        "253 automated tests; all numbers in this PDF are computed from the committed result files.",
+        "269 automated tests; all numbers in this PDF are computed from the committed result files.",
     ]
     story.append(KeepTogether([Paragraph("Honest notes", S["h"])] +
                               [Paragraph(b, S["bullet"], bulletText="•") for b in bullets]))

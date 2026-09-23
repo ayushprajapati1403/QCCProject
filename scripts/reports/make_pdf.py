@@ -1,6 +1,8 @@
 """make_pdf.py - render a Markdown report to PDF with rendered math and tables (Chromium via playwright).
 Usage: python scripts/reports/make_pdf.py input.md output.pdf
 Math is typeset with MathJax from the CDN when reachable; otherwise the LaTeX source is left as text.
+Optional environment variables for offline machines: MATHJAX_LOCAL = path of a local MathJax 3 `es5/tex-svg.js`
+(served in place of the CDN file); CHROMIUM_PATH = the Chromium executable to use instead of Playwright's default.
 """
 import sys, markdown, re, pathlib, os
 
@@ -31,8 +33,11 @@ pathlib.Path(dst).with_suffix(".html").write_text(html, encoding="utf-8")
 
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
-    browser = p.chromium.launch()
+    browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH") or None)
     page = browser.new_page()
+    if os.environ.get("MATHJAX_LOCAL"):                        # serve MathJax from a local copy (no network needed)
+        page.route(mathjax_src, lambda route: route.fulfill(path=os.environ["MATHJAX_LOCAL"],
+                                                            content_type="application/javascript"))
     page.set_content(html, wait_until="domcontentloaded", timeout=120000)
     try:
         page.wait_for_function("window.MathJax && MathJax.typesetPromise", timeout=45000)

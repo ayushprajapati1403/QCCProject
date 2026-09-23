@@ -69,27 +69,39 @@ blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
 <ol start="3">
 <li>Overview of the proposed work</li>
 </ol>
-<p>The proposed work follows an implementation-first research loop that has already completed one full cycle (observe → hypothesis → implement → run → ablate → adversarial test → prior-art recheck), documented in a runnable notebook, a lab log and a report.</p>
-<p>Findings of the completed cycle (5 seeds, 20 000 evaluations per run, four instance families, laptop CPU):</p>
+<p>The proposed work follows an implementation-first research loop that has already completed five versions (V1–V5) of the cycle observe → hypothesis → implement → run → ablate → adversarial test → prior-art recheck. Version 5 added eleven pre-registered hypotheses (H5–H15), each tested on held-out problem instances that were never used for any design choice. Everything is documented in runnable notebooks, a lab log, a research plan with every pre-registration and its outcome, and a report.</p>
+<p>Findings of the preparatory work (20 000 evaluations per run; 30 seeds on seven instances in V4; in V5, 80 fresh held-out instances per static test and 60 scenario-seed pairs per dynamic test):</p>
 <ul>
 <li>
-<p>Failure mode identified: floor-encoded DMO and MRFO change on average 44–49 of 100 task assignments per candidate; fewer than 2 % of candidates improve; gap to the makespan lower bound 76 % (DMO) and 98 % (MRFO) at 100 tasks, versus 1.4 % for a discrete GA at the same budget.</p>
+<p>Failure mode identified: with the rounding encoding, DMO and MRFO change 46–49 of 100 task assignments per candidate. Their gap to the makespan lower bound at 100 tasks is 75 % (DMO) and 84 % (MRFO), versus 1.4 % for a discrete GA at the same budget. The failure persists at scale: at 500–5 000 tasks their makespans stay 3.1–4.3 times the lower bound.</p>
 </li>
 <li>
-<p>Mechanism: the measurement-based register representation with a decoherence floor turns MRFO into a GA-class optimiser (1.1 % gap at 100 tasks and 2.8 % at 200 tasks on 20 VMs in a 30-seed, seven-instance confirmation; equal to or slightly better than a discrete GA, Holm-corrected p &lt; 10⁻⁴ against MRFO on every instance) and repairs DMO likewise (4.0 %; 1.4 % once DMO's unconditional move is made greedy). The decoherence strength shows a clean dose–response with an interior optimum; without it 25–75 % of evaluations are wasted on re-measuring the same schedule. The boundary is measured too: on static heterogeneous batches at this budget the Max-Min list heuristic remains better on six of seven instances by 0.3–4.7 percentage points, which is why the proposal targets objectives and dynamics that list heuristics do not handle.</p>
+<p>Mechanism: the measurement-based register representation repairs both hosts. In the 30-seed confirmation QI-MRFO reaches a 1.1 % gap at 100 tasks and 2.8 % at 200 tasks on 20 VMs. It is better than MRFO on every instance (Holm-corrected p &lt; 10⁻⁴) and GA-class: at most 0.64 percentage points behind a discrete GA on any of the seven instances, ahead on the other five, and significantly better on one. QI-DMO reaches 4.0 % (1.5 % once DMO's unconditional move is made greedy) and beats DMO on all 80 fresh held-out instances. At 500–5 000 tasks both quantum-inspired versions beat their originals in every run.</p>
 </li>
 <li>
-<p>Honest negatives: the specifically quantum ingredients (amplitude squaring, signed interference) are measurably irrelevant — a probability-vector twin performs the same — and uniform "decoherence shocks" after a workload change never beat plain continuation at any churn severity from 10 % to 80 %. What does help under change is the representation's structural rules: VM removal as column deletion, VM addition as a uniform share, new tasks as uniform registers — carried state beats restarts on every change type (recovery area 2–4× smaller) and beats the GA's carried population on drift, VM failure and VM addition.</p>
+<p>Move types (V5): the product-state measurement changes tasks independently, so it almost never produces the correlated two-task exchange that nearly balanced schedules need. A correlated exchange measurement (a swap move on the busiest VM) lowers QI-MRFO's gap by 2.86 percentage points on 76 of 80 held-out instances (pre-registered H5) and beats the Max-Min heuristic on six of eight held-out families. Started from the Max-Min schedule, it ends within 0.03–0.22 % of the lower bound at 500–5 000 tasks. The same move does not transfer cleanly to QI-DMO, whose unconditional phase keeps worsening swaps (H14, H15): the value of a move depends on the host's acceptance rule.</p>
 </li>
 <li>
-<p>Prior art: the classical twin is essentially ICPSO (Strasser et al., GECCO 2016) with a new host; the floor is the EDA "margin" / Hε gate under another name; what is not found anywhere is a purity-calibrated per-candidate floor with a measured dose–response, VM removal as projective column deletion with warm re-optimisation, and any of this in a cloud scheduler.</p>
+<p>Re-scheduling under change with a migration price (V5): carrying the register state beats restarting on every change type. The representation's structural rules are VM removal as column deletion, VM addition as a uniform share and new tasks as uniform registers. Combined with an event-aware elite, incremental placement of new tasks and no noise floor after local changes, they give a configuration that beats the best list-heuristic strategy at every migration price tested: 58/2, 57/3 and 59/1 scenario-seed pairs on fresh seeds (H11–H13).</p>
+</li>
+<li>
+<p>Honest negatives:</p>
+</li>
+<li>The specifically quantum ingredients (amplitude squaring, signed interference) are irrelevant or slightly harmful. A probability-vector twin performs the same without the swap move and slightly better with it (68 of 80 held-out instances).</li>
+<li>For one-time (static) makespan, a single-trajectory (1+1)-EA with the same moves is at least as good as the swarm (H7). The static gain belongs to the moves and the Max-Min start, not to the swarm.</li>
+<li>Uniform "decoherence shocks" after a workload change never beat plain continuation at any churn severity from 10 % to 80 %.</li>
+<li>
+<p>A purity-regulated decoherence controller was falsified (H9). Once the swap move exists, the fixed noise floor no longer affects the static gap for c between 0 and 2 (development set).</p>
+</li>
+<li>
+<p>Prior art: the classical twin is essentially ICPSO (Strasser et al., GECCO 2016) with a new host; the floor is the EDA "margin" / Hε gate under another name. What is not found anywhere is a purity-calibrated per-candidate floor with a measured dose–response, VM removal as projective column deletion with warm re-optimisation, correlated exchange measurements in a register swarm, and any of this in a cloud scheduler.</p>
 </li>
 </ul>
 <p>The PhD builds on this base along three lines:</p>
-<p>(a) Representation and theory. Formalise the register swarm as a per-individual univariate probabilistic model driven by swarm difference vectors; derive the expected move size $n - \sum_t \pi_t$ and its evolution under attraction, mixing and the depolarising channel; obtain drift and runtime results (in the style of the chance-constrained makespan analyses of Neumann and co-workers and the r-valued EDA drift results of Doerr and Krejca) that predict the optimal floor strength as a function of $n$, $m$ and selection pressure; validate the predictions against the measured dose–response.</p>
-<p>(b) Re-scheduling under change. Replace uniform forgetting by task-selective, severity-scaled decoherence (shock only the registers of tasks whose execution-time rows changed, scaled by the relative change) and purity-regulated floors; build a dynamic benchmark suite with change generators (arrivals, failures, scale-out, drift) and evaluate against restart, continuation, hypermutation, random immigrants and learning-augmented/online baselines; characterise the severity boundary beyond which carried state stops helping.</p>
+<p>(a) Representation and theory. Formalise the register swarm as a per-individual univariate probabilistic model driven by swarm difference vectors and extended with correlated (exchange) measurements. Derive the expected move size $n - \sum_t \pi_t$ and its evolution under attraction, mixing and the depolarising channel. Obtain drift and runtime results (in the style of the chance-constrained makespan analyses of Neumann and co-workers and the r-valued EDA drift results of Doerr and Krejca) that predict when the noise floor matters and when exchange moves are needed, as a function of $n$, $m$, selection pressure and the acceptance rule. Validate the predictions against the measured dose–response and move-type diagnostics.</p>
+<p>(b) Re-scheduling under change. Build on the V5 result that the event-aware configuration beats the best list-heuristic strategy under migration pricing. Replace its fixed event rules by severity- and cost-aware decisions: when to repair and when to re-optimise, which tasks to release, and how much noise to allow. Build a dynamic benchmark suite with trace-driven change generators (arrivals, failures, scale-out, drift). Evaluate against restart, continuation, hypermutation, random immigrants and learning-augmented/online baselines, and against a single-trajectory local search with the same moves, the control V5 showed to be necessary. Characterise the severity boundary beyond which carried state stops helping.</p>
 <p>(c) Cloud realism. Move from the pure-Python simulator to CloudSim 7G/WorkflowSim/iFogSim with public traces and energy/cost/deadline objectives (where list heuristics no longer dominate), then to a Kubernetes prototype: a scheduler plugin or descheduler that keeps a register state per pending pod set and re-optimises placement under node churn on an iContinuum/GreenK8s-style testbed.</p>
-<p>Expected outputs: a first paper on the failure mode of rounding encodings and its repair (workshop/CCGrid-level), a second on severity-aware re-optimisation with a measurement-based representation (journal: FGCS/TPDS-level target), a theory paper on move size and drift with a noise floor (GECCO/PPSN), a systems paper on the Kubernetes prototype, an open-source MEALPY-compatible implementation, and the thesis.</p>
+<p>Expected outputs: a first paper on the failure mode of rounding encodings, its repair and the move-type diagnosis (workshop/CCGrid-level), a second on migration-priced re-optimisation with a measurement-based representation (journal: FGCS/TPDS-level target), a theory paper on move size and drift with a noise floor (GECCO/PPSN), a systems paper on the Kubernetes prototype, an open-source MEALPY-compatible implementation, and the thesis.</p>
 <ol start="4">
 <li>Research/Development Methodology</li>
 </ol>
@@ -99,10 +111,10 @@ blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
 <p>Hypothesis-driven cycle (used in the preparatory work and continued in the PhD): OBSERVE the classical failure with instrumentation (move size, wasted/improving candidates, diversity, purity) → MECHANISM with a stated causal chain → PREDICTION with a falsification condition → MINIMAL IMPLEMENTATION → RUN at equal evaluation budgets with multiple seeds → ABLATION (mechanism removed; classical twin) → ADVERSARIAL cases where the mechanism should not help → PRIOR-ART RECHECK with the exact mechanism → next version. Every version has one evidence-driven change; every number is measured or labelled unmeasured.</p>
 </li>
 <li>
-<p>Statistical protocol: 30+ seeds, paired non-parametric tests with Holm correction, effect sizes (Cliff's delta, Vargha–Delaney A12), bootstrap confidence intervals, held-out instance families and real traces; evaluation-budget fairness enforced in code (each measurement is one evaluation).</p>
+<p>Statistical protocol: every hypothesis pre-registered before it is run, with acceptance and falsification criteria; 30+ seeds or instance-level tests on held-out instance families (and real traces); paired non-parametric tests with Holm correction, effect sizes (Cliff's delta, Vargha–Delaney A12) and bootstrap confidence intervals; write-once experiment directories that record the code version; evaluation-budget fairness enforced in code (each measurement is one evaluation).</p>
 </li>
 <li>
-<p>Baselines: the algorithms the field uses (floor-encoded swarms), the algorithms it should use (discrete GA, ICPSO, PBIL/EDA, list heuristics, HEFT), and for dynamic settings restart/continue/hypermutation/random immigrants and learning-augmented online baselines.</p>
+<p>Baselines: the algorithms the field uses (floor-encoded swarms), the algorithms it should use (discrete GA, ICPSO, PBIL/EDA, list heuristics, HEFT, and a single-trajectory local search with the same moves), and for dynamic settings restart/continue/hypermutation/random immigrants and learning-augmented online baselines.</p>
 </li>
 <li>
 <p>Theory: expected-move-size calculus of registers; drift analysis with margins; runtime bounds for the register swarm on makespan scheduling under chance constraints.</p>
@@ -111,7 +123,7 @@ blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
 <p>Systems: CloudSim 7G/WorkflowSim/iFogSim (the laboratory-standard toolkits) with GoCJ/HPC2N/Google traces; Kubernetes prototype with failure injection; Docker-reproducible environments (the preparatory work already ships a Dockerfile and a notebook that runs end-to-end in smoke/fast/full modes).</p>
 </li>
 <li>
-<p>Reproducibility: all code, instances, seeds, logs and literature maps are released; the preparatory package includes 18 automated validation tests (objective versus brute force, Born-rule measurement chi-square test, budget accounting, determinism).</p>
+<p>Reproducibility: all code, instances, seeds, logs and literature maps are released. The preparatory package includes 269 automated tests: objective versus brute force, Born-rule measurement, budget accounting, determinism, bit-exact golden fingerprints of earlier versions, notebook/module synchronisation and exact reproduction of committed records. It also includes Docker environments and Google Colab notebooks that save every run.</p>
 </li>
 </ul>
 <ol start="5">
@@ -122,13 +134,13 @@ blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
 <p>A demonstrated, reproducible failure-mode analysis showing why rounding-encoded swarm schedulers degrade with problem size — a result that affects a large published literature and that the field currently does not measure.</p>
 </li>
 <li>
-<p>A measurement-based register representation with a purity-calibrated noise floor that makes swarm optimisers competitive with discrete GAs at equal budgets, with a theory that predicts the floor strength.</p>
+<p>A measurement-based register representation with correlated (exchange) measurements and structural rules for capacity changes. It makes swarm optimisers competitive with discrete GAs at equal budgets and, for re-optimisation under a migration price, better than the best list-heuristic strategy. It comes with a theory of move size and of when the noise floor matters.</p>
 </li>
 <li>
-<p>A characterisation of re-scheduling under change: which changes benefit from carried state, how the benefit decays with severity, and whether selective decoherence has a regime of usefulness — together with a dynamic cloud-scheduling benchmark suite.</p>
+<p>A characterisation of re-scheduling under change: which changes benefit from carried state, how the benefit decays with severity, and when to repair rather than re-optimise. The preparatory work already shows that removing the noise floor after local changes pays at medium and high migration prices (H13). It comes with a dynamic cloud-scheduling benchmark suite.</p>
 </li>
 <li>
-<p>A negative-result contribution that matters for the community: quantum-specific ingredients (Born rule, interference) and uniform forgetting add nothing measurable on this problem class, which sets a standard of evidence for "quantum-inspired" schedulers.</p>
+<p>A negative-result contribution that matters for the community. Quantum-specific ingredients (Born rule, interference) and uniform forgetting add nothing measurable on this problem class. For static makespan, a single-trajectory local search with the same moves matches the swarm. This sets a standard of evidence for "quantum-inspired" schedulers.</p>
 </li>
 <li>
 <p>Simulator-validated and Kubernetes-prototyped resource management under churn, with energy-aware objectives, contributing to the knowledge of sustainable, adaptive cloud resource management.</p>
@@ -141,8 +153,13 @@ blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
 <li>Reference to any preparatory reading and work that has been completed</li>
 </ol>
 <ul>
+<li>Implementation-first preparatory work (2026):</li>
+<li>a runnable research notebook (18 sections: problem model, faithful PSO/DMO/MRFO/GA implementations, the quantum-inspired mechanism, validation tests, baseline, convergence, statistics, ablation, sensitivity, adversarial cases, dynamic workloads, interpretation), executed end-to-end in Docker;</li>
+<li>standalone Google Colab notebooks for QI-DMO and QI-MRFO;</li>
+<li>a lab log with the full version history (V0–V5);</li>
+<li>a research plan with eleven pre-registered, held-out hypothesis tests (H5–H15) and their outcomes, and a scaling study to 5 000 tasks;</li>
 <li>
-<p>Implementation-first pilot (2026): a runnable Jupyter notebook (<code>quantum_inspired_cloud_scheduler.ipynb</code>, 18 sections: problem model, faithful PSO/DMO/MRFO/GA implementations, the quantum-inspired mechanism, validation tests, baseline, convergence, statistics, ablation, sensitivity, adversarial cases, dynamic workloads, interpretation) executed end-to-end in Docker; a lab log with the full version history (V0–V3 and the dynamic pilots); a research report; live-web literature maps of quantum-inspired PSO (23 papers), DMO (5 quantum variants, 9 cloud applications), MRFO (6 quantum items, 12 cloud applications), quantum-inspired cloud scheduling on other hosts (19 papers) and the classical equivalents of every quantum mechanism (rotation gate = PBIL, tunnelling = Lévy/Cauchy mutation, decoherence = mutation shift / hypermutation, superposition + measurement = univariate EDA, purity floor = EDA margins); and a prior-art recheck of the exact implemented mechanism (ICPSO, QIEA/Hε gate, PBIL hypermutation, ACO pheromone equalisation, qudit-inspired optimisation).</p>
+<p>a research report; live-web literature maps of quantum-inspired PSO (23 papers), DMO (5 quantum variants, 9 cloud applications), MRFO (6 quantum items, 12 cloud applications), quantum-inspired cloud scheduling on other hosts (19 papers) and the classical equivalents of every quantum mechanism (rotation gate = PBIL, tunnelling = Lévy/Cauchy mutation, decoherence = mutation shift / hypermutation, superposition + measurement = univariate EDA, purity floor = EDA margins); and a prior-art recheck of the exact implemented mechanism (ICPSO, QIEA/Hε gate, PBIL hypermutation, ACO pheromone equalisation, qudit-inspired optimisation).</p>
 </li>
 <li>
 <p>B.Tech minor project (PDEU, 2025–2026): Dwarf Mongoose Optimisation applied to cloud VM scheduling, benchmarked against ACO and PSO — the starting point from which the present, more critical measurement of DMO's behaviour grew.</p>
@@ -164,8 +181,8 @@ blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
 </ol>
 <ul>
 <li>Months 0–3: literature and fundamentals; CloudSim 7G/WorkflowSim setup; formal statement of the register-swarm model. Milestone: candidature proposal and workshop paper submitted (failure-mode analysis and repair).</li>
-<li>Months 3–6: <code>full</code> study on held-out instances and public traces; Max-Min-seeded and energy/cost/deadline objectives. Milestone: static-scheduling results paper.</li>
-<li>Months 6–10: selective, severity-scaled decoherence; purity-regulated floor; dynamic benchmark suite and change generators. Milestone: dynamic re-optimisation paper.</li>
+<li>Months 3–6: replication of the held-out results on public traces (GoCJ, HPC2N, Google); energy/cost/deadline objectives, where list heuristics no longer dominate. Milestone: static-scheduling results paper.</li>
+<li>Months 6–10: severity- and cost-aware re-optimisation under change (repair versus re-optimise, beyond the event-aware rules of the preparatory work); dynamic benchmark suite and trace-driven change generators. Milestone: dynamic re-optimisation paper.</li>
 <li>Months 10–14: theory of expected move size, drift and runtime with a noise floor; validation against the dose–response. Milestone: theory paper (GECCO/PPSN).</li>
 <li>Months 14–18: large-scale CloudSim/WorkflowSim experiments with DAG workflows, 30+ seeds, DRL and list baselines. Milestone: journal paper.</li>
 <li>Months 18–21: Kubernetes scheduler-plugin prototype with failure injection on a cluster testbed. Milestone: systems paper and open-source release.</li>
@@ -176,4 +193,4 @@ blockquote { color: #444; border-left: 3px solid #ccc; padding-left: 8px; }
 </ol>
 <p>Agushaka, J.O., Ezugwu, A.E., Abualigah, L. (2022). Dwarf mongoose optimization algorithm. CMAME 391:114570. · Zhao, W., Zhang, Z., Wang, L. (2020). Manta ray foraging optimization. EAAI 87:103300. · Sun, J., Fang, W., Palade, V., Wu, X., Xu, W. (2011). Quantum-behaved PSO with Gaussian distributed local attractor point. AMC 218:3763. · Han, K.-H., Kim, J.-H. (2002, 2004). Quantum-inspired evolutionary algorithms. IEEE TEVC 6(6); 8(2). · Platel, M.D., Schliebs, S., Kasabov, N. (2009). Quantum-inspired evolutionary algorithm: a multimodel EDA. IEEE TEVC 13(6). · Baluja, S. (1994). Population-based incremental learning. CMU-CS-94-163. · Krejca, M., Witt, C. (2018). Theory of estimation-of-distribution algorithms. arXiv 1806.05392. · Strasser, S., Goodman, R., Sheppard, J., Butcher, S. (2016). A new discrete particle swarm optimization algorithm. GECCO 2016. · Yang, S., Richter, H. (2009). Hyper-learning for PBIL in dynamic environments. IEEE CEC 2009. · Guntsch, M., Middendorf, M. (2001). Pheromone modification strategies for ant algorithms applied to dynamic TSP. EvoWorkshops 2001. · Balicki, J. (2022). Many-objective quantum-inspired PSO for VM placement. Entropy 24(1):58. · Yahia et al. (2025). A comprehensive survey of MRFO. Arch. Comput. Methods Eng. · Neumann, F. et al. (2025). Runtime performance of EAs for the chance-constrained makespan scheduling problem. TCS. · Sun, Y., Xu, M., Toosi, A.N. (2025). GreenK8s: green-aware scheduling for sustainable Kubernetes cluster management. IEEE CLUSTER 2025. · Bai, Islam, Buyya, Toosi (2025). REACH: RL for adaptive microservice rescheduling in the cloud-edge continuum. arXiv 2510.06675. · Buyya, R. et al. (2025). qCLOUDS Laboratory Annual Report 2025; iQuantum; CloudSim 7G. · Wu, Li, Wang, Zomaya (2018). Multi-objective EDA for fog scheduling. IEEE TCC.</p>
 <hr />
-<p>Enclosures: quantum_inspired_research_report.md (PDF), quantum_inspired_cloud_scheduler.ipynb, README.md, lab_log.md, literature/.</p></body></html>
+<p>Enclosures (paths in the project repository): docs/report/quantum_inspired_research_report.pdf, notebooks/research/quantum_inspired_cloud_scheduler.ipynb, notebooks/colab/ (QI-DMO and QI-MRFO notebooks), README.md, docs/lab_log.md, docs/research_plan_v5.md, docs/literature/.</p></body></html>
