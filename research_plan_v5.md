@@ -460,7 +460,7 @@ elite repaired by greedy placement of the new tasks.
 | Multi-objective (makespan, energy, SLA, cost, migration) | **migration tested** (H8, H10). Energy, SLA and monetary cost not tested in V5 (the V0–V4 energy objective is unchanged) | `results/h8_*`, `h10_*` |
 | Larger and more diverse held-out families | done: 8 families up to n = 300, m = 30 with lognormal / bimodal / low-heterogeneity shapes; six disjoint fresh seed sets (101–110, 201–210, 301–310, 401–410, 501–510, 601–610) | `qi_experiment.py` |
 | Vectorisation, caching, profiling, parallel execution | profiled (no micro-optimisation, since results must stay bit-identical); parallel checkpointed harness; duplicate diagnostics. No evaluation cache (the (1+1)-EA's 36 % duplicates make one a clear next step) | `research_plan_v5.md` §3 |
-| Reproducibility, tests, configuration, checkpointing | done: 255 tests incl. golden fingerprints; JSON specs; write-once experiments with commit hashes; pinned requirements; deterministic notebook builds | `tests/`, `qi_experiment.py` |
+| Reproducibility, tests, configuration, checkpointing | done: 269 tests incl. golden fingerprints; JSON specs; write-once experiments with commit hashes; pinned requirements; deterministic notebook builds | `tests/`, `qi_experiment.py` |
 
 ## 25. H12 — incremental elite: place the new tasks of a churn event by list scheduling (pre-registered before H12 was run)
 

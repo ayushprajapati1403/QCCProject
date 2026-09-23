@@ -14,6 +14,7 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 | `qi_quantum.py` | The quantum-inspired mechanism (registers, Born measurement, projection, depolarising channel, purity) and QI-DMO / QI-MRFO. |
 | `qi_dynamic.py` | Dynamic-workload harness (task churn, VM failure, VM addition, speed drift; restart / continue / decoherence-shock / hypermutation strategies). |
 | `build_notebook.py` | Assembles the notebook from the modules (`# %% S<k>` markers) plus the experiment cells. |
+| `QI_DMO_Colab.ipynb`, `QI_MRFO_Colab.ipynb` | **Standalone notebooks, one per algorithm (supervisor request).** Each holds only the code its algorithm needs, copied verbatim function by function from the modules, and saves every run, table (CSV + Excel), figure and a summary to Google Drive (resumable). **Part 1:** the algorithm on its own: 7 benchmark problems × 30 runs and 500–5000 tasks × 10 runs (makespan in s, gap, energy in Wh, run time, convergence, VM finish times). **Part 2:** how it was improved, version by version (original → quantum-inspired → swap move, plus the Max-Min start for QI-MRFO), with per-change tests on benchmark, unseen and large problems. **QI-MRFO Part 3:** the changing-cloud improvements (H6–H13) step by step. Built by `build_algorithm_notebooks.py`; checked by `tests/test_algorithm_notebooks.py`. |
 | `QI_MRFO_DMO_Colab.ipynb` | **One self-contained Google Colab notebook for sharing.** It holds all algorithms (copied verbatim from the modules), four commented experiments (A: DMO/MRFO vs QI-DMO/QI-MRFO; B: the swap move on 80 unseen problems; C: 500–5000 tasks; D: changing cloud, vs the GA and with a migration cost) and saves every finished run, the tables (CSV + Excel), the figures and a summary to a Google Drive folder. `MODE = "full"` uses exactly the settings of the reported studies (checked against the committed records by `tests/test_colab_notebook.py`); `MODE = "quick"` is a short check. Built by `build_colab_notebook.py`. |
 | `observe_v0.py … observe_v3.py`, `observe_dyn*.py` | The pilot scripts of the research loop (V0 observe → V1 → V2 → V3 → dynamic), exactly as run; their outputs are in `results/*.txt`. |
 | `lab_log.md` | The Senku-style lab log: what happened, why, evidence, alternative explanation, next change — for every version. |
@@ -187,8 +188,16 @@ local changes (H13) adds a further gain, and the final configuration wins at eve
     * seeded with Max-Min, it is within 0.03–0.22 % of the lower bound and better than Max-Min.
   * **Limits.** Without the swap move, QI-MRFO is behind the GA. The simple (1+1)-EA with the same swap move is better
     than the unseeded swarm and about 16× faster.
+* **The swap move in QI-DMO (H14, H15; both REJECT; report §39).** Requested for the standalone QI-DMO notebook.
+  * **In every phase, p_x = 1 (H14).** QI-DMO got worse on 30–300-task problems: 65 of 80 fresh problems worse, in
+    both H14 and its H15 replication.
+  * **Large problems.** On 500–5000 tasks it was better at every size, e.g. 1198.89 vs 1402.89 s at 5000 tasks.
+  * **Only in the phases that keep improvements, p_x = 0.1 (H15).** The harm disappears: better than the H14 version
+    on 71 of 80 problems. Against plain QI-DMO it is better on average (−0.81 pp, 47 of 80), but the pre-registered
+    test misses its bar (Wilcoxon p = 0.067).
+  * **Conclusion.** For QI-DMO the swap move is not an established improvement on 30–300 tasks.
 * **Research quality.**
-  * 255 tests, including bit-exact golden fingerprints of the V0–V4 code.
+  * 269 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.
   * A tighter (preemptive) lower bound.
   * Write-once checkpointed experiments with commit hashes.

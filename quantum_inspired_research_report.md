@@ -768,6 +768,8 @@ seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
 | H11 | Event-aware elite (none after VM addition) | 60 pairs × 3 λ (seeds 401–410) | **confirmed at every λ**; beats the best heuristic chooser at every λ; remaining boundary: pure churn at λ ≥ 0.2 |
 | H12 | Incremental elite (new churn tasks placed by list scheduling) | 60 pairs × 3 λ (seeds 501–510) | **retained at λ = 0.2 and 1.0**, not at λ = 0.05 (26/3, but the CI of the mean includes 0); removes the churn boundary at λ ≤ 0.2; vs a (1+1)-EA with the same repair the swarm wins only through VM additions |
 | H13 | Event-aware decoherence (no floor after local changes) | 60 pairs × 3 λ (seeds 601–610) | **retained at λ = 0.2 and 1.0**, not at 0.05 (36/14, CI includes 0); the VM-addition exception is not needed (H13b ✗); the final configuration beats the Chooser at every λ (58/2, 57/3, 59/1) |
+| H14 | The swap move (CXM) transferred to QI-DMO, all phases, p_x = 1 | 80 instances (seeds 701–710) | **rejected**: worse on 65/80 (+2.33 pp), 6/8 families Holm-worse; descriptively better at every scaling size (500–5000 tasks) |
+| H15 | CXM only in QI-DMO's greedy phases, p_x = 0.1 (tuned on the development set) | 80 fresh instances (seeds 801–810) | **rejected narrowly**: −0.81 pp [−1.43, −0.25], 47/80, but Wilcoxon p = 0.067; no family worse; beats the H14 version on 71/80 |
 
 ### Threats to validity (V5)
 
@@ -930,6 +932,33 @@ each, with the earlier settings; 610 runs (`results/scale_tasks_analysis.md`, `r
 * **Reading.** This confirms the V5 reading at scale: for one-time batches, the gain is the swap move and the seed, not
   the swarm.
 
+## 39. V5 — the swap move in QI-DMO (H14, H15; measured, fresh seeds)
+
+**Why.** The standalone QI-DMO notebook requested by the supervisor should show how the swap move improves QI-DMO,
+but the move (CXM, H5) existed only for QI-MRFO, the GA and the (1+1)-EA. It was added to `run_qidmo` as an opt-in
+option and tested twice, each time pre-registered on fresh instances (plan §31–§34).
+
+| Mean gap2 (%), 80 fresh problems | QI-DMO | + swap in every phase, p_x = 1 | + swap in improving phases, p_x = 0.1 |
+|---|---|---|---|
+| H14 (seeds 701–710) | 7.39 | 9.72 (worse on 65/80) | — |
+| H15 (seeds 801–810) | 6.89 | 8.78 (worse on 65/80) | 6.08 (better on 47/80; Wilcoxon p = 0.067) |
+
+**Findings.**
+* **H14: the transferred move hurts QI-DMO** on 30–300-task problems (REJECT). The mechanism diagnostics show a
+  noisier search: end purity 0.95 → 0.83, move size 33 → 53 tasks, and more improving swaps left unused.
+* **The explanation, tested in H15.** QI-DMO's next-position phase keeps every candidate, so a worsening swap is kept.
+  QI-MRFO keeps a candidate only if it improves. Restricting the move to QI-DMO's greedy phases removes the harm: the
+  H15 version beats the H14 version on 71 of 80 fresh problems (−2.70 pp, p < 1e-4).
+* **H15: the remaining gain is small** (REJECT by the pre-registered rule). −0.81 pp [−1.43, −0.25] and 47 of 80 better,
+  but the rank test gives p = 0.067. No family is worse.
+* **Large problems (descriptive).** At 500–5000 tasks, the every-phase version is better than QI-DMO at every size
+  (1198.89 vs 1402.89 s at 5000 tasks; Holm p = 0.0009). The greedy p_x = 0.1 version is better on average there, but
+  not significantly.
+
+**Reading.** Far from convergence, almost any swap on the critical VM helps; near convergence it must be filtered by
+greedy acceptance, and then only a low rate is safe. The swap move's value depends on the host algorithm's acceptance
+rule. That is why it transfers to QI-MRFO (all greedy) and the (1+1)-EA, but not cleanly to QI-DMO.
+
 ## Final decision
 
 **PROCEED — with the revised framing.** The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"
@@ -938,7 +967,7 @@ each, with the earlier settings; 610 runs (`results/scale_tasks_analysis.md`, `r
 
 **PROCEED, with claims that V5's own controls have both sharpened and narrowed.**
 1. **Research quality.** Findings now rest on development/held-out splits, instance-level statistics, pre-registered
-   hypotheses, write-once experiments and 255 tests. The tests include bit-exact golden fingerprints of the original
+   hypotheses, write-once experiments and 269 tests. The tests include bit-exact golden fingerprints of the original
    code, and the smoke results reproduce to within 1.1e-16.
 2. **What V5 added that is positive and measured.**
    * **Move-type diagnosis.** The product-state measurement cannot produce the correlated exchange that
