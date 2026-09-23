@@ -522,3 +522,45 @@ after VM additions.
 
 The decision rule required H12a at every λ, so the recommendation changes only for λ ≥ 0.2 (post hoc, labelled).
 H12c locates the register swarm's remaining advantage over incremental repair + a (1+1)-EA in VM additions.
+
+
+## 27. H13 — event-aware decoherence under change (pre-registered before H13 was run)
+
+**Origin (development seeds 11–15, `results/v5_c_dynamic.md`).**
+* **Effect of c after local changes.** With the H12 configuration, lower c after churn, drift and VM failure gives
+  fewer voluntary migrations at a similar makespan. With a migration price, a random re-draw of a persistent task is a
+  paid migration, and CXM already supplies the targeted moves.
+* **Effect of c after VM additions.** Lower c hurts at λ ≥ 0.2, because filling new capacity needs exploration.
+* **Rule chosen.** No floor after local changes (c = 0) and the default c = 1 after VM additions. Epoch 0 keeps c = 1.
+
+The static result (§24, report §35) is consistent with this: once CXM exists, the floor is not needed for static
+makespan.
+
+**Change (one).** `decoherence_by_event={"churn": 0, "drift": 0, "vm_fail": 0}` (qi_dynamic.run_dynamic) on top of the
+H12 configuration (QI-MRFO+CXM continue, event-aware incremental elite).
+* **Ties by construction.** The rule changes nothing on the VM-addition scenario, so its 10 pairs per λ are ties with
+  the c = 1 swarm.
+
+**Design** (`exp_h13_event_gamma.py`). The H12 harness with **fresh seeds 601–610**; 6 scenarios ×
+λ ∈ {0.05, 0.2, 1.0} × 4 strategies; 720 runs. The strategies are:
+* the Chooser;
+* the H12 swarm (c = 1);
+* the H12 swarm with c = 0 after every change, including VM additions;
+* the H12 swarm with event-aware γ.
+
+**Hypotheses and acceptance** (post-change cost gap; unit = (scenario, seed); pooled over 60 pairs per λ; Holm across
+the three λ; retained at a λ when the difference is negative, Holm p < 0.05 and the 95 % CI excludes 0).
+* **H13a (primary).** Event-aware γ < c = 1, at each λ.
+  * **Prediction:** retained at λ = 0.2 and λ = 1.0.
+  * At λ = 0.05 the development-seed effect was about −0.1 pp on the pure scenarios, so it may miss the bar.
+* **H13b.** Event-aware γ < c = 0 after every change, at each λ.
+  * **Prediction:** retained at λ ≥ 0.2, driven by VM addition.
+  * At λ = 0.05 no difference is expected; there, c = 0 was also better after VM additions.
+* **H13c (reported).** Event-aware γ vs the Chooser.
+* **Reported.** c = 0 after every change vs c = 1.
+
+**What would falsify it.** H13a not retained at λ = 1.0, where the development-seed effect was largest, or the
+event-aware swarm significantly worse than c = 1 on any scenario.
+
+**Decision rule.** If H13a is retained at λ = 0.2 and λ = 1.0, the recommended configuration adds the event-aware γ
+for λ ≥ 0.2. At λ = 0.05 it is added only if H13a is retained there too.

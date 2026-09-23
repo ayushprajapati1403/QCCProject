@@ -654,3 +654,37 @@ Pooled cost gap % (makespan gap %, voluntary migrations per epoch):
 * **Candidate design.** A hybrid: run the (1+1)-EA after local events (4× cheaper per run: 2.9 s vs 11.6 s) and the
   register swarm only after VM additions.
 * **Open problem.** It needs a register state that survives the (1+1)-EA epochs.
+
+## V5 OBSERVE — decoherence under change, and a Max-Min recompute as the elite (`results/v5_c_dynamic.md`, `results/v5_chooser_elite.md`)
+
+Both observations use development seeds 11–15 and the H12 configuration. They are descriptive.
+
+**Decoherence under change** (`observe_v5_c_dynamic.py`; c ∈ {0, 0.5, 1, 2, 4}, six scenarios, three λ; 450 runs).
+* **High c hurts at every λ.** Against c = 1, pooled: c = 2 adds +0.29 / +0.48 / +0.76 pp and c = 4 adds
+  +1.15 / +1.76 / +2.65 pp (λ = 0.05 / 0.2 / 1.0).
+* **c = 0 against c = 1, pooled.**
+  * λ = 0.05: −0.24 pp [−0.37, −0.11], 24/6.
+  * λ = 0.2: +0.07 pp, 19/11, n.s.
+  * λ = 1.0: −0.85 pp, 22/8, n.s. after Holm.
+* **The pooled numbers hide a split by event type.**
+  * After local changes (churn, drift, VM failure), lower c gives fewer voluntary migrations at a similar makespan.
+    For example, on drift at λ = 0.2: 32.6 vs 38.1 migrations per epoch; cost gap 7.34 vs 8.34 %.
+  * After a VM addition, lower c hurts at λ ≥ 0.2: a cost gap of 11.4 vs 9.4 % at λ = 0.2. At λ = 1.0 the makespan gap is
+    29.8 % at c = 0, 24.5 % at c = 1 and 14.3 % at c = 4. Filling new capacity needs exploration.
+* **Mechanism.** Under a migration price, every random re-draw of a persistent task that survives selection is a paid
+  migration. CXM already supplies the targeted moves, so after local changes the floor mostly adds priced noise.
+* **Consequence.** An event-aware γ (c = 0 after local changes, c = 1 after VM additions) is worth a pre-registered test:
+  H13, plan §27. The values come from these development seeds, so the test uses fresh seeds.
+
+**Max-Min recompute as the elite** (`observe_v5_chooser_elite.py`; drift, n100 mixed and n200 mixed; non-VM-addition
+epochs).
+* **How often the recompute is cheaper.** Measured from the swarm's own previous schedule, the recompute is the cheaper
+  heuristic in 9–100 % of epochs.
+* **Whether that matters.** The swarm already ends below the recompute in 94–100 % of epochs. The one exception is n200
+  mixed at λ = 0.05, where it ends above it in 6 % of epochs.
+* **Verdict.** A "Chooser elite" would almost never change the deployed schedule, so it is not pursued. This is a
+  negative observation.
+* **Why the Chooser still wins n200 mixed at λ = 0.05 (H12 held-out records).** It is not because it migrates little:
+  it migrates 136 tasks per epoch, against 51 for the swarm. It wins on makespan, 0.60 vs 3.34 %. Max-Min is
+  near-optimal on heavy-tailed tasks, and at λ = 0.05 a full recompute is cheap. The swarm's 4 000 evaluations per
+  epoch at n = 200 do not reach that makespan.

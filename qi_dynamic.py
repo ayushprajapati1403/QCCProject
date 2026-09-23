@@ -124,7 +124,7 @@ def incremental_list_schedule(prev, info, inst_new, rng):
 
 # --- strategies --------------------------------------------------------------------------------------------
 def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=0.5, mode="born_signed", gamma_shock=0.5,
-                algo_kw=None, carry_elite=False, repair="random", mig_lambda=None):
+                algo_kw=None, carry_elite=False, repair="random", mig_lambda=None, decoherence_by_event=None):
     """algo in {'QI-MRFO','QI-DMO','MRFO','DMO','GA','PSO'} or the per-epoch heuristics {'Max-Min' (full recompute),
     'Incremental' (zero voluntary migration)}; strategy in {'restart','continue','continue_struct','shock','hypermut'}.
     V5 options: algo_kw = extra optimizer kwargs (e.g. {'exchange': 1.0}); carry_elite = the previous epoch's best
@@ -134,6 +134,8 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
     mig_lambda (V5, H8): after the first epoch every optimizer sees the migration-aware objective
     makespan x (1 + mig_lambda * voluntary migrations / eligible tasks) relative to the previous deployed schedule;
     'Chooser' deploys whichever of Max-Min (recompute) and Incremental is cheaper under that objective.
+    decoherence_by_event (V5, H13): {event type: c} overriding decoherence_c after that type of change (epochs e > 0,
+    QI-MRFO and the (1+1)-EA); types not in the dict, and epoch 0, keep decoherence_c.
     Returns per-epoch dict: best makespan, LB, MaxMin makespan, normalised area under the best-so-far gap curve, and the
     voluntary / forced migrations of the deployed (best) schedule relative to the previous epoch's."""
     rng = np.random.default_rng(seed + 7)
@@ -142,6 +144,7 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
     for e, (inst, info) in enumerate(seq):
         obj = Objective(inst); B = budget0 if e == 0 else budget
         n, m = inst.n, inst.m
+        c_e = decoherence_c if (e == 0 or not decoherence_by_event) else decoherence_by_event.get(info["type"], decoherence_c)
         if mig_lambda is not None and e > 0:
             ref, forced_ = map_to_new_vms(prev_best, info)
             elig = ~forced_
@@ -170,13 +173,13 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
                 fs = [obj(c) for c in cands]; k = int(np.argmin(fs)); a, f = cands[k], fs[k]
             tr = Tracker(n, m); tr.snapshot(obj.n_evals, [a], [f], f)
             r = {"best_f": f, "best_assign": a, "tracker": tr, "state": None}
-        elif algo == "QI-MRFO": r = run_qimrfo(inst, obj, B, P=P, seed=seed * 100 + e, decoherence=decoherence_c / n, mode=mode, init_state=init, track=False, **kw)
+        elif algo == "QI-MRFO": r = run_qimrfo(inst, obj, B, P=P, seed=seed * 100 + e, decoherence=c_e / n, mode=mode, init_state=init, track=False, **kw)
         elif algo == "QI-DMO": r = run_qidmo(inst, obj, B, P=P, seed=seed * 100 + e, decoherence=0.25 / n, mode=mode, init_state=init, track=False, **kw)
         elif algo == "MRFO": r = run_mrfo(inst, obj, B, P=P, seed=seed * 100 + e, init_state=init, track=False, **kw)
         elif algo == "DMO": r = run_dmo(inst, obj, B, P=P, seed=seed * 100 + e, init_state=init, track=False, **kw)
         elif algo == "PSO": r = run_pso(inst, obj, B, P=P, seed=seed * 100 + e, init_state=init, track=False, **kw)
         elif algo == "GA": r = run_ga(inst, obj, B, P=P, seed=seed * 100 + e, init_state=init, track=False, hypermutation=(0.2 if strategy == "hypermut" else 0.0), **kw)
-        elif algo == "(1+1)-EA": r = run_one_plus_one(inst, obj, B, seed=seed * 100 + e, decoherence=decoherence_c / n, init_state=init, track=False, **kw)
+        elif algo == "(1+1)-EA": r = run_one_plus_one(inst, obj, B, seed=seed * 100 + e, decoherence=c_e / n, init_state=init, track=False, **kw)
         else: raise ValueError(algo)
         state = r["state"]; tr = r["tracker"]
         lb = inst.lower_bound(); mm = obj._raw(max_min(inst))[0]
