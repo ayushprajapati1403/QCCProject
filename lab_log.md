@@ -585,3 +585,72 @@ CXM taking over the floor's role.
   UNMEASURED.
 
 **Decision.** No adaptive-decoherence hypothesis is pre-registered for static makespan; fixed c = 1 stays the default.
+
+## V5 / H12 — incremental elite: new churn tasks placed by list scheduling (`results/h12_incremental_elite/`, `results/h12_analysis.md`)
+
+**Origin.** On development seeds 11–15 (`results/v5_churn_elite.md`), the carried elite after churn leaves every new
+task on the VM of the departed task it replaced.
+* **Start cost.** It starts 18–38 % above the bound, against 1.8–3.0 % for the incremental schedule. Both make zero
+  voluntary migrations.
+* **End cost.** The swarm then ends above the incremental schedule's cost on 73–100 % of churn epochs.
+
+H12 was pre-registered in plan §25 and tested on **fresh seeds 501–510**; 720 runs.
+
+Pooled cost gap % (makespan gap %, voluntary migrations per epoch):
+
+| Strategy | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Chooser | 3.40 (1.27, 52.9) | 8.62 (3.25, 31.4) | 29.70 (19.66, 12.7) |
+| (1+1)-EA+CXM, incremental repair | 10.21 (9.32, 20.8) | 12.06 (9.81, 13.5) | 18.07 (13.32, 5.2) |
+| H11 swarm (event-aware elite, slot inheritance) | 2.76 (1.06, 37.1) | 6.72 (2.49, 22.9) | 18.37 (9.05, 9.6) |
+| **H12 swarm (event-aware incremental elite)** | **2.50** (1.19, 29.6) | **5.54** (2.38, 17.6) | **15.53** (8.21, 7.7) |
+
+**What happened?**
+* **H12a (primary): retained at λ = 0.2 and 1.0, not at λ = 0.05.**
+  * λ = 0.2: −1.18 pp [−1.55, −0.83], 29/0.
+  * λ = 1.0: −2.84 pp [−3.79, −1.94], 28/1.
+  * Both have Holm p < 1e-5.
+  * λ = 0.05: −0.25 pp [−0.47, +0.04], 26/3, Holm p = 6e-5. The rank test is significant, but the bootstrap CI of the
+    mean includes 0, so the pre-registered rule (all three conditions) is not met.
+    * The three losses are all on heavy-tailed n200 mixed (+0.11 pp, 7/3, n.s.).
+    * Churn (−1.20 pp, 10/0) and n100 mixed (−0.43 pp, 9/0) improve.
+  * The 30 drift, VM-failure and VM-addition pairs per λ are ties by construction.
+  * No scenario is significantly worse, so the pre-registered falsification criterion is not met either.
+* **The mechanism on held-out seeds (pure churn, λ = 0.05 / 0.2 / 1.0).**
+  * Voluntary migrations per epoch fall from 27.0 / 15.3 / 5.0 to 6.5 / 1.6 / 0.2.
+  * The makespan gap changes little at λ ≤ 0.2 (0.48 → 0.57 and 0.92 → 0.92 %) and halves at λ = 1.0
+    (2.80 → 1.40 %).
+  * The cost gap falls from 2.17 / 4.77 / 9.24 % to 0.97 / 1.32 / 1.69 %.
+* **H12b: retained pooled at every λ.** H12 swarm − Chooser: −0.90, −3.08 and −14.17 pp; 57/3, 56/4 and 54/6;
+  Holm p < 1e-8.
+  * **H11's churn boundary is gone.** On pure churn the swarm is better at λ = 0.05 (10/0) and at λ = 0.2 (9/1,
+    Holm p = 0.016). At λ = 1.0 it is 8/2 but n.s. (−0.66 pp, Holm p = 0.084). H11 lost this scenario 0/10 at λ ≥ 0.2.
+    The pre-registered secondary prediction (better on churn at every λ) therefore holds only at λ ≤ 0.2.
+  * The only scenario not won at λ = 0.05 is heavy-tailed n200 mixed (+0.50 pp, 8/2, n.s.).
+* **H12c: the swarm vs incremental repair + a (1+1)-EA with the same moves.**
+  * Retained at λ = 0.05 (−7.71 pp, Holm p = 0.006) and λ = 0.2 (−6.52 pp, Holm p = 0.010).
+  * n.s. at λ = 1.0 (−2.54 pp, 31/29, p = 0.082).
+  * The advantage is concentrated in **VM addition**: −44.6 / −38.6 / −12.2 pp; 10/0, 10/0, 9/1. It also appears in
+    n100 mixed at λ = 0.05, a scenario that contains VM additions.
+  * On churn, drift and VM failure the (1+1)-EA with incremental repair is as good. On churn it is even slightly
+    better in the mean (+0.05 to +0.21 pp, n.s.).
+* **Replication.** H11c (H11 swarm vs Chooser) replicates on fresh seeds at every λ: −0.64 / −1.90 / −11.33 pp.
+
+**Why?** New tasks are free to place.
+* The slot-inherited elite wastes that freedom, and the swarm then pays migrations to repair it.
+* With the incremental elite, the swarm starts at the zero-migration heuristic's cost (guaranteed by construction) and
+  migrates only when that pays.
+* What remains specific to the register swarm is VM addition. The (1+1)-EA with the same moves and the same repair
+  cannot fill a new VM with single moves (the H8 barrier).
+
+**Decision.**
+* **Formal.** The pre-registered rule ("retained at every λ") is not met, so the default does not switch
+  unconditionally.
+* **Post hoc reading, labelled.** For migration prices λ ≥ 0.2 the incremental elite is adopted: `repair="incremental"`
+  with `carry_elite="except_vm_add"`. At λ = 0.05 it wins 26 of the 29 non-tied pairs, but its mean advantage is not
+  established, so either configuration is defensible there.
+
+**Next (UNMEASURED).** Against incremental repair + a (1+1)-EA, the swarm's value is confined to VM additions.
+* **Candidate design.** A hybrid: run the (1+1)-EA after local events (4× cheaper per run: 2.9 s vs 11.6 s) and the
+  register swarm only after VM additions.
+* **Open problem.** It needs a register state that survives the (1+1)-EA epochs.

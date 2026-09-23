@@ -1,6 +1,6 @@
 """
 make_v5_figures.py - figures for the V5 results, drawn only from committed result files (results/h5_test, h6_dynamic,
-h7_test, h8_migration and, if present, h10_elite_migration). Writes new files results/fig_v5_*.png (write-once).
+h7_test, h8_migration and, if present, h10_elite_migration, h11_event_elite and h12_incremental_elite). Writes new files results/fig_v5_*.png (write-once).
 
 Design: light surface; categorical hues from the reference palette in fixed order, colour follows the entity across
 panels (validated with the dataviz validator: adjacent CVD dE >= 9.1, normal-vision >= 22.9); 2 px lines, ringed
@@ -103,10 +103,24 @@ def fig_dynamic_tradeoff():
 
 def fig_migration_heatmaps():
     """Pairwise contrasts of post-change COST gap by scenario type x lambda (blue = A cheaper, red = B cheaper)."""
-    panels = [("h8_migration", "QI-MRFO+CXM continue", "Chooser (cheaper of the two)", "H8: swarm − Chooser"),
-              ("h10_elite_migration", "QI-MRFO+CXM continue+elite", "QI-MRFO+CXM continue", "H10: elite − no elite"),
-              ("h11_event_elite", "QI-MRFO+CXM continue+event-aware elite", "QI-MRFO+CXM continue", "H11: event-aware elite − no elite")]
+    heatmap_figure([("h8_migration", "QI-MRFO+CXM continue", "Chooser (cheaper of the two)", "H8: swarm − Chooser"),
+                    ("h10_elite_migration", "QI-MRFO+CXM continue+elite", "QI-MRFO+CXM continue", "H10: elite − no elite"),
+                    ("h11_event_elite", "QI-MRFO+CXM continue+event-aware elite", "QI-MRFO+CXM continue", "H11: event-aware elite − no elite")],
+                   "fig_v5_migration_heatmap.png")
+
+
+def fig_h12_heatmaps():
+    """H12 contrasts: the incremental-elite swarm against the H11 swarm, the Chooser and the (1+1)-EA control."""
+    inc = "QI-MRFO+CXM continue+event-aware incremental elite"
+    heatmap_figure([("h12_incremental_elite", inc, "QI-MRFO+CXM continue+event-aware elite", "H12a: incremental − H11 elite"),
+                    ("h12_incremental_elite", inc, "Chooser (cheaper of the two)", "H12b: incremental elite − Chooser"),
+                    ("h12_incremental_elite", inc, "(1+1)-EA+CXM continue, incremental repair", "H12c: swarm − (1+1)-EA, same repair")],
+                   "fig_v5_h12_heatmap.png", seeds_note="all panels: the H12 run, fresh seeds 501–510")
+
+
+def heatmap_figure(panels, name, seeds_note="each panel uses its own fresh seed set"):
     panels = [p for p in panels if os.path.exists(os.path.join(RES, p[0], "records.csv"))]
+    if not panels: return
     cmap = LinearSegmentedColormap.from_list("div", ["#2a78d6", "#f0efec", "#e34948"])
     norm = SymLogNorm(linthresh=1.0, vmin=-45, vmax=45, base=10)
     fig, axes = plt.subplots(1, len(panels), figsize=(4.3 * len(panels) + 1.6, 4.2), squeeze=False)
@@ -127,10 +141,10 @@ def fig_migration_heatmaps():
         ax.tick_params(length=0)
         for i in range(d.shape[0] + 1): ax.axhline(i - 0.5, color=SURF, linewidth=2)      # 2 px surface gap between cells
         for j in range(d.shape[1] + 1): ax.axvline(j - 0.5, color=SURF, linewidth=2)
-    fig.text(0.01, -0.03, "Cell = mean difference in post-change cost gap, A − B (percentage points; 10 seeds per cell; each panel uses its own "
-                          "fresh seed set). Blue = A cheaper, red = B cheaper; symmetric-log colour scale.", fontsize=8, color=INK2)
-    save(fig, "fig_v5_migration_heatmap.png")
+    fig.text(0.01, -0.03, "Cell = mean difference in post-change cost gap, A − B (percentage points; 10 seeds per cell; " + seeds_note +
+                          "). Blue = A cheaper, red = B cheaper; symmetric-log colour scale.", fontsize=8, color=INK2)
+    save(fig, name)
 
 
 if __name__ == "__main__":
-    fig_convergence(); fig_dynamic_tradeoff(); fig_migration_heatmaps()
+    fig_convergence(); fig_dynamic_tradeoff(); fig_migration_heatmaps(); fig_h12_heatmaps()

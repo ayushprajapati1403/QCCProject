@@ -21,7 +21,7 @@ This folder is a complete, runnable research package: a Jupyter notebook that im
 | `results/` | CSV/PKL/PNG outputs of the notebook runs and the pilot logs. **Raw results are immutable**: V5 experiments write to their own write-once directories (`results/<experiment>/` with `jobs.json`, `meta.json` incl. git commit, a JSONL checkpoint, `records.csv`, `DONE`), and a notebook re-run never overwrites committed files (it writes to `results/rerun_<mode>_<timestamp>/` unless `QI_RESULTS_DIR` is set). |
 | `research_plan_v5.md` | V5 audit (risks with file/function citations), profile, observations O1–O4, ranked backlog, and the pre-registered hypothesis H5 with its acceptance criteria. It was written and committed before H5 was run; its §9 amendment was committed before the held-out stage. |
 | `qi_experiment.py` | V5 harness: development (TUNE) vs held-out (TEST) instance families, JSON algorithm specs, checkpointed parallel runner for static and dynamic jobs, paired statistics (bootstrap CI, Wilcoxon, rank-biserial, Cliff's δ, A12, Holm). |
-| `exp_h5_cxm.py` … `exp_h11_event_elite.py` | The V5 experiments H5–H11: each script pre-registered in `research_plan_v5.md`, writes a write-once `results/<name>/` directory, and produces `results/h*_analysis.md`. |
+| `exp_h5_cxm.py` … `exp_h12_incremental_elite.py` | The V5 experiments H5–H12: each script pre-registered in `research_plan_v5.md`, writes a write-once `results/<name>/` directory, and produces `results/h*_analysis.md`. |
 | `make_v5_figures.py` | V5 figures (`results/fig_v5_*.png`) drawn from the committed result files. |
 | `observe_v5_*.py` | V5 observation scripts: duplicate evaluations, the critical-VM condition, stagnation, local optimality of end points, the H8 barrier check (post hoc) and the decoherence dose-response with and without CXM (`analyze_v5_c_sweep.py` writes the paired contrasts). |
 | `tests/` | `pytest` suite: objective, registers, measurement, channel, dynamic structural rules, determinism, budget accounting, harness, notebook/module synchronisation, and bit-exact golden fingerprints of the V0–V4 code. |
@@ -78,7 +78,7 @@ Swarm schedulers (PSO, DMO, MRFO) are continuous algorithms; cloud papers apply 
 * Dynamic workloads: carrying the register state beats restarting on every change type (recovery AUC 2–4× lower) and beats the GA on VM drift/failure/addition, thanks to clean structural rules (column deletion = projective measurement, uniform share for new VMs, uniform registers for new tasks). The decoherence *shock* ("controlled forgetting") does **not** beat plain continuation at any churn severity tested (10–80 %): a negative result with a boundary.
 * The 30-seed run (7 instances, 2 100 runs) confirms the encoding effect with p < 10⁻⁴ and Cliff's δ ≈ −1 on every instance, confirms that the Born rule adds nothing over the linear twin, softens "beats the GA" to "GA-class (significantly better on one instance)", and shows that the Max-Min list heuristic beats QI-MRFO on 6 of 7 static instances by 0.3–4.7 percentage points: the practical case for the population method is additive/multi-objective objectives and re-optimisation under change, not static makespan batches.
 
-## What V5 found (held-out protocol; `research_plan_v5.md`, `lab_log.md` V5, report §27–§34)
+## What V5 found (held-out protocol; `research_plan_v5.md`, `lab_log.md` V5, report §27–§36)
 
 **In one paragraph.** V5 diagnosed a second representation problem: the product-state measurement cannot produce the
 correlated two-task exchange that relocation-optimal schedules need. Adding it (critical exchange measurement) gave the
@@ -89,7 +89,8 @@ largest gains of the project, static and dynamic. V5's own controls then narrowe
 
 What survives, measured on fresh seeds, is specific to the register representation. Under migration-priced
 re-optimisation its structural rule for new capacity produces coordinated moves that local search cannot, and with an
-event-aware elite the swarm beats the best heuristic chooser at every migration price tested. Figures:
+event-aware elite the swarm beats the best heuristic chooser at every migration price tested. An elite repaired by
+list scheduling (H12) turns its last losing case, pure churn, into a win at λ ≤ 0.2 (n.s. at λ = 1.0). Figures:
 `results/fig_v5_*.png`.
 
 * **Observation.** QI-MRFO stalls at schedules that are *relocation-optimal* but leave 1–50 improving two-task swaps
@@ -144,16 +145,25 @@ event-aware elite the swarm beats the best heuristic chooser at every migration 
   addition works at every λ.
   * It beats the no-elite swarm (−0.41 / −0.78 / −2.19 pp) and the always-elite swarm.
   * It **beats the best heuristic chooser at every migration price** (−0.83 / −2.27 / −12.7 pp).
-  * Remaining boundary: pure churn at λ ≥ 0.2, where zero-migration repair is best.
-  * Recommended configuration for migration-priced re-optimisation:
-    `run_dynamic(..., "QI-MRFO", "continue_struct", algo_kw={"exchange": 1.0}, carry_elite="except_vm_add", repair="greedy", mig_lambda=λ)`.
+  * Remaining boundary: pure churn at λ ≥ 0.2, where zero-migration repair is best. H12 addresses it.
+* **Incremental elite (H12, fresh seeds 501–510).** After churn the carried elite used to leave each new task on the
+  VM of the task it replaced, starting 18–38 % above the bound. It now places new tasks by list scheduling.
+  * **Against the H11 swarm.** Better at λ = 0.2 and λ = 1.0: −1.18 and −2.84 pp; 29/0 and 28/1.
+  * **At λ = 0.05, not retained.** It wins 26/3, but the CI of the mean includes 0.
+  * **Against the Chooser.** Better at every λ: −0.90 / −3.08 / −14.17 pp. It now also wins pure churn at
+    λ ≤ 0.2.
+  * **Against incremental repair + a (1+1)-EA with the same moves.** The swarm wins only through VM additions,
+    its one unique mechanism.
+  * **Recommended configuration for migration-priced re-optimisation (λ ≥ 0.2; post hoc reading of the
+    pre-registered rule):**
+    `run_dynamic(..., "QI-MRFO", "continue_struct", algo_kw={"exchange": 1.0}, carry_elite="except_vm_add", repair="incremental", mig_lambda=λ)`.
 * **The decoherence floor once CXM exists (descriptive, development set; report §35).**
   * Without CXM, removing the floor (c = 0) multiplies the gap by 2.6–4.3.
   * With CXM, the gap is flat for c ∈ [0, 2]: the exchange move takes over the floor's job.
   * c then only sets duplicate evaluations (29 % → 7 % → 0.1 % at c = 0 / 1 / 4), so adaptive decoherence has
     little static headroom. An evaluation cache is the better lever (UNMEASURED).
 * **Research quality.**
-  * 237 tests, including bit-exact golden fingerprints of the V0–V4 code.
+  * 248 tests, including bit-exact golden fingerprints of the V0–V4 code.
   * Development/held-out split with instance-level statistics.
   * A tighter (preemptive) lower bound.
   * Write-once checkpointed experiments with commit hashes.

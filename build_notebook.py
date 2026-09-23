@@ -962,8 +962,9 @@ md(r"""
 """)
 
 code(r"""
-# committed migration-priced runs: H8 (seeds 201-210), H10 elite anchor (301-310), H11 event-aware elite (401-410)
-for _exp, _lab in [("h8_migration", "H8"), ("h10_elite_migration", "H10"), ("h11_event_elite", "H11")]:
+# committed migration-priced runs: H8 (seeds 201-210), H10 elite anchor (301-310), H11 event-aware elite (401-410),
+# H12 incremental elite (501-510)
+for _exp, _lab in [("h8_migration", "H8"), ("h10_elite_migration", "H10"), ("h11_event_elite", "H11"), ("h12_incremental_elite", "H12")]:
     _p = os.path.join("results", _exp, "records.csv")
     if not os.path.exists(_p):
         print(f"{_p} not found (run the corresponding exp_*.py in the repository)"); continue
@@ -986,7 +987,7 @@ md(r"""
 * **What H10 tests next.** Anchoring the swarm on the deployed schedule (the elite) for local changes.
 """)
 md(r"""
-### 20.3 H9–H11 (`results/h9_analysis.md`, `h10_analysis.md`, `h11_analysis.md`)
+### 20.3 H9–H12 (`results/h9_analysis.md`, `h10_analysis.md`, `h11_analysis.md`, `h12_analysis.md`)
 
 * **H9: purity-regulated decoherence (the original report's §21 proposal) is falsified.** It raises duplicate
   evaluations (27 % → 46 %) and worsens the gap. Mean purity is dominated by a few diffuse registers, so the controller
@@ -996,6 +997,34 @@ md(r"""
 * **H11: the event-aware elite (none after a VM addition) is confirmed on fresh seeds at every λ.** It beats the best
   heuristic chooser at every migration price. The remaining boundary is pure churn at λ ≥ 0.2, where zero-migration
   repair is best.
+* **H12: the incremental elite.** After churn the elite used to leave each new task on the VM of the task it replaced.
+  It now places new tasks by list scheduling.
+  * It is better than H11 at λ = 0.2 and λ = 1.0. At λ = 0.05 it wins 26/3, but the CI of the mean includes 0, so it
+    is not retained there.
+  * It wins pure churn against the Chooser at λ ≤ 0.2.
+  * Against incremental repair + a (1+1)-EA with the same moves, the swarm wins only through VM additions.
+""")
+code(r"""
+# small demonstration of the migration-priced configurations (instance seed 101, lambda = 0.2): the Chooser,
+# the H11 swarm (event-aware elite) and the H12 swarm (event-aware incremental elite)
+DYN12 = {"Chooser (cheaper of the two)": dict(algo="Chooser"),
+         "QI-MRFO+CXM event-aware elite (H11)": dict(algo="QI-MRFO", strategy="continue_struct", repair="greedy",
+                                                     carry_elite="except_vm_add", algo_kw={"exchange": 1.0}),
+         "QI-MRFO+CXM event-aware incremental elite (H12)": dict(algo="QI-MRFO", strategy="continue_struct", repair="incremental",
+                                                                 carry_elite="except_vm_add", algo_kw={"exchange": 1.0})}
+_n12, _ch12 = (60, ["churn", "mixed"]) if MODE == "smoke" else (100, ["churn", "drift", "vm_add", "mixed"])
+rows12 = []
+for ch in _ch12:
+    seq12 = make_dynamic_sequence(_n12, 10, seed=101, K=4, change=ch)
+    for name, spec12 in DYN12.items():
+        kw = dict(spec12)                                 # copy: the specs are reused for every change type
+        o = run_dynamic(seq12, kw.pop("algo"), kw.pop("strategy", "continue_struct"), CFG["dyn_budget0"], CFG["dyn_budget"],
+                        seed=101, P=CFG["P"], decoherence_c=1.0, mig_lambda=0.2, **kw)
+        post = o[1:]
+        rows12.append({"change": ch, "strategy": name, "cost_gap_%": 100 * np.mean([x["cost_gap"] for x in post]),
+                       "makespan_gap_%": 100 * np.mean([x["gap"] for x in post]),
+                       "migrations/epoch": np.mean([x["migrations"] for x in post])})
+pd.DataFrame(rows12).round(3)
 """)
 
 nb = {"cells": cells, "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
