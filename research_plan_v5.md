@@ -450,7 +450,7 @@ elite repaired by greedy placement of the new tasks.
 
 | Brief item | V5 status | Evidence |
 |---|---|---|
-| Adaptive, feedback-controlled decoherence | **tested as H9 and falsified** (the purity-regulated band from the original report §21 raises duplicates). Follow-up observation (development set, descriptive): under CXM the static gap is flat for c ∈ [0, 2], while without CXM c = 0 costs +6.1 / +15.1 pp. An adaptive γ therefore has little static headroom once CXM exists; γ now mainly sets duplicate waste | `results/h9_analysis.md`, `results/v5_c_sweep_paired.md` |
+| Adaptive, feedback-controlled decoherence | **tested as H9 and falsified** (the purity-regulated band from the original report §21 raises duplicates). Follow-up observation (development set, descriptive): under CXM the static gap is flat for c ∈ [0, 2], while without CXM c = 0 costs +6.1 / +15.1 pp. An adaptive γ therefore has little static headroom once CXM exists; γ now mainly sets duplicate waste. **Under migration pricing an event-conditioned floor works (H13 ✓ at λ ≥ 0.2)**: no floor after local changes. The VM-addition exception is not needed (H13b ✗) | `results/h9_analysis.md`, `results/v5_c_sweep_paired.md`, `results/h13_analysis.md` |
 | Event-aware adaptation (churn, VM failure/addition, drift) | **tested**: CXM under change (H6a ✓); unconditional elite (H6b ✗, H10 ✗); **event-aware elite (H11 ✓, every λ)**; **incremental elite (H12 ✓ at λ ≥ 0.2; it removes the churn boundary)**; structural rule for new VMs (H8 mechanism; H12c: the swarm's remaining advantage over a (1+1)-EA) | `results/h6_*`, `h8_*`, `h10_*`, `h11_*`, `h12_*` |
 | Hybrid initialisation (Max-Min / Min-Min / HEFT) | **tested as H7b** (Max-Min seed ✓). Min-Min and HEFT not tested (HEFT does not apply to independent tasks) | `results/h7_analysis.md` |
 | Discrete local search, critical-VM relocation, two-task swap | **CXM** (H5 ✓, H6a ✓). A (1+1)-EA with the same moves is the H7 control, and it wins for static makespan | `results/h5_*`, `h7_*` |
@@ -458,9 +458,9 @@ elite repaired by greedy placement of the new tasks.
 | Stagnation detection + partial register resets | **not tested** (UNMEASURED). H5 moved stagnation from 54 % to 76 % of the budget | `results/h5_analysis.md` |
 | Self-adaptive exploration parameters | partially: H9's controller. A self-adjusting mutation rate for the (1+1)-EA was not tested | — |
 | Multi-objective (makespan, energy, SLA, cost, migration) | **migration tested** (H8, H10). Energy, SLA and monetary cost not tested in V5 (the V0–V4 energy objective is unchanged) | `results/h8_*`, `h10_*` |
-| Larger and more diverse held-out families | done: 8 families up to n = 300, m = 30 with lognormal / bimodal / low-heterogeneity shapes; five disjoint fresh seed sets (101–110, 201–210, 301–310, 401–410, 501–510) | `qi_experiment.py` |
+| Larger and more diverse held-out families | done: 8 families up to n = 300, m = 30 with lognormal / bimodal / low-heterogeneity shapes; six disjoint fresh seed sets (101–110, 201–210, 301–310, 401–410, 501–510, 601–610) | `qi_experiment.py` |
 | Vectorisation, caching, profiling, parallel execution | profiled (no micro-optimisation, since results must stay bit-identical); parallel checkpointed harness; duplicate diagnostics. No evaluation cache (the (1+1)-EA's 36 % duplicates make one a clear next step) | `research_plan_v5.md` §3 |
-| Reproducibility, tests, configuration, checkpointing | done: 248 tests incl. golden fingerprints; JSON specs; write-once experiments with commit hashes; pinned requirements; deterministic notebook builds | `tests/`, `qi_experiment.py` |
+| Reproducibility, tests, configuration, checkpointing | done: 253 tests incl. golden fingerprints; JSON specs; write-once experiments with commit hashes; pinned requirements; deterministic notebook builds | `tests/`, `qi_experiment.py` |
 
 ## 25. H12 — incremental elite: place the new tasks of a churn event by list scheduling (pre-registered before H12 was run)
 
@@ -564,3 +564,15 @@ event-aware swarm significantly worse than c = 1 on any scenario.
 
 **Decision rule.** If H13a is retained at λ = 0.2 and λ = 1.0, the recommended configuration adds the event-aware γ
 for λ ≥ 0.2. At λ = 0.05 it is added only if H13a is retained there too.
+
+
+## 28. H13 outcome (recorded after `results/h13_analysis.md`)
+
+| Test | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| H13a event-aware γ < c = 1 (primary) | **not retained**: −0.10 pp [−0.24, +0.04], 36/14, Holm p = 0.006 (the CI includes 0) | **retained** (−0.26 pp, 34/16) | **retained** (−0.93 pp, 41/9) |
+| H13b event-aware γ < c = 0 after every change | **falsified** (+0.04 pp, n.s.) | **falsified** (+0.06 pp, n.s.) | **falsified** (+0.09 pp, n.s.) |
+| H13c event-aware γ vs Chooser | −1.26 pp (58/2) | −3.62 pp (57/3) | −18.34 pp (59/1) |
+
+The decision rule is met for λ ≥ 0.2: the recommended configuration adds the event-aware γ there. H13b shows that the
+VM-addition exception is not needed. The gain comes from removing the floor after local changes.

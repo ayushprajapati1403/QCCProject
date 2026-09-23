@@ -1,6 +1,6 @@
 """
 make_v5_figures.py - figures for the V5 results, drawn only from committed result files (results/h5_test, h6_dynamic,
-h7_test, h8_migration and, if present, h10_elite_migration, h11_event_elite and h12_incremental_elite). Writes new files results/fig_v5_*.png (write-once).
+h7_test, h8_migration and, if present, h10_elite_migration, h11_event_elite, h12_incremental_elite and h13_event_gamma). Writes new files results/fig_v5_*.png (write-once).
 
 Design: light surface; categorical hues from the reference palette in fixed order, colour follows the entity across
 panels (validated with the dataviz validator: adjacent CVD dE >= 9.1, normal-vision >= 22.9); 2 px lines, ringed
@@ -118,6 +118,15 @@ def fig_h12_heatmaps():
                    "fig_v5_h12_heatmap.png", seeds_note="all panels: the H12 run, fresh seeds 501–510")
 
 
+def fig_h13_heatmaps():
+    """H13 contrasts: event-aware decoherence against c = 1, against c = 0 after every change, and against the Chooser."""
+    ev = "H12 swarm, event-aware gamma"
+    heatmap_figure([("h13_event_gamma", ev, "H12 swarm (c = 1)", "H13a: event-aware γ − c = 1"),
+                    ("h13_event_gamma", ev, "H12 swarm, c = 0 after every change", "H13b: event-aware γ − c = 0 everywhere"),
+                    ("h13_event_gamma", ev, "Chooser (cheaper of the two)", "H13c: final configuration − Chooser")],
+                   "fig_v5_h13_heatmap.png", seeds_note="all panels: the H13 run, fresh seeds 601–610")
+
+
 def heatmap_figure(panels, name, seeds_note="each panel uses its own fresh seed set"):
     panels = [p for p in panels if os.path.exists(os.path.join(RES, p[0], "records.csv"))]
     if not panels: return
@@ -147,4 +156,4 @@ def heatmap_figure(panels, name, seeds_note="each panel uses its own fresh seed 
 
 
 if __name__ == "__main__":
-    fig_convergence(); fig_dynamic_tradeoff(); fig_migration_heatmaps(); fig_h12_heatmaps()
+    fig_convergence(); fig_dynamic_tradeoff(); fig_migration_heatmaps(); fig_h12_heatmaps(); fig_h13_heatmaps()

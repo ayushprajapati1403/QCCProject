@@ -755,7 +755,7 @@ placement of new tasks; that is UNMEASURED.
 All hypotheses were pre-registered in `research_plan_v5.md` before their runs, and every result directory is
 write-once with its git commit in `meta.json`. Unit = instance (static) or scenario-seed pair (dynamic). Held-out
 seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
-`results/fig_v5_dynamic_tradeoff.png`, `results/fig_v5_migration_heatmap.png`, `results/fig_v5_h12_heatmap.png`.
+`results/fig_v5_dynamic_tradeoff.png`, `results/fig_v5_migration_heatmap.png`, `results/fig_v5_h12_heatmap.png`, `results/fig_v5_h13_heatmap.png`.
 
 | # | Hypothesis | Held-out test | Verdict |
 |---|---|---|---|
@@ -767,6 +767,7 @@ seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
 | H10 | The deployed schedule as an elite anchor under migration pricing | 60 pairs × 3 λ (seeds 301–310) | **rejected** pooled (wins 10/10 on churn and VM failure, loses 0–1/10 on VM addition) |
 | H11 | Event-aware elite (none after VM addition) | 60 pairs × 3 λ (seeds 401–410) | **confirmed at every λ**; beats the best heuristic chooser at every λ; remaining boundary: pure churn at λ ≥ 0.2 |
 | H12 | Incremental elite (new churn tasks placed by list scheduling) | 60 pairs × 3 λ (seeds 501–510) | **retained at λ = 0.2 and 1.0**, not at λ = 0.05 (26/3, but the CI of the mean includes 0); removes the churn boundary at λ ≤ 0.2; vs a (1+1)-EA with the same repair the swarm wins only through VM additions |
+| H13 | Event-aware decoherence (no floor after local changes) | 60 pairs × 3 λ (seeds 601–610) | **retained at λ = 0.2 and 1.0**, not at 0.05 (36/14, CI includes 0); the VM-addition exception is not needed (H13b ✗); the final configuration beats the Chooser at every λ (58/2, 57/3, 59/1) |
 
 ### Threats to validity (V5)
 
@@ -786,9 +787,10 @@ seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
 * **Post hoc elements.** P2's relative re-expression, the H8 barrier check and the H11 rule are post hoc. They are
   labelled, and the one that became a claim (H11) was re-tested on fresh seeds. H12 came from a development-seed
   observation and was pre-registered before its fresh-seed run. Its λ-conditional recommendation is a post hoc
-  reading of a pre-registered rule that was only partly met.
+  reading of a pre-registered rule that was only partly met. H13's rule came from development seeds as well; its
+  λ-conditional decision rule was pre-registered.
 * **Same generator shapes.** H7 reuses H5's family shapes with new seeds, and the dynamic scenarios reuse shapes
-  across H6/H8/H10/H11/H12 with disjoint seeds. Generalisation beyond these shapes is UNMEASURED.
+  across H6/H8/H10/H11/H12/H13 with disjoint seeds. Generalisation beyond these shapes is UNMEASURED.
 
 
 ### Status of the §21 improvement plan and the §25 "exact next experiment" after V5
@@ -796,9 +798,9 @@ seeds were never used for any choice. Figures: `results/fig_v5_convergence.png`,
 | §21 / §25 item | V5 status |
 |---|---|
 | 1. Task-selective, severity-scaled decoherence under change (§25) | Not run: superseded. CXM under change (H6a, 60/60) and the event-aware elite (H11) addressed recovery. Selective shocks remain UNMEASURED. |
-| 2. Purity-regulated γ | **Tested (H9) and falsified** for the band controller as specified. Under CXM the fixed floor no longer affects the static gap for c ∈ [0, 2] (§35, descriptive), so little headroom is left for any γ controller there. A controller on a direct duplicate signal is UNMEASURED. |
+| 2. Purity-regulated γ | **Tested (H9) and falsified** for the band controller as specified. Under CXM the fixed floor no longer affects the static gap for c ∈ [0, 2] (§35, descriptive), so little headroom is left for any γ controller there. **Under migration pricing an event-conditioned floor works (H13, §37)**: no floor after local changes, retained at λ ≥ 0.2. A controller on a direct duplicate signal is UNMEASURED. |
 | 3. Max-Min seeding | **Tested (H7b), confirmed.** Against Max-Min + local search (H7c) the seeded (1+1)-EA is marginally better. |
-| 4. Objectives where heuristics do not apply | **Migration-priced re-optimisation tested (H8, H10, H11, H12).** Energy, SLA and monetary cost are UNMEASURED in V5. |
+| 4. Objectives where heuristics do not apply | **Migration-priced re-optimisation tested (H8, H10–H13).** Energy, SLA and monetary cost are UNMEASURED in V5. |
 | 5. Drop the quantum-specific parts from the default | **Supported by data.** The linear twin beats the Born rule under CXM (H5: 68/80; H6: 55/60; H7: 54/16), and is n.s. under migration pricing (H8). |
 
 ## 35. V5 — the decoherence floor once CXM exists (descriptive, development set)
@@ -869,6 +871,40 @@ It was pre-registered in `research_plan_v5.md` §25 and tested on **fresh seeds 
 * **Next design (UNMEASURED).** A cheaper hybrid would run the (1+1)-EA after local events and the register swarm
   after VM additions.
 
+## 37. V5 — event-aware decoherence under change (H13; measured, fresh seeds)
+
+**Why.** Development seeds showed a split (`results/v5_c_dynamic.md`, 450 runs).
+* **After local changes.** Under a migration price, the decoherence floor's random re-draws of persistent tasks are paid
+  migrations, and CXM already supplies the targeted moves. Removing the floor after churn, drift and VM failure lowered
+  migrations at a similar makespan.
+* **After VM additions.** Removing it hurt at λ ≥ 0.2.
+
+H13 tests the rule c = 0 after local changes and c = 1 after VM additions, on top of H12. It was pre-registered in
+`research_plan_v5.md` §27 and tested on **fresh seeds 601–610** (720 runs; `results/h13_analysis.md`).
+
+| Pooled cost gap % | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Chooser (best heuristic) | 3.52 | 9.19 | 33.90 |
+| H12 swarm, c = 1 | 2.36 | 5.83 | 16.49 |
+| H12 swarm, c = 0 after every change | 2.22 | 5.51 | 15.47 |
+| **H12 swarm, event-aware γ** | **2.25** | **5.57** | **15.56** |
+
+**Verdicts.**
+* **H13a (primary) is retained at λ = 0.2 (−0.26 pp, 34/16) and λ = 1.0 (−0.93 pp, 41/9).** At λ = 0.05 the rank test is
+  significant (36/14) but the mean CI includes 0, as the pre-registration anticipated.
+  * The gain comes mostly from drift (up to −3.0 pp at λ = 1.0).
+  * Its mechanism is fewer voluntary migrations at a similar makespan.
+* **H13b is falsified.** Keeping c = 1 after VM additions is indistinguishable from c = 0 after every change. The
+  development-seed exception did not replicate, so the gain is removing the floor after local changes.
+* **H13c.** The final configuration beats the best heuristic chooser at every λ: −1.26, −3.62 and −18.34 pp; 58/2,
+  57/3 and 59/1.
+  * Per scenario, 16 of the 18 scenario × λ cells are Holm-significant wins, and the other two are 8/2 in its favour.
+  * Pure churn is won at every λ on these seeds.
+
+**Reading.** H13 completes a consistent story about the noise floor. It was essential without CXM (V2–V4, §35). With CXM
+it is unnecessary for static makespan (§35). Under a migration price it is harmful after local changes (H13). The
+exchange measurement has taken over its job.
+
 ## Final decision
 
 **PROCEED — with the revised framing.** The implementation works, the effect is large and reproducible against the baselines the field uses (2 100-run, 30-seed confirmation on seven instances including three held-out shapes), the mechanism is understood (move size via purity, floor via decoherence), the boundary is measured (a list heuristic wins static heterogeneous batches at this budget; neutrality-dominated plateaus defeat greedy acceptance; uniform forgetting does not help under change), and the honest negative results (Born rule and interference irrelevant; uniform shocks useless) are themselves publishable. The research question for the PhD is not "does quantum inspiration beat classical?" but "which properties of a measurement-based schedule representation matter for re-scheduling under change, and how should its noise floor adapt to change severity?"
@@ -877,7 +913,7 @@ It was pre-registered in `research_plan_v5.md` §25 and tested on **fresh seeds 
 
 **PROCEED, with claims that V5's own controls have both sharpened and narrowed.**
 1. **Research quality.** Findings now rest on development/held-out splits, instance-level statistics, pre-registered
-   hypotheses, write-once experiments and 248 tests. The tests include bit-exact golden fingerprints of the original
+   hypotheses, write-once experiments and 253 tests. The tests include bit-exact golden fingerprints of the original
    code, and the smoke results reproduce to within 1.1e-16.
 2. **What V5 added that is positive and measured.**
    * **Move-type diagnosis.** The product-state measurement cannot produce the correlated exchange that
@@ -886,7 +922,9 @@ It was pre-registered in `research_plan_v5.md` §25 and tested on **fresh seeds 
    * **Structural rules under migration pricing.** In migration-priced re-optimisation, the register representation's
      rule for new capacity produces coordinated moves that a (1+1)-EA with the same moves cannot. With an event-aware
      elite the swarm beats the best heuristic chooser at every migration price tested. With the incremental elite
-     (H12) it also wins pure churn at λ ≤ 0.2, and at λ ≥ 0.2 it is better than the H11 configuration.
+     (H12) it also wins pure churn at λ ≤ 0.2, and at λ ≥ 0.2 it is better than the H11 configuration. Removing the
+     noise floor after local changes (H13) adds a further gain at λ ≥ 0.2. The final configuration beats the
+     Chooser at every λ on fresh seeds: 58/2, 57/3, 59/1.
 3. **What V5's controls took away.**
    * The Born rule is measurably worse than the classical linear twin under CXM.
    * For static makespan a (1+1)-EA with the same moves is at least as good as the swarm; the best static method

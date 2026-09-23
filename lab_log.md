@@ -688,3 +688,54 @@ epochs).
   it migrates 136 tasks per epoch, against 51 for the swarm. It wins on makespan, 0.60 vs 3.34 %. Max-Min is
   near-optimal on heavy-tailed tasks, and at λ = 0.05 a full recompute is cheap. The swarm's 4 000 evaluations per
   epoch at n = 200 do not reach that makespan.
+
+## V5 / H13 — event-aware decoherence under change (`results/h13_event_gamma/`, `results/h13_analysis.md`)
+
+**Origin.** On development seeds (`results/v5_c_dynamic.md`), lowering c after local changes removed paid noise
+migrations, and lowering it after VM additions hurt at λ ≥ 0.2. H13 was pre-registered in plan §27 and tested on
+**fresh seeds 601–610** (720 runs). All swarms use the H12 configuration.
+
+Pooled cost gap % (makespan gap %, voluntary migrations per epoch):
+
+| Strategy | λ = 0.05 | λ = 0.2 | λ = 1.0 |
+|---|---|---|---|
+| Chooser | 3.52 (1.23, 55.9) | 9.19 (3.28, 35.3) | 33.90 (22.41, 13.9) |
+| H12 swarm, c = 1 | 2.36 (0.95, 32.2) | 5.83 (2.25, 20.5) | 16.49 (8.49, 8.6) |
+| H12 swarm, c = 0 after every change | 2.22 (0.90, 30.1) | 5.51 (2.46, 17.3) | 15.47 (9.07, 6.9) |
+| **H12 swarm, event-aware γ** | **2.25** (0.89, 30.9) | **5.57** (2.37, 18.1) | **15.56** (8.71, 7.2) |
+
+**What happened?**
+* **H13a (primary): retained at λ = 0.2 and 1.0, not at λ = 0.05, as the pre-registration anticipated.**
+  * Event-aware γ − c = 1: −0.26 pp [−0.45, −0.07] (34/16, Holm p = 0.007) at λ = 0.2 and −0.93 pp [−1.67, −0.17]
+    (41/9, Holm p = 0.001) at λ = 1.0.
+  * At λ = 0.05: −0.10 pp [−0.24, +0.04], 36/14, Holm p = 0.006. The CI includes 0, so the rule is not met.
+  * **Where the gain comes from.** Mostly drift (−0.23 / −1.05 / −3.02 pp), with small, consistent gains on churn and VM
+    failure.
+  * **Mechanism, as on development seeds.** There are fewer voluntary migrations (for example 20.5 → 18.1 per epoch at
+    λ = 0.2) at a similar makespan.
+  * No scenario is significantly worse, so the falsification criterion is not met.
+* **H13b: falsified.** Event-aware γ − (c = 0 after every change) is +0.04 / +0.06 / +0.09 pp, n.s. at every λ.
+  * The VM-addition exception from the development seeds did not replicate: on VM addition, c = 1 vs c = 0 is 3/7, 5/5
+    and 5/5.
+  * The gain comes from dropping the floor after local changes. What happens after VM additions made no measurable
+    difference.
+  * **Statistical subtlety.** "c = 0 after every change" vs c = 1 wins the rank test at every λ (47/13, 41/19, 47/13;
+    Holm p ≤ 0.002), but its mean CIs all include 0. The event-aware rule passes at λ ≥ 0.2 because it is identical to
+    c = 1 on VM addition, which removes that scenario's variance.
+* **H13c: the final configuration beats the Chooser at every λ.** −1.26 / −3.62 / −18.34 pp; 58/2, 57/3 and 59/1;
+  Holm p < 1e-9.
+  * Per scenario, 16 of the 18 scenario × λ cells are Holm-significant wins.
+  * The other two (n200 mixed at λ = 0.05, VM addition at λ = 0.2) are 8/2 in its favour but n.s.
+  * Pure churn is won at every λ on these seeds: 10/0, 10/0 and 9/1.
+* **Replication.** The H12 swarm (c = 1) again beats the Chooser at every λ on these fresh seeds: 2.36 vs 3.52,
+  5.83 vs 9.19 and 16.49 vs 33.90 %.
+
+**Why?** Under a migration price, the decoherence floor's random re-draws of persistent tasks are paid moves, and CXM
+already supplies the targeted ones. After local changes the floor is therefore priced noise; removing it lowers
+migrations without costing makespan. The static observation (report §35) is consistent: once CXM exists the floor is
+not needed for makespan.
+
+**Decision (pre-registered rule met at λ ≥ 0.2).** For λ ≥ 0.2 the recommended configuration adds
+`decoherence_by_event={"churn": 0, "drift": 0, "vm_fail": 0}`. H13b shows that dropping the floor after VM additions as
+well is statistically indistinguishable, but that variant did not pass the pre-registered bar. At λ = 0.05 neither H12
+nor H13 met the bar: both win the rank test, but the mean CI includes 0. Every swarm variant beats the Chooser there.
