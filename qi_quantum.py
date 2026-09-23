@@ -103,9 +103,14 @@ def collapse_rows(psi, rows, outcomes, gamma, m, mode):
 # QI-DMO: DMO dynamics (MATLAB/MEALPY-faithful) on amplitude registers
 # ----------------------------------------------------------------------------------------------
 def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="born_signed",
-              gamma_reset=1.0, decoherence=0.0, attractor="basis", greedy_next=False, track=True, init_state=None):
+              gamma_reset=1.0, decoherence=0.0, attractor="basis", greedy_next=False, track=True, init_state=None,
+              exchange=0.0):
     """decoherence: per-candidate depolarising strength gamma (0 = V1); gamma_reset: babysitter channel strength;
-    attractor: 'basis' (alpha peeps its measured schedule) or 'register' (alpha's superposition state)."""
+    attractor: 'basis' (alpha peeps its measured schedule) or 'register' (alpha's superposition state).
+    exchange>0 (V5, hypothesis H14): the swap move of QI-MRFO (H5) transferred unchanged to QI-DMO. With this probability
+    a measured candidate of the three search phases (alpha group, scouts, next position) additionally exchanges a task of
+    its critical VM with a shorter task on another VM (qi_core.critical_exchange), and the pair's registers collapse onto
+    that outcome. The babysitter reset is a restart, not a search move, and is left unchanged."""
     rng = np.random.default_rng(seed); n, m = inst.n, inst.m
     tr = Tracker(n, m, inst); tr.purity = []
     if init_state is None:
@@ -120,6 +125,14 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
         tr.snapshot(obj.n_evals, A, F, gbF); tr.purity.append(float(np.mean([purity(Psi[i], mode).mean() for i in range(P)])))
     snap()
     dec = lambda psi: depolarise(psi, decoherence, m, mode)
+    def xmeasure(new, a_new):
+        # H14: correlated exchange on top of the product-state measurement; no extra random draw when exchange == 0
+        if exchange <= 0 or rng.random() >= exchange: return new, a_new, False
+        a_x, tt, uu = critical_exchange(inst, a_new, rng)
+        rows = [tt] if uu < 0 else [tt, uu]
+        return collapse_rows(new, rows, a_x[rows], decoherence, m, mode), a_x, True
+    def xtrack(xm, f, f_parent):
+        if xm: tr.x_cands += 1; tr.x_improving += int(f < f_parent - 1e-12)
     for it in range(1, max_iter + 1):
         if obj.n_evals + 3 * P + n_baby_sitter > budget: break         # never exceed the evaluation budget
         CF = (1.0 - it / max_iter) ** (2.0 * it / max_iter)
@@ -131,8 +144,10 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
             phi = (peep / 2) * rng.uniform(-1, 1, (n, 1))
             E = basis_state(A[alpha], m) if attractor == "basis" else Psi[alpha]
             new = dec(project(E + phi * (E - Psi[k]), m, mode))
-            a_new = measure(new, rng, mode); f = obj(a_new)
-            if track: tr.candidate(A[i], a_new, F[i], f)
+            a_new = measure(new, rng, mode)
+            new, a_new, xm = xmeasure(new, a_new)
+            f = obj(a_new)
+            if track: tr.candidate(A[i], a_new, F[i], f); xtrack(xm, f, F[i])
             if f < F[i]: Psi[i], A[i], F[i] = new, a_new, f
             else: C[i] += 1
             if f < gbF: gbF, gbA = f, a_new.copy(); tr.gb_improvements += 1
@@ -142,8 +157,10 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
             k = rng.choice([k for k in range(P) if k != i])
             phi = (peep / 2) * rng.uniform(-1, 1, (n, 1))
             new = dec(project(Psi[i] + phi * (Psi[i] - Psi[k]), m, mode))
-            a_new = measure(new, rng, mode); f = obj(a_new)
-            if track: tr.candidate(A[i], a_new, F[i], f)
+            a_new = measure(new, rng, mode)
+            new, a_new, xm = xmeasure(new, a_new)
+            f = obj(a_new)
+            if track: tr.candidate(A[i], a_new, F[i], f); xtrack(xm, f, F[i])
             SM[i] = (f - F[i]) / max(f, F[i])
             if f < F[i]: Psi[i], A[i], F[i] = new, a_new, f
             else: C[i] += 1
@@ -161,8 +178,10 @@ def run_qidmo(inst, obj, budget, P=30, seed=0, n_baby_sitter=3, peep=2.0, mode="
             else:             new = Psi[i] + CF * phi * rng.random() * (Psi[i] - SM[i])
             tau = new_tau
             new = dec(project(new, m, mode))
-            a_new = measure(new, rng, mode); f = obj(a_new)
-            if track: tr.candidate(A[i], a_new, F[i], f)
+            a_new = measure(new, rng, mode)
+            new, a_new, xm = xmeasure(new, a_new)
+            f = obj(a_new)
+            if track: tr.candidate(A[i], a_new, F[i], f); xtrack(xm, f, F[i])
             if (not greedy_next) or f < F[i]: Psi[i], A[i], F[i] = new, a_new, f
             if f < gbF: gbF, gbA = f, a_new.copy(); tr.gb_improvements += 1
         snap()

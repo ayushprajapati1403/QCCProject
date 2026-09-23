@@ -621,3 +621,51 @@ The expectations of §29 held:
   without the swap.
 
 Details: `lab_log.md` (V5 scaling study) and `results_scale_tasks.pdf`.
+
+
+## 31. H14 — the swap move in QI-DMO (pre-registered before H14 was run)
+
+**Why now.** The standalone QI-DMO notebook requested by the supervisor should show how the swap move improves the
+algorithm. The swap move (CXM, H5) existed only for QI-MRFO, the GA and the (1+1)-EA. QI-DMO samples its registers with
+the same product-state measurement as QI-MRFO, so it has the same blind spot (O4): it almost never produces the
+correlated two-task exchange that relocation-optimal schedules need.
+
+**Change.** `run_qidmo(..., exchange=p_x)` uses the QI-MRFO operator unchanged.
+* **When it acts.** After each measurement in the three search phases (alpha group, scouts, next position), with
+  probability p_x.
+* **What it does.** `critical_exchange` swaps a task of the critical VM with a shorter task on another VM, or relocates
+  it if none exists. The pair's registers then collapse onto that outcome: depolarised basis states with the candidate
+  channel γ.
+* **What stays the same.** The babysitter reset (a restart, not a search move), the budget, the host dynamics and the
+  acceptance rules.
+* **Opt-in.** `exchange = 0` is the unchanged algorithm (golden fingerprints; `tests/test_qidmo_exchange.py`).
+
+**Settings fixed a priori (no tuning for QI-DMO).**
+* p_x = 1, the value selected for QI-MRFO and for the GA in H5 (`results/h5_selection.json`).
+* c = 0.25, the QI-DMO setting of every earlier study.
+* Population 30; 20 000 evaluations.
+
+**Held-out set (fresh).** The 8 TEST families of H5 × **instance seeds 701–710**, never used before; run seeds 0 and 1.
+**Algorithms:** DMO (the original, as a reference), QI-DMO, QI-DMO+CXM.
+
+**Predictions.**
+* **P1 (primary).** QI-DMO+CXM − QI-DMO has a negative mean paired gap2 difference over the 80 instances, with a 95 %
+  bootstrap CI excluding 0 and a two-sided Wilcoxon p < 0.05. The unit is the instance (mean of its 2 run seeds).
+* **P2 (safety).** No family shows a Holm-significant deterioration (Wilcoxon per family, Holm across the 8).
+* **P3 (descriptive, not a gate).** On the scaling problems of §29 (500–5000 tasks, 50 VMs, 10 runs), QI-DMO+CXM vs
+  QI-DMO mean makespan per size. QI-DMO's runs are the committed `results/scale_tasks/` records (same problems and run
+  seeds). Reported with a two-sided Mann–Whitney p per size, Holm across the 5 sizes.
+* Also reported: wins out of 80, per-family means, and the fraction of exchange candidates that improve (x_success).
+
+**Acceptance criteria.**
+* **RETAIN** (CXM becomes the recommended QI-DMO option for makespan) if P1 and P2 hold.
+* **RETAIN WITH BOUNDARY** if P1 holds but a family deteriorates significantly.
+* **REJECT** if P1 fails. The negative result is documented, and the notebook shows it as it is.
+
+**Threats.**
+* p_x is not tuned for QI-DMO, which could understate the gain.
+* QI-DMO measures 3 candidates per individual per iteration (QI-MRFO: 2), all of which receive the move at p_x = 1.
+* Fixed budget; synthetic workload.
+
+**Files.** `exp_h14_qidmo_cxm.py` writes the write-once `results/h14_test/`, `results/h14_scale/` and
+`results/h14_analysis.md`.
