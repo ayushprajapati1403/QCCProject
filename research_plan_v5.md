@@ -461,3 +461,50 @@ elite repaired by greedy placement of the new tasks.
 | Larger and more diverse held-out families | done: 8 families up to n = 300, m = 30 with lognormal / bimodal / low-heterogeneity shapes; four disjoint fresh seed sets (101–110, 201–210, 301–310, 401–410) | `qi_experiment.py` |
 | Vectorisation, caching, profiling, parallel execution | profiled (no micro-optimisation, since results must stay bit-identical); parallel checkpointed harness; duplicate diagnostics. No evaluation cache (the (1+1)-EA's 36 % duplicates make one a clear next step) | `research_plan_v5.md` §3 |
 | Reproducibility, tests, configuration, checkpointing | done: 237 tests incl. golden fingerprints; JSON specs; write-once experiments with commit hashes; pinned requirements; deterministic notebook builds | `tests/`, `qi_experiment.py` |
+
+## 25. H12 — incremental elite: place the new tasks of a churn event by list scheduling (pre-registered before H12 was run)
+
+**Origin (observation on development seeds 11–15, `results/v5_churn_elite.md`, `observe_v5_churn_elite.py`).**
+H11's remaining boundary is pure churn at λ ≥ 0.2, where the swarm loses to zero-migration incremental repair.
+* **Why the elite is bad after churn.** With `repair="greedy"`, the carried elite repairs only VM failures. After churn,
+  every new task keeps the VM of the departed task whose index it took ("slot inheritance"), whatever its length.
+* **How large the gap is.** At the start of a churn epoch the slot-inherited elite's priced cost gap is **18–38 %**.
+  The incremental schedule's is **1.8–3.0 %**, and both make zero voluntary migrations. New tasks are free to place.
+* **What the swarm does with it.** It ends above the incremental schedule's cost on **73–100 %** of churn epochs. It
+  spends 4–29 voluntary migrations per epoch repairing a bad start instead of placing the new tasks well.
+
+**Change (one).** `repair="incremental"`: the carried elite is `incremental_list_schedule` of the previous deployed
+schedule. Persistent tasks stay where they are; new and orphaned tasks go, longest first, to the VM that finishes them
+earliest. Everything else is as in H11, including the event-aware rule (no elite after a VM addition).
+* **Where it differs.** For VM failure the elite is identical to `"greedy"`, and for drift it is the previous schedule.
+  After a VM addition there is no elite. The two swarm strategies therefore differ only after churn events, so the
+  drift, VM-failure and VM-addition scenarios are **ties by construction** (30 of 60 pairs per λ). The effect can
+  only come from the churn scenario and the two mixed scenarios.
+* **Design guarantee (unit-tested).** The elite is evaluated first, so in every churn epoch the deployed priced cost is
+  at most the incremental schedule's cost, relative to the swarm's own previous schedule. This bounds each epoch, not
+  the sequence, because the previous schedules differ between strategies.
+
+**Design** (`exp_h12_incremental_elite.py`). The H11 harness with **fresh seeds 501–510**; 6 scenarios ×
+λ ∈ {0.05, 0.2, 1.0} × 4 strategies; 720 runs. The strategies are:
+* the Chooser;
+* the H11 swarm (QI-MRFO+CXM continue, event-aware elite, `repair="greedy"`);
+* the H12 swarm (the same with `repair="incremental"`);
+* a control: the (1+1)-EA+CXM carrying one schedule with `repair="incremental"`, i.e. incremental repair plus
+  stochastic local search with the same moves (H8's tuned c = 1, p_x = 0.5).
+
+**Hypotheses and acceptance** (post-change cost gap; unit = (scenario, seed); pooled over 60 pairs per λ; Holm across
+the three λ; retained at a λ when the difference is negative, Holm p < 0.05 and the 95 % CI excludes 0).
+* **H12a (primary).** H12 swarm < H11 swarm, at each λ. Prediction: retained at every λ, with the largest effect at
+  λ ≥ 0.2.
+* **H12b.** H12 swarm < Chooser, at each λ. Secondary, per scenario (Holm across the 6 scenarios within λ): on pure
+  churn the H12 swarm is **better** than the Chooser at every λ, where H11 lost 0/10 at λ ≥ 0.2.
+* **H12c (control).** H12 swarm < (1+1)-EA with incremental repair, at each λ. Predicted to be driven by VM addition
+  (the single-move barrier, H8). On churn the two may not differ, since both start from the incremental schedule.
+* **Replication (reported).** H11c (H11 swarm vs Chooser) on fresh seeds.
+
+**What would falsify it.** H12a not retained at λ ≥ 0.2, or the H12 swarm significantly worse than the H11 swarm on a
+mixed scenario. The latter would mean the incremental placement anchors the swarm in a worse basin, as the elite did
+after VM additions.
+
+**Decision rule.** If H12a is retained at every λ, the recommended configuration changes from `repair="greedy"` to
+`repair="incremental"`, keeping `carry_elite="except_vm_add"`.

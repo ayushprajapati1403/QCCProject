@@ -65,6 +65,10 @@ def adapt_position_state(state, info, m_new, rng):
 def adapt_ga_state(state, info, m_new, rng, inst=None, repair="random"):
     if info is None: return state
     A = state["A"].copy()
+    if repair == "incremental" and info["type"] in ("churn", "vm_fail"):
+        # V5, H12: every carried schedule keeps its persistent tasks and gets the new / orphaned tasks placed longest
+        # first on the VM that finishes them earliest (incremental_list_schedule)
+        return {"A": np.stack([incremental_list_schedule(a, info, inst, rng) for a in A])}
     if info["type"] == "vm_fail":
         if repair == "greedy":
             return {"A": np.stack([repair_schedule(a, info, inst, rng, "greedy") for a in A])}
@@ -82,7 +86,11 @@ def map_to_new_vms(a, info):
 def repair_schedule(a, info, inst_new, rng, how="random"):
     """Make the previous epoch's schedule valid for the new instance. Only a VM failure invalidates it: the tasks of
     the failed VM go to uniformly random VMs ('random', as adapt_ga_state) or, longest first, to the VM that
-    finishes them earliest ('greedy', list scheduling on top of the surviving loads)."""
+    finishes them earliest ('greedy', list scheduling on top of the surviving loads). With 'random' and 'greedy' the
+    NEW tasks of a churn event stay on the VM of the departed task whose index they took (slot inheritance).
+    'incremental' (V5, H12) also places the new tasks longest first on the VM that finishes them earliest, i.e. it
+    returns incremental_list_schedule (identical to 'greedy' for every event except churn)."""
+    if how == "incremental": return incremental_list_schedule(a, info, inst_new, rng)
     mapped, forced = map_to_new_vms(a, info)
     if not forced.any(): return mapped
     if how == "random":
@@ -121,7 +129,8 @@ def run_dynamic(seq, algo, strategy, budget0, budget, seed, P=30, decoherence_c=
     'Incremental' (zero voluntary migration)}; strategy in {'restart','continue','continue_struct','shock','hypermut'}.
     V5 options: algo_kw = extra optimizer kwargs (e.g. {'exchange': 1.0}); carry_elite = the previous epoch's best
     schedule, repaired for the change, seeds the register swarm (QI-MRFO); repair = 'random' | 'greedy' treatment of the
-    tasks of a failed VM (used for the carried elite and the GA's carried population).
+    tasks of a failed VM, or 'incremental' (H12: failed-VM and new churn tasks placed by list scheduling), used for the
+    carried elite and the carried population of the GA / (1+1)-EA.
     mig_lambda (V5, H8): after the first epoch every optimizer sees the migration-aware objective
     makespan x (1 + mig_lambda * voluntary migrations / eligible tasks) relative to the previous deployed schedule;
     'Chooser' deploys whichever of Max-Min (recompute) and Incremental is cheaper under that objective.
