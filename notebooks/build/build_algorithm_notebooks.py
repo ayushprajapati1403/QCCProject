@@ -880,11 +880,19 @@ if RUN_PART_2:
     fig, ax = plt.subplots(figsize=(8.8, 4.2))
     sets = [("benchmark problems", B, "gap_pct"), ("unseen problems (preemptive bound)", U, "gap_pmtn_pct"),
             ("large problems", L, "gap_pct")]
+    ends = []                                                         # last value of each line, for the labels
     for (label, df, col), color in zip(sets, PALETTE):
         y = [df[df.variant == s].groupby("problem")[col].mean().mean() for s in STEPS]
         ax.plot(range(len(STEPS)), y, color=color, linewidth=2, label=label, zorder=2)
         ax.plot(range(len(STEPS)), y, "o", color=color, markersize=6, markeredgecolor=SURFACE, markeredgewidth=2, zorder=3)
-        ax.annotate(f"{y[-1]:.2f} %", (len(STEPS) - 1, y[-1]), xytext=(8, 0), textcoords="offset points", va="center",
+        ends.append(y[-1])
+    order = np.argsort(ends)
+    nudge = np.zeros(len(ends))
+    for a, b in zip(order[:-1], order[1:]):                           # labels closer than 15 % would overlap
+        if ends[b] < ends[a] * 1.15:
+            nudge[b] = nudge[a] + 9
+    for v, dy in zip(ends, nudge):
+        ax.annotate(f"{v:.2f} %", (len(STEPS) - 1, v), xytext=(8, dy), textcoords="offset points", va="center",
                     fontsize=8, color=INK2)
     ax.set_xticks(range(len(STEPS))); ax.set_xticklabels([s.replace(" + ", "\n+ ").replace(", ", ",\n") for s in STEPS])
     ax.set_yscale("log"); ax.yaxis.set_major_formatter(PERCENT)
@@ -909,7 +917,8 @@ if RUN_PART_2:
         ax.xaxis.set_major_formatter(PERCENT); ax.yaxis.set_major_formatter(PERCENT)
         style(ax, f"{after}\nbelow the dashed line = better with the swap move ({k} of {len(per_problem)} problems)",
               f"gap without the swap move (%, {before})", "gap with the swap move (%)")
-    fig.suptitle("Figure 2.2 - every unseen problem as one point", x=0.02, ha="left", fontsize=10, color=INK)
+    fig.suptitle("Figure 2.2 - every unseen problem as one point (a gap of 0 %, an optimal schedule, is drawn at 0.001 %)",
+                 x=0.02, ha="left", fontsize=10, color=INK)
     fig.tight_layout()
     save_figure(fig, "2_2_swap_each_problem.png")
 else:
@@ -1057,7 +1066,9 @@ else:
 FOUND_PART2 = {
     "dmo": """**What the project's pre-registered tests found** (the tables below recompute the same comparisons from this
 notebook's own runs; its unseen problems are the H15 test problems):
-* **DMO → QI-DMO.** Better on every problem: all 80 fresh problems of H14 (−67 percentage points of gap).
+* **DMO → QI-DMO.** Better on all 80 fresh problems of H14 (−67 percentage points of gap). On this notebook's unseen
+  problems (the H15 set) it is better on 76 of 80. DMO wins four problems of the type with 20 near-identical VMs and
+  heavy-tailed tasks, where the longest task alone sets the makespan.
 * **Swap move in every phase (H14).**
   * On 30–300-task problems QI-DMO got **worse**: worse on 65 of 80 fresh problems, in both H14 and H15.
   * On the large problems it was **better** at every size, e.g. 1 198.89 vs 1 402.89 s at 5 000 tasks.
