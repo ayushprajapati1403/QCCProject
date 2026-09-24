@@ -261,15 +261,13 @@ RUNTIME = {
 * **Keep the browser tab open.** Free Colab stops idle sessions. If it disconnects, reconnect and click *Run all*
   again: finished runs are read back from Google Drive and skipped.""",
 }
-RUNTIME_FACTS = {   # quick: measured (lab_log.md); full: estimated from the per-run times of the committed studies
-    "dmo": dict(Q="about 3.5 minutes measured with 2 processes on a 2.1 GHz Xeon (while other experiments shared the "
-                  "machine); expect about 4–12 minutes on Colab",
-                F="about 3.3 CPU-hours, estimated from the measured run times of the project's experiments; with 2 "
-                  "processes on free Colab, expect roughly 2–3.5 hours"),
-    "mrfo": dict(Q="about 5 minutes measured with 2 processes on a 2.1 GHz Xeon (while other experiments shared the "
-                   "machine); expect about 5–15 minutes on Colab",
-                 F="about 4 CPU-hours, estimated from the measured run times of the project's experiments; with 2 "
-                   "processes on free Colab, expect roughly 2.5–4.5 hours"),
+RUNTIME_FACTS = {   # measured here (docs/lab_log.md, standalone notebooks); the Colab ranges are estimates from them
+    "dmo": dict(Q="3.6 minutes measured with 2 processes on a 2.8 GHz Xeon; expect about 4–12 minutes on Colab",
+                F="the runs took 3.25 CPU-hours in total (the sum of the measured run times); with 2 processes on "
+                  "free Colab, expect roughly 2–4 hours"),
+    "mrfo": dict(Q="5.2 minutes measured with 2 processes on a 2.8 GHz Xeon; expect about 5–15 minutes on Colab",
+                 F="the runs took 4.35 CPU-hours in total (the sum of the measured run times); with 2 processes on "
+                   "free Colab, expect roughly 2.5–5 hours"),
 }
 
 
@@ -604,6 +602,11 @@ def wilcoxon(diff):
     return float(stats.wilcoxon(d).pvalue) if len(d) >= 2 else float("nan")
 
 
+def p_text(p):
+    # A p-value as text with 2 significant digits, so that a tiny p shows as e.g. 1.1e-13 and not as 0.0
+    return "-" if p != p else f"{p:.2g}"
+
+
 def holm(pvalues):
     # Holm-Bonferroni correction when several tests are done together
     p = np.asarray(pvalues, float); order = np.argsort(p); adj = np.empty_like(p); running = 0.0
@@ -870,7 +873,7 @@ if RUN_PART_2:
                          "better on": f"{better} of {units} problems",
                          "significantly better on": int(sum((x < 0) and (q < 0.05) for x, q in zip(diffs, ph))),
                          "significantly worse on": int(sum((x > 0) and (q < 0.05) for x, q in zip(diffs, ph))),
-                         "p (all unseen problems)": pooled})
+                         "p (all unseen problems)": p_text(pooled)})
     gains = pd.DataFrame(rows)
     save_table(gains.round(4), "2_4_what_each_change_gained",
                "Table 2.4 - what each change gained (gap = mean over problems; lower is better; unseen problems: "
@@ -942,7 +945,7 @@ if RUN_PART_3:
                       "cost gap (%)": g.cost_gap_pct.mean()}).reindex(STEPS3)
     t["better than the step before in"] = ["-"] + [f"{int((cost[b] < cost[a]).sum())} of {len(cost)} runs"
                                                    for a, b in zip(STEPS3[:-1], STEPS3[1:])]
-    t["p (Wilcoxon, vs the step before)"] = [np.nan] + [wilcoxon(cost[b] - cost[a]) for a, b in zip(STEPS3[:-1], STEPS3[1:])]
+    t["p (Wilcoxon, vs the step before)"] = ["-"] + [p_text(wilcoxon(cost[b] - cost[a])) for a, b in zip(STEPS3[:-1], STEPS3[1:])]
     save_table(t.round(4), "3_1_changing_cloud_steps",
                f"Table 3.1 - changing cloud, migration price {cfg['price']}: every development step (lower is better)")
 
@@ -1066,9 +1069,9 @@ else:
 FOUND_PART2 = {
     "dmo": """**What the project's pre-registered tests found** (the tables below recompute the same comparisons from this
 notebook's own runs; its unseen problems are the H15 test problems):
-* **DMO → QI-DMO.** Better on all 80 fresh problems of H14 (−67 percentage points of gap). On this notebook's unseen
-  problems (the H15 set) it is better on 76 of 80. DMO wins four problems of the type with 20 near-identical VMs and
-  heavy-tailed tasks, where the longest task alone sets the makespan.
+* **DMO → QI-DMO.** Better on all 80 fresh problems of H14 (−67 percentage points of gap). In the project's full-mode
+  run of this notebook it was better on 76 of its 80 unseen problems (the H15 set). DMO won four problems of the type
+  with 20 near-identical VMs and heavy-tailed tasks, where the longest task alone sets the makespan.
 * **Swap move in every phase (H14).**
   * On 30–300-task problems QI-DMO got **worse**: worse on 65 of 80 fresh problems, in both H14 and H15.
   * On the large problems it was **better** at every size, e.g. 1 198.89 vs 1 402.89 s at 5 000 tasks.
@@ -1076,16 +1079,21 @@ notebook's own runs; its unseen problems are the H15 test problems):
   * It removed that harm: better than the every-phase version on 71 of 80 problems.
   * Against QI-DMO without the swap it was better on average (−0.81 percentage points, better on 47 of 80), but the
     pre-registered test missed its bar (Wilcoxon p = 0.067).
+  * In the project's full-mode run of this notebook it was better on only 2 of the 7 benchmark problems (the two
+    bimodal ones, by about 2 s) and slightly worse on the other 5. Its lower average gap comes from those two.
   * On large problems it was better on average, but not significantly.
 * **Conclusion.** For QI-DMO, the swap move is **not** an established improvement on 30–300 tasks. On large problems
   (500–5 000 tasks) the every-phase version helps.""",
     "mrfo": """**What the project's pre-registered tests found** (the tables below recompute the same comparisons from this
 notebook's own runs; its unseen problems are the H5 test problems):
-* **MRFO → QI-MRFO.** Better on every benchmark problem and at every large size.
+* **MRFO → QI-MRFO.** Better on every benchmark problem and at every large size. In the project's full-mode run of
+  this notebook it was also better on 78 of 80 unseen problems.
 * **+ swap move (H5).** Better on 76 of 80 held-out problems (−2.86 percentage points of gap). It was also better in
   every run at every large size.
 * **+ Max-Min start (H7).** −0.51 percentage points, better on 67 of 80 fresh problems, worse on 11. It removes the
-  plateau on problems where Max-Min is already optimal (3.11 → 0.02 %).
+  plateau on problems where Max-Min is already optimal (3.11 → 0.02 %). In the project's full-mode run of this
+  notebook it was better on 65 of the 80 unseen problems (the H5 set), worse on 13, and slightly worse on the 30-task
+  benchmark problem.
 * **An honest limit (H7).** For one-time scheduling, a simple local search with the same swap move and start does as
   well or slightly better. QI-MRFO's own strength is the changing cloud (Part 3).""",
 }
@@ -1362,7 +1370,12 @@ computes a new schedule. **Moving a task that is already running to another VM (
 6. no decoherence noise after small changes: the final version.
 
 **What the project's pre-registered tests found.**
-* **Swap move under change (H6).** −2.98 percentage points of gap; better in 60 of 60 runs.
+* **Swap move under change (H6).** −2.98 percentage points of makespan gap; better in 60 of 60 runs. H6 did not
+  price migrations, and there the swap move roughly tripled the tasks moved (19 → 58 per change at 100 tasks). With
+  the price λ = 0.2 its net effect depends on the change. In the project's full-mode run of this notebook, step 3
+  lowers the mean cost gap (10.33 → 7.43 %) but is better than step 2 in only 31 of 60 runs (p = 0.051). It helps
+  after a VM addition, after speed drift and on the 200-task problem; it hurts after churn, VM failures and mixed
+  events (Table 3.2).
 * **Starting from the running schedule (H6).** It helps after churn and VM failures. After a VM addition it hurts,
   because the new VM stays empty. The event-aware start (step 5, H11) therefore skips it after a VM addition.
 * **Placing new tasks by list scheduling (H12).** Fewer tasks moved after churn: 15.3 → 1.6 per change at λ = 0.2.
