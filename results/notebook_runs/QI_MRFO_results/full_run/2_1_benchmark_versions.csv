@@ -1,0 +1,8 @@
+problem,lower bound (s),MRFO (original),QI-MRFO,QI-MRFO + swap,QI-MRFO + swap + Max-Min start
+"30 tasks, 5 VMs, uniform/high",44.528,47.432,44.998,44.578,44.616
+"50 tasks, 10 VMs, bimodal/high",25.107,35.689,28.117,25.666,25.485
+"100 tasks, 10 VMs, uniform/high",47.061,86.565,47.589,47.098,47.09
+"50 tasks, 10 VMs, uniform/none",28.387,33.412,29.278,28.459,28.45
+"200 tasks, 20 VMs, uniform/high",60.832,152.08,62.528,60.952,60.897
+"100 tasks, 10 VMs, lognormal/low",38.677,43.964,39.09,38.702,38.698
+"60 tasks, 8 VMs, bimodal/none",52.936,64.389,57.53,55.051,55.033

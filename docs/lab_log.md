@@ -888,3 +888,47 @@ a low rate is safe, and its gain is small.
 **Decision (pre-registered rule).** REJECT. QI-DMO keeps no swap move by default. The standalone QI-DMO notebook shows
 both versions with their measured results; these negative and inconclusive outcomes are reported as they are.
 Untested: making the next-position phase greedy (`greedy_next=True`) together with the move.
+
+## Standalone QI-DMO and QI-MRFO notebooks (supervisor request; `notebooks/colab/QI_DMO_Colab.ipynb`, `notebooks/colab/QI_MRFO_Colab.ipynb`, `results/notebook_runs/`)
+
+**What happened?** `notebooks/build/build_algorithm_notebooks.py` builds one notebook per algorithm. Each holds only
+the code that algorithm needs, copied verbatim from `src/`, and saves every run, table, figure and a summary to
+Google Drive.
+* **Part 1:** the algorithm on its own: 7 benchmark problems × 30 runs and 500–5 000 tasks × 10 runs.
+* **Part 2:** how it was improved, version by version, on the benchmark, on 80 unseen problems (QI-DMO: the H15 test
+  set; QI-MRFO: the H5 test set) and on the large problems.
+* **Part 3 (QI-MRFO only):** the changing-cloud improvements (H6–H13) step by step, at the migration price λ = 0.2.
+
+**Evidence.**
+* **Full mode, executed end to end** with `jupyter nbconvert` (4 processes): no errors. The executed copies and every
+  file they wrote are in `results/notebook_runs/`. The container restarted twice during the runs; the notebooks
+  resumed from their saved runs. The executed copies come from a last pass on the final notebook text, which read
+  every run back and recomputed the tables and figures.
+* **Runs vs the committed records.** Every run with a committed counterpart is bit-identical:
+  * **QI-DMO:** 1 100 of 1 100 runs (benchmark vs `baseline_full.csv`, unseen vs `h15_test`, large vs `scale_tasks`,
+    `h14_scale` and `h15_scale`). 580 runs are new: the two swap versions on the benchmark, and DMO on the unseen
+    problems.
+  * **QI-MRFO:** 1 220 runs, 1 340 of 1 340 values (benchmark, unseen vs `h5_test`, large vs `scale_tasks`, and Part 3
+    steps 5–6 vs `h13_event_gamma`, cost gap and migrations). 820 runs are new: the two swap versions on the
+    benchmark, the Max-Min start on the unseen problems, and Part 3 steps 1–4.
+* **Quick mode is a subset of full mode.** In a clean quick run (2 processes, 2.8 GHz Xeon), all 76 QI-DMO runs and
+  all 100 QI-MRFO runs (24 of them changing-cloud runs) were bit-identical to the same runs in full mode.
+* **Run time, measured here.** The sum of all run times is 3.25 h for QI-DMO (1 680 runs) and 4.35 h for QI-MRFO
+  (2 040 runs). Quick mode end to end, 2 processes on a 2.8 GHz Xeon, nothing else running: QI-DMO 3.6 min,
+  QI-MRFO 5.2 min. Run times on Colab are UNMEASURED; the notebooks' ranges are estimates from these.
+
+**What the new runs show** (full mode, the notebooks' own runs):
+* **QI-DMO.** QI-DMO beats DMO on 76 of the 80 unseen problems (Wilcoxon p = 1.3e-14). DMO wins 4, all of the type
+  n100 m20 lognormal low (seeds 801, 803, 806 and 810). On the benchmark, the improving-phase swap is better on only 2
+  of 7 problems (the two bimodal ones, by about 2 s) and slightly worse on 5.
+* **QI-MRFO.** MRFO → QI-MRFO is better on 78 of 80 unseen problems (p = 9.1e-15). The Max-Min start is better on 65
+  and worse on 13 (p = 9.4e-10), and slightly worse on the 30-task benchmark problem.
+* **QI-MRFO Part 3** (λ = 0.2, 6 scenarios × 10 runs). Cost gap over the six steps: 23.18 → 10.33 → 7.43 → 9.23 →
+  5.83 → 5.57 %.
+  * **Step 3 (swap move) vs step 2:** better in only 31 of 60 runs (p = 0.051). It moves more tasks (10.2 → 28.3 per
+    change). It helps after a VM addition (18.43 → 11.16 %), after speed drift and on 200 tasks, and hurts after
+    churn, VM failures and mixed events. H6 measured the swap move without a migration price (60 of 60 better), so
+    the notebook text now says so.
+  * **Step 4 vs step 3:** worse on average (9.23 vs 7.43 %), because of the VM addition (11.16 → 24.25 %). This is
+    the H6b mechanism; step 5 removes it.
+  * **Steps 5 and 6** reproduce H13 exactly.

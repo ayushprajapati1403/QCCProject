@@ -1,0 +1,7 @@
+scenario,1. restart after each change,2. keeps its registers,3. + swap move,4. + starts from the running schedule,5. + event-aware start,6. + no noise after small changes
+Task churn (20% replaced),16.66,4.779,6.118,5.124,1.413,1.339
+VM speed drift,19.823,9.327,8.494,8.576,8.576,7.525
+VM failure,12.248,1.683,2.602,0.691,0.691,0.658
+VM added,21.868,18.427,11.155,24.248,11.155,11.155
+Mixed events,16.857,6.195,6.713,6.254,5.402,5.097
+"Mixed, 200 tasks, 20 VMs, heavy-tailed",51.608,21.539,9.507,10.511,7.723,7.649

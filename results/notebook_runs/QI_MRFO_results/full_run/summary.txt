@@ -1,0 +1,58 @@
+QI-MRFO for cloud task scheduling - results summary (full mode)
+Folder: /home/user/QCCProject/results/notebook_runs/QI_MRFO_results/full_run
+Written: 2026-09-24 06:25:51
+
+Part 1 - QI-MRFO on the benchmark problems: mean makespan (s), best (s), gap (%), run time (s)
+  30 tasks, 5 VMs, uniform/high: 45.00 (best 44.71; lower bound 44.53), gap 1.055 %, 1.3 s per run
+  50 tasks, 10 VMs, bimodal/high: 28.12 (best 25.60; lower bound 25.11), gap 11.987 %, 1.5 s per run
+  100 tasks, 10 VMs, uniform/high: 47.59 (best 47.31; lower bound 47.06), gap 1.122 %, 1.8 s per run
+  50 tasks, 10 VMs, uniform/none: 29.28 (best 28.66; lower bound 28.39), gap 3.138 %, 1.5 s per run
+  200 tasks, 20 VMs, uniform/high: 62.53 (best 61.90; lower bound 60.83), gap 2.788 %, 3.3 s per run
+  100 tasks, 10 VMs, lognormal/low: 39.09 (best 38.91; lower bound 38.68), gap 1.067 %, 1.8 s per run
+  60 tasks, 8 VMs, bimodal/none: 57.53 (best 55.03; lower bound 52.94), gap 8.679 %, 1.5 s per run
+
+Part 1 - QI-MRFO on the large problems (50 vms): mean makespan (s), best (s), gap (%), run time (s)
+  500 tasks, 50 VMs, uniform/high: 76.89 (best 71.65; lower bound 53.38), gap 44.050 %, 12.0 s per run
+  1000 tasks, 50 VMs, uniform/high: 138.95 (best 133.11; lower bound 101.38), gap 37.069 %, 25.3 s per run
+  1500 tasks, 50 VMs, uniform/high: 336.44 (best 313.86; lower bound 164.78), gap 104.175 %, 43.2 s per run
+  2000 tasks, 50 VMs, uniform/high: 510.95 (best 474.73; lower bound 231.55), gap 120.666 %, 68.7 s per run
+  5000 tasks, 50 VMs, uniform/high: 1698.02 (best 1652.69; lower bound 528.17), gap 221.491 %, 143.7 s per run
+
+Part 2 - benchmark problems: average gap to the lower bound of every version
+  MRFO (original): 47.946 %
+  QI-MRFO: 4.262 %
+  QI-MRFO + swap: 0.990 %
+  QI-MRFO + swap + Max-Min start: 0.873 %
+  MRFO (original) -> QI-MRFO: better on 7 of 7 problems, worse on 0
+  QI-MRFO -> QI-MRFO + swap: better on 7 of 7 problems, worse on 0
+  QI-MRFO + swap -> QI-MRFO + swap + Max-Min start: better on 6 of 7 problems, worse on 1
+
+Part 2 - unseen problems: average gap to the lower bound of every version
+  MRFO (original): 56.090 %
+  QI-MRFO: 3.396 %
+  QI-MRFO + swap: 0.541 %
+  QI-MRFO + swap + Max-Min start: 0.074 %
+  MRFO (original) -> QI-MRFO: better on 78 of 80 problems, worse on 2 (Wilcoxon p = 9.1e-15)
+  QI-MRFO -> QI-MRFO + swap: better on 76 of 80 problems, worse on 4 (Wilcoxon p = 1.1e-13)
+  QI-MRFO + swap -> QI-MRFO + swap + Max-Min start: better on 65 of 80 problems, worse on 13 (Wilcoxon p = 9.4e-10)
+
+Part 2 - large problems: average gap to the lower bound of every version
+  MRFO (original): 240.694 %
+  QI-MRFO: 105.490 %
+  QI-MRFO + swap: 9.652 %
+  QI-MRFO + swap + Max-Min start: 0.098 %
+  MRFO (original) -> QI-MRFO: better on 5 of 5 problems, worse on 0
+  QI-MRFO -> QI-MRFO + swap: better on 5 of 5 problems, worse on 0
+  QI-MRFO + swap -> QI-MRFO + swap + Max-Min start: better on 5 of 5 problems, worse on 0
+
+Part 3 - changing cloud (migration price 0.2), mean over 6 scenarios x 10 runs:
+  1. restart after each change: cost gap 23.18 %, tasks moved per change 74.6, makespan 64.44 s
+  2. keeps its registers: cost gap 10.33 %, tasks moved per change 10.2, makespan 64.39 s
+  3. + swap move: cost gap 7.43 %, tasks moved per change 28.3, makespan 61.73 s
+  4. + starts from the running schedule: cost gap 9.23 %, tasks moved per change 20.2, makespan 62.96 s
+  5. + event-aware start: cost gap 5.83 %, tasks moved per change 20.5, makespan 61.75 s
+  6. + no noise after small changes: cost gap 5.57 %, tasks moved per change 18.1, makespan 61.81 s
+
+Units: makespan in seconds (task length in MI / VM speed in MIPS); energy in Wh; gap in % above the lower bound.
+Quantum-inspired = a classical algorithm that uses quantum ideas (registers, measurement, decoherence); no quantum
+hardware is used and no quantum advantage is claimed.

@@ -1,0 +1,10 @@
+,change,problem set,gap before (%),gap after (%),change (percentage points),better on,significantly better on,significantly worse on,p (all unseen problems)
+0,DMO (original)  ->  QI-DMO,benchmark,59.3717,7.4612,-51.9105,7 of 7 problems,7,0,-
+1,DMO (original)  ->  QI-DMO,unseen,67.9388,6.8893,-61.0495,76 of 80 problems,7,0,1.3e-14
+2,DMO (original)  ->  QI-DMO,large,302.5723,96.1235,-206.4488,5 of 5 problems,5,0,-
+3,QI-DMO  ->  QI-DMO + swap in every phase,benchmark,7.4612,8.5558,1.0947,2 of 7 problems,1,5,-
+4,QI-DMO  ->  QI-DMO + swap in every phase,unseen,6.8893,8.7756,1.8863,15 of 80 problems,0,6,3.7e-06
+5,QI-DMO  ->  QI-DMO + swap in every phase,large,96.1235,68.5681,-27.5554,5 of 5 problems,5,0,-
+6,QI-DMO  ->  QI-DMO + swap in improving phases,benchmark,7.4612,6.0105,-1.4507,2 of 7 problems,2,1,-
+7,QI-DMO  ->  QI-DMO + swap in improving phases,unseen,6.8893,6.076,-0.8133,47 of 80 problems,0,0,0.067
+8,QI-DMO  ->  QI-DMO + swap in improving phases,large,96.1235,88.0577,-8.0658,5 of 5 problems,0,0,-

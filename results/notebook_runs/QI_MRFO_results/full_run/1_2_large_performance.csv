@@ -1,0 +1,6 @@
+problem,tasks,VMs,runs,lower bound (s),makespan mean (s),makespan SD (s),best (s),worst (s),gap to lower bound (%),energy (Wh),run time per run (s)
+"500 tasks, 50 VMs, uniform/high",500,50,10,53.376,76.889,2.347,71.652,80.329,44.05,192.515,12.034
+"1000 tasks, 50 VMs, uniform/high",1000,50,10,101.376,138.954,4.095,133.113,146.824,37.069,364.955,25.274
+"1500 tasks, 50 VMs, uniform/high",1500,50,10,164.783,336.445,21.293,313.864,381.784,104.175,777.645,43.191
+"2000 tasks, 50 VMs, uniform/high",2000,50,10,231.547,510.946,23.74,474.727,543.652,120.666,1138.672,68.703
+"5000 tasks, 50 VMs, uniform/high",5000,50,10,528.17,1698.019,30.151,1652.692,1735.826,221.491,3656.96,143.651

@@ -1,0 +1,166 @@
+{
+ "mode": "full",
+ "sizes": {
+  "benchmark": {
+   "problems": [
+    [
+     30,
+     5,
+     "uniform",
+     "high"
+    ],
+    [
+     50,
+     10,
+     "bimodal",
+     "high"
+    ],
+    [
+     100,
+     10,
+     "uniform",
+     "high"
+    ],
+    [
+     50,
+     10,
+     "uniform",
+     "none"
+    ],
+    [
+     200,
+     20,
+     "uniform",
+     "high"
+    ],
+    [
+     100,
+     10,
+     "lognormal",
+     "low"
+    ],
+    [
+     60,
+     8,
+     "bimodal",
+     "none"
+    ]
+   ],
+   "inst_seeds": [
+    1
+   ],
+   "runs": 30,
+   "budget": 20000
+  },
+  "unseen": {
+   "problems": [
+    [
+     80,
+     8,
+     "uniform",
+     "high"
+    ],
+    [
+     150,
+     15,
+     "uniform",
+     "high"
+    ],
+    [
+     300,
+     30,
+     "uniform",
+     "high"
+    ],
+    [
+     100,
+     10,
+     "bimodal",
+     "high"
+    ],
+    [
+     200,
+     10,
+     "bimodal",
+     "none"
+    ],
+    [
+     120,
+     12,
+     "lognormal",
+     "high"
+    ],
+    [
+     60,
+     12,
+     "uniform",
+     "low"
+    ],
+    [
+     100,
+     20,
+     "lognormal",
+     "low"
+    ]
+   ],
+   "inst_seeds": [
+    801,
+    802,
+    803,
+    804,
+    805,
+    806,
+    807,
+    808,
+    809,
+    810
+   ],
+   "runs": 2,
+   "budget": 20000
+  },
+  "large": {
+   "problems": [
+    [
+     500,
+     50,
+     "uniform",
+     "high"
+    ],
+    [
+     1000,
+     50,
+     "uniform",
+     "high"
+    ],
+    [
+     1500,
+     50,
+     "uniform",
+     "high"
+    ],
+    [
+     2000,
+     50,
+     "uniform",
+     "high"
+    ],
+    [
+     5000,
+     50,
+     "uniform",
+     "high"
+    ]
+   ],
+   "inst_seeds": [
+    1
+   ],
+   "runs": 10,
+   "budget": 20000
+  }
+ },
+ "population": 30,
+ "workers": 4,
+ "python": "3.11.15",
+ "numpy": "2.2.6",
+ "started": "2026-09-24 06:25:34"
+}

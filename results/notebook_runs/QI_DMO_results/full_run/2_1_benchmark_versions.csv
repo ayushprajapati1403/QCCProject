@@ -1,0 +1,8 @@
+problem,lower bound (s),DMO (original),QI-DMO,QI-DMO + swap in every phase,QI-DMO + swap in improving phases
+"30 tasks, 5 VMs, uniform/high",44.528,45.816,45.262,45.236,45.345
+"50 tasks, 10 VMs, bimodal/high",25.107,35.363,29.635,28.456,27.525
+"100 tasks, 10 VMs, uniform/high",47.061,82.541,48.925,49.633,49.258
+"50 tasks, 10 VMs, uniform/none",28.387,32.943,30.421,31.017,30.586
+"200 tasks, 20 VMs, uniform/high",60.832,210.576,66.317,68.029,66.477
+"100 tasks, 10 VMs, lognormal/low",38.677,44.786,39.901,41.025,40.003
+"60 tasks, 8 VMs, bimodal/none",52.936,62.708,57.824,59.462,55.84

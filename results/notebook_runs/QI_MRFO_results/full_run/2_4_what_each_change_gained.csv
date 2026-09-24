@@ -1,0 +1,10 @@
+,change,problem set,gap before (%),gap after (%),change (percentage points),better on,significantly better on,significantly worse on,p (all unseen problems)
+0,MRFO (original)  ->  QI-MRFO,benchmark,47.946,4.2624,-43.6836,7 of 7 problems,7,0,-
+1,MRFO (original)  ->  QI-MRFO,unseen,56.0901,3.3964,-52.6936,78 of 80 problems,8,0,9.1e-15
+2,MRFO (original)  ->  QI-MRFO,large,240.6939,105.4901,-135.2038,5 of 5 problems,5,0,-
+3,QI-MRFO  ->  QI-MRFO + swap,benchmark,4.2624,0.9898,-3.2726,7 of 7 problems,7,0,-
+4,QI-MRFO  ->  QI-MRFO + swap,unseen,3.3964,0.5412,-2.8552,76 of 80 problems,7,0,1.1e-13
+5,QI-MRFO  ->  QI-MRFO + swap,large,105.4901,9.6522,-95.838,5 of 5 problems,5,0,-
+6,QI-MRFO + swap  ->  QI-MRFO + swap + Max-Min start,benchmark,0.9898,0.8731,-0.1166,6 of 7 problems,1,1,-
+7,QI-MRFO + swap  ->  QI-MRFO + swap + Max-Min start,unseen,0.5412,0.0738,-0.4674,65 of 80 problems,3,0,9.4e-10
+8,QI-MRFO + swap  ->  QI-MRFO + swap + Max-Min start,large,9.6522,0.0977,-9.5545,5 of 5 problems,5,0,-

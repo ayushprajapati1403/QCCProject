@@ -1,0 +1,50 @@
+QI-DMO for cloud task scheduling - results summary (full mode)
+Folder: /home/user/QCCProject/results/notebook_runs/QI_DMO_results/full_run
+Written: 2026-09-24 06:25:40
+
+Part 1 - QI-DMO on the benchmark problems: mean makespan (s), best (s), gap (%), run time (s)
+  30 tasks, 5 VMs, uniform/high: 45.26 (best 44.81; lower bound 44.53), gap 1.648 %, 1.6 s per run
+  50 tasks, 10 VMs, bimodal/high: 29.64 (best 26.68; lower bound 25.11), gap 18.036 %, 1.8 s per run
+  100 tasks, 10 VMs, uniform/high: 48.93 (best 48.44; lower bound 47.06), gap 3.963 %, 2.4 s per run
+  50 tasks, 10 VMs, uniform/none: 30.42 (best 29.67; lower bound 28.39), gap 7.166 %, 2.5 s per run
+  200 tasks, 20 VMs, uniform/high: 66.32 (best 64.25; lower bound 60.83), gap 9.017 %, 4.9 s per run
+  100 tasks, 10 VMs, lognormal/low: 39.90 (best 39.46; lower bound 38.68), gap 3.165 %, 2.9 s per run
+  60 tasks, 8 VMs, bimodal/none: 57.82 (best 55.49; lower bound 52.94), gap 9.233 %, 2.4 s per run
+
+Part 1 - QI-DMO on the large problems (50 vms): mean makespan (s), best (s), gap (%), run time (s)
+  500 tasks, 50 VMs, uniform/high: 90.73 (best 78.26; lower bound 53.38), gap 69.977 %, 13.7 s per run
+  1000 tasks, 50 VMs, uniform/high: 143.55 (best 136.98; lower bound 101.38), gap 41.602 %, 26.0 s per run
+  1500 tasks, 50 VMs, uniform/high: 324.00 (best 305.68; lower bound 164.78), gap 96.625 %, 38.4 s per run
+  2000 tasks, 50 VMs, uniform/high: 478.84 (best 463.75; lower bound 231.55), gap 106.800 %, 56.9 s per run
+  5000 tasks, 50 VMs, uniform/high: 1402.89 (best 1378.55; lower bound 528.17), gap 165.614 %, 136.4 s per run
+
+Part 2 - benchmark problems: average gap to the lower bound of every version
+  DMO (original): 59.372 %
+  QI-DMO: 7.461 %
+  QI-DMO + swap in every phase: 8.556 %
+  QI-DMO + swap in improving phases: 6.011 %
+  DMO (original) -> QI-DMO: better on 7 of 7 problems, worse on 0
+  QI-DMO -> QI-DMO + swap in every phase: better on 2 of 7 problems, worse on 5
+  QI-DMO -> QI-DMO + swap in improving phases: better on 2 of 7 problems, worse on 5
+
+Part 2 - unseen problems: average gap to the lower bound of every version
+  DMO (original): 67.939 %
+  QI-DMO: 6.889 %
+  QI-DMO + swap in every phase: 8.776 %
+  QI-DMO + swap in improving phases: 6.076 %
+  DMO (original) -> QI-DMO: better on 76 of 80 problems, worse on 4 (Wilcoxon p = 1.3e-14)
+  QI-DMO -> QI-DMO + swap in every phase: better on 15 of 80 problems, worse on 65 (Wilcoxon p = 3.7e-06)
+  QI-DMO -> QI-DMO + swap in improving phases: better on 47 of 80 problems, worse on 33 (Wilcoxon p = 0.067)
+
+Part 2 - large problems: average gap to the lower bound of every version
+  DMO (original): 302.572 %
+  QI-DMO: 96.123 %
+  QI-DMO + swap in every phase: 68.568 %
+  QI-DMO + swap in improving phases: 88.058 %
+  DMO (original) -> QI-DMO: better on 5 of 5 problems, worse on 0
+  QI-DMO -> QI-DMO + swap in every phase: better on 5 of 5 problems, worse on 0
+  QI-DMO -> QI-DMO + swap in improving phases: better on 5 of 5 problems, worse on 0
+
+Units: makespan in seconds (task length in MI / VM speed in MIPS); energy in Wh; gap in % above the lower bound.
+Quantum-inspired = a classical algorithm that uses quantum ideas (registers, measurement, decoherence); no quantum
+hardware is used and no quantum advantage is claimed.

@@ -1,0 +1,7 @@
+step,makespan after a change (s),tasks moved per change,cost gap (%),better than the step before in,"p (Wilcoxon, vs the step before)"
+1. restart after each change,64.4361,74.6188,23.1772,-,-
+2. keeps its registers,64.3866,10.1708,10.3252,58 of 60 runs,2.6e-11
+3. + swap move,61.7348,28.2792,7.4316,31 of 60 runs,0.051
+4. + starts from the running schedule,62.9589,20.2,9.2337,35 of 60 runs,0.95
+5. + event-aware start,61.7504,20.5458,5.8266,35 of 60 runs,6.7e-10
+6. + no noise after small changes,61.8102,18.075,5.5707,34 of 60 runs,0.0061
